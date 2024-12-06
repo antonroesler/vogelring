@@ -1,0 +1,56 @@
+from typing import Counter
+from api.service.get_sightings import get_sightings_by_ring, get_sightings
+from api.models.sightings import BirdMeta
+
+
+def get_bird_by_ring(ring: str) -> BirdMeta | None:
+    """Return bird meta information by ring or None if bird is not found."""
+    sightings = get_sightings_by_ring(ring)
+    if not sightings:
+        return None
+
+    species_counts = Counter(sighting.species for sighting in sightings)
+    most_likely_species, _ = species_counts.most_common(1)[0]
+    other_species_identifications = {
+        species: count for species, count in species_counts.items() if species != most_likely_species
+    }
+
+    last_seen = max(sightings, key=lambda sighting: sighting.date).date
+    first_seen = min(sightings, key=lambda sighting: sighting.date).date
+
+    return BirdMeta(
+        species=most_likely_species,
+        ring=ring,
+        sighting_count=len(sightings),
+        last_seen=last_seen,
+        first_seen=first_seen,
+        other_species_identifications=other_species_identifications,
+    )
+
+
+def get_unique_rings() -> list[str]:
+    """Return a list of unique rings."""
+    return list(set(sighting.ring for sighting in get_sightings()))
+
+
+def get_bird_suggestions_by_partial_reading(partial_reading: str) -> list[BirdMeta]:
+    """Return a list of bird meta information suggestions by partial reading.
+    Partial reading can be only front, back, outer or middle reading."""
+    partial_reading = partial_reading.replace("...", "*").replace("…", "*")
+    all_rings = get_unique_rings()
+
+    # Case 1: Partial reading is outer reading *8043*
+    if partial_reading.startswith("*") and partial_reading.endswith("*"):
+        return [get_bird_by_ring(ring) for ring in all_rings if partial_reading.replace("*", "") in ring]
+    # Case 2: Partial reading is front reading 280*
+    if partial_reading.endswith("*"):
+        return [get_bird_by_ring(ring) for ring in all_rings if ring.startswith(partial_reading[:-1])]
+    # Case 3: Partial reading is back reading *35
+    if partial_reading.startswith("*"):
+        return [get_bird_by_ring(ring) for ring in all_rings if ring.endswith(partial_reading[1:])]
+    # Case 4: Partial reading is middle reading 28*35
+    if "*" in partial_reading:
+        start = partial_reading.split("*")[0]
+        end = partial_reading.split("*")[-1]
+        return [get_bird_by_ring(ring) for ring in all_rings if ring.startswith(start) and ring.endswith(end)]
+    return [get_bird_by_ring(partial_reading)]
