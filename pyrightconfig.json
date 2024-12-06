@@ -1,0 +1,4 @@
+{
+    "extraPaths": ["ring-api/src"],
+    "pythonVersion": "3.10"
+} 
