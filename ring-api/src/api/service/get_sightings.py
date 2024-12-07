@@ -36,4 +36,14 @@ def get_sightings_by_date(date: _date) -> list[Sighting]:
 
 def get_sightings_by_date_range(start: _date, end: _date) -> list[Sighting]:
     """Returns all sightings for a given date range."""
-    return [sighting for sighting in loader.get_sightings() if start <= sighting.date <= end]
+    return [sighting for sighting in loader.get_sightings() if sighting.date and start <= sighting.date <= end]
+
+
+def get_next_sighting_id() -> str:
+    """Returns the next sighting id."""
+    return str(len(loader.get_sightings()) + 1)
+
+
+if __name__ == "__main__":
+    valid_sighting_id = "a543c698-917c-4218-b385-9d78839aad18"
+    print(get_sighting_by_id(valid_sighting_id))

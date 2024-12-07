@@ -11,8 +11,17 @@ from api.service.get_bird import (
     get_bird_by_ring,
     get_bird_suggestions_by_partial_reading,
 )
+from api.service.upsert_sighting import (
+    add_sighting,
+    update_sighting,
+    delete_sighting,
+)
+
 
 __all__ = [
+    "add_sighting",
+    "update_sighting",
+    "delete_sighting",
     "get_sighting_by_id",
     "get_sightings",
     "get_sightings_count",

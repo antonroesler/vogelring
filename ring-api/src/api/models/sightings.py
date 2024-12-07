@@ -1,10 +1,11 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 from datetime import date as _date
 from uuid import uuid4
 
 
 class Sighting(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
+    excel_id: int | None = None
     species: str | None = None
     ring: str | None = None
     reading: str | None = None
@@ -14,8 +15,12 @@ class Sighting(BaseModel):
     comment: str | None = None
     melder: str | None = None
     melded: bool | None = None
-    lan: float | None = None
+    lat: float | None = None
     lon: float | None = None
+
+    @field_serializer("date")
+    def serialize_date(self, v: _date | None, _info):
+        return v.isoformat() if v else None
 
 
 class BirdMeta(BaseModel):
@@ -33,3 +38,11 @@ class BirdMeta(BaseModel):
         if not isinstance(other, BirdMeta):
             return False
         return self.ring == other.ring
+
+    @field_serializer("last_seen")
+    def serialize_last_seen(self, v: _date | None, _info):
+        return v.isoformat() if v else None
+
+    @field_serializer("first_seen")
+    def serialize_first_seen(self, v: _date | None, _info):
+        return v.isoformat() if v else None

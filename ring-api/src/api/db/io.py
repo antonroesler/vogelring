@@ -5,6 +5,8 @@ import boto3
 from api import conf
 from api.models.sightings import Sighting
 
+s3 = boto3.client("s3")
+
 
 # Readers
 def local_file_reader(file: str) -> list[Sighting]:
@@ -13,7 +15,6 @@ def local_file_reader(file: str) -> list[Sighting]:
 
 
 def s3_reader(file: str) -> list[Sighting]:
-    s3 = boto3.client("s3")
     obj = s3.get_object(Bucket=conf.BUCKET, Key=file)
     return pickle.loads(obj["Body"].read())
 
@@ -33,7 +34,6 @@ def local_file_writer(file: str, data: list[Sighting]) -> None:
 
 
 def s3_writer(file: str, data: list[Sighting]) -> None:
-    s3 = boto3.client("s3")
     s3.put_object(Bucket=conf.BUCKET, Key=file, Body=pickle.dumps(data))
 
 

@@ -2,14 +2,14 @@ from pathlib import Path
 from enum import Enum
 import pickle
 from datetime import datetime
-from models.sightings import Sighting
+from api.models.sightings import Sighting
 import csv
 
 outfile = Path("data/pkl/sightings.pkl")
 
 
 class SightingCols(Enum):
-    id = 0
+    excel_id = 0
     species = 1
     ring = 2
     reading = 3
