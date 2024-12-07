@@ -30,7 +30,7 @@ def get_bird_by_ring(ring: str) -> BirdMeta | None:
 
 def get_unique_rings() -> list[str]:
     """Return a list of unique rings."""
-    return list(set(sighting.ring for sighting in get_sightings() if sighting.ring is not Nonex))
+    return list(set(sighting.ring for sighting in get_sightings() if sighting.ring is not None))
 
 
 def get_bird_suggestions_by_partial_reading(partial_reading: str) -> list[BirdMeta]:
