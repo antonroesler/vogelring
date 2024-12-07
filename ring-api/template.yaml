@@ -12,6 +12,7 @@ Resources:
   RingApiFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html
     Properties:
+      ReservedConcurrentExecutions: 1
       Handler: api.app.lambda_handler
       CodeUri: src
       Description: Ring API Lambda function
