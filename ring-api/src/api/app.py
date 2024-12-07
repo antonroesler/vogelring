@@ -5,10 +5,12 @@ from aws_lambda_powertools import Logger
 from aws_lambda_powertools.event_handler.exceptions import (
     NotFoundError,
     BadRequestError,
+    InternalServerError,
 )
 from aws_lambda_powertools import Metrics
 from pydantic import ValidationError
 
+from api.models.responses import FriendResponse
 from api.version import __version__
 from api import service
 from api.models.sightings import BirdMeta, Sighting
@@ -99,8 +101,17 @@ def add_sighting():
         raise BadRequestError("Request body is required")
     sighting = Sighting(**json.loads(body))
     logger.info(f"Add sighting: {sighting}")
-    service.add_sighting(sighting)
-    return Response(status_code=201, body=sighting.model_dump())
+    try:
+        service.add_sighting(sighting)
+    except ValueError as e:
+        logger.error(f"Error adding sighting: {e}")
+        raise BadRequestError(str(e))
+    except Exception as e:
+        logger.error(f"Error adding sighting: {e}")
+        raise InternalServerError("An error occurred while adding the sighting")
+    logger.info(f"Sighting added: {sighting}")
+
+    return Response(status_code=201, body=json.dumps(sighting.model_dump()), content_type="application/json")
 
 
 @app.put("/sightings")
@@ -123,6 +134,21 @@ def delete_sighting(id: str):
         raise NotFoundError(f"Sighting with id {id} not found")
     service.delete_sighting(id)
     return Response(status_code=204)
+
+
+# Analytics
+
+
+@app.get("/analytics/history/<ring>")
+def get_all_sightings_from_ring(ring: str) -> list[Sighting]:
+    logger.info(f"Get all history from ring: {ring}")
+    return service.get_all_sightings_from_ring(ring)
+
+
+@app.get("/analytics/groups/<ring>")
+def get_groups_from_ring(ring: str) -> FriendResponse:
+    logger.info(f"Get groups from ring: {ring}")
+    return service.get_friends_from_ring(ring)
 
 
 @logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST)

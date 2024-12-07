@@ -16,6 +16,7 @@ from api.service.upsert_sighting import (
     update_sighting,
     delete_sighting,
 )
+from api.service.analytics import get_all_sightings_from_ring, get_friends_from_ring
 
 
 __all__ = [
@@ -31,4 +32,6 @@ __all__ = [
     "get_sightings_by_date_range",
     "get_bird_by_ring",
     "get_bird_suggestions_by_partial_reading",
+    "get_all_sightings_from_ring",
+    "get_friends_from_ring",
 ]
