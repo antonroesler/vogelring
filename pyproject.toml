@@ -68,3 +68,8 @@ indent-width = 4
 [tool.pytest]
 pythonpath = ["ring-api/src"]
 env = ["LOCAL=true", "LOCAL_PATH=/Users/anton/Projects/vogelring/data/pkl"]
+
+[tool.rye.scripts]
+convert = "rye run python src/processor/converter.py"
+deploy = "sam build && sam deploy"
+test = "rye run pytest ring-api/tests/unit"
