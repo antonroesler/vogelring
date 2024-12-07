@@ -6,13 +6,15 @@ from datetime import date as _date
 from api import service
 from api.models.sightings import BirdMeta, Sighting
 
+valid_sighting_id = "05d0991f-fd82-4912-9a69-13b5ccf9c6ba"
+
 
 def test_get_sighting_by_id():
-    assert service.get_sighting_by_id("1") is not None
+    assert service.get_sighting_by_id(valid_sighting_id) is not None
 
 
 def test_get_sighting_by_id_returns_sighting():
-    assert isinstance(service.get_sighting_by_id("6690"), Sighting)
+    assert isinstance(service.get_sighting_by_id(valid_sighting_id), Sighting)
 
 
 def test_get_sighting_by_id_returns_none_if_sighting_not_found():
@@ -20,7 +22,7 @@ def test_get_sighting_by_id_returns_none_if_sighting_not_found():
 
 
 def test_get_sighting_by_id_returns_sighting_with_correct_id():
-    assert service.get_sighting_by_id("6690").id == "6690"
+    assert service.get_sighting_by_id(valid_sighting_id).id == valid_sighting_id
 
 
 def test_get_sightings():

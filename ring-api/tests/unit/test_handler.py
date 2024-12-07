@@ -1,119 +1,258 @@
 import json
-
 import pytest
-
-from hello_world import app
-
-
-def lambda_context():
-    class LambdaContext:
-        def __init__(self):
-            self.function_name = "test-func"
-            self.memory_limit_in_mb = 128
-            self.invoked_function_arn = (
-                "arn:aws:lambda:eu-west-1:809313241234:function:test-func"
-            )
-            self.aws_request_id = "52fdfc07-2182-154f-163f-5f0f9a621d72"
-
-        def get_remaining_time_in_millis(self) -> int:
-            return 1000
-
-    return LambdaContext()
+from datetime import date
+from api.app import app
+from api.models.sightings import Sighting, BirdMeta
 
 
-@pytest.fixture()
-def apigw_event():
-    """Generates API GW Event"""
+class DateJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, date):
+            return obj.isoformat()
+        return super().default(obj)
 
-    return {
-        "body": "",
-        "headers": {
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
-            "Cache-Control": "max-age=0",
-            "Connection": "keep-alive",
-            "Host": "127.0.0.1:3000",
-            "Sec-Ch-Ua": '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"',
-            "Sec-Ch-Ua-Mobile": "?0",
-            "Sec-Ch-Ua-Platform": '"Linux"',
-            "Sec-Fetch-Dest": "document",
-            "Sec-Fetch-Mode": "navigate",
-            "Sec-Fetch-Site": "none",
-            "Sec-Fetch-User": "?1",
-            "Upgrade-Insecure-Requests": "1",
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
-            "X-Forwarded-Port": "3000",
-            "X-Forwarded-Proto": "http",
-        },
-        "httpMethod": "GET",
+
+def create_event(method="GET", path="/health", body=None, query_params=None, path_params=None):
+    event = {
+        "httpMethod": method,
+        "path": path,
+        "headers": {},
+        "queryStringParameters": query_params or {},
+        "pathParameters": path_params or {},
+        "body": json.dumps(body, cls=DateJSONEncoder) if body else None,
         "isBase64Encoded": False,
-        "multiValueHeaders": {
-            "Accept": [
-                "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9"
-            ],
-            "Accept-Encoding": ["gzip, deflate, br"],
-            "Accept-Language": ["pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"],
-            "Cache-Control": ["max-age=0"],
-            "Connection": ["keep-alive"],
-            "Host": ["127.0.0.1:3000"],
-            "Sec-Ch-Ua": [
-                '"Google Chrome";v="105", "Not)A;Brand";v="8", "Chromium";v="105"'
-            ],
-            "Sec-Ch-Ua-Mobile": ["?0"],
-            "Sec-Ch-Ua-Platform": ['"Linux"'],
-            "Sec-Fetch-Dest": ["document"],
-            "Sec-Fetch-Mode": ["navigate"],
-            "Sec-Fetch-Site": ["none"],
-            "Sec-Fetch-User": ["?1"],
-            "Upgrade-Insecure-Requests": ["1"],
-            "User-Agent": [
-                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36"
-            ],
-            "X-Forwarded-Port": ["3000"],
-            "X-Forwarded-Proto": ["http"],
-        },
-        "multiValueQueryStringParameters": "",
-        "path": "/hello",
-        "pathParameters": "",
-        "queryStringParameters": "",
-        "requestContext": {
-            "accountId": "123456789012",
-            "apiId": "1234567890",
-            "domainName": "127.0.0.1:3000",
-            "extendedRequestId": "",
-            "httpMethod": "GET",
-            "identity": {
-                "accountId": "",
-                "apiKey": "",
-                "caller": "",
-                "cognitoAuthenticationProvider": "",
-                "cognitoAuthenticationType": "",
-                "cognitoIdentityPoolId": "",
-                "sourceIp": "127.0.0.1",
-                "user": "",
-                "userAgent": "Custom User Agent String",
-                "userArn": "",
-            },
-            "path": "/hello",
-            "protocol": "HTTP/1.1",
-            "requestId": "a3590457-cac2-4f10-8fc9-e47114bf7c62",
-            "requestTime": "02/Feb/2023:11:45:26 +0000",
-            "requestTimeEpoch": 1675338326,
-            "resourceId": "123456",
-            "resourcePath": "/hello",
-            "stage": "Prod",
-        },
-        "resource": "/hello",
-        "stageVariables": "",
-        "version": "1.0",
+    }
+    return event
+
+
+@pytest.fixture
+def sample_sighting():
+    return Sighting(
+        id="05d0991f-fd82-4912-9a69-14b5ccf9c6ba",
+        ring="AB123",
+        reading="...B123",
+        date="2024-03-20",
+        place="Test Place",
+        melder="Test Melder",
+        species="Test Bird",
+        comment="Test Comment",
+        lat=123.456,
+        lon=78.910,
+    )
+
+
+@pytest.fixture
+def invalid_sighting():
+    return {
+        "id": "05d0991f-fde2-4952-9a69-11b5ccf9c6ba",
+        "ring": "AB123",
+        "date": "invalid-date",  # Invalid date format
+        "place": "Test Place",
+        "melder": "Test Melder",
+        "species": "Test Bird",
+        "comment": "Test Comment",
+        "lat": 123.456,
+        "lon": 78.910,
     }
 
 
-def test_lambda_handler(apigw_event):
-    ret = app.lambda_handler(apigw_event, lambda_context())
-    data = json.loads(ret["body"])
+def test_health():
+    event = create_event(path="/health")
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert "message" in body
+    assert body["message"] == "healthy"
+    assert "version" in body
 
-    assert ret["statusCode"] == 200
-    assert "message" in ret["body"]
-    assert data["message"] == "hello world"
+
+def test_get_sightings():
+    event = create_event(path="/sightings", query_params={"page": "1", "per_page": "10"})
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert isinstance(body, list)
+    assert len(body) == 10
+    assert all(Sighting(**item) for item in body)
+
+
+def test_get_sightings_invalid_page():
+    event = create_event(path="/sightings", query_params={"page": "invalid", "per_page": "10"})
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 400
+
+
+def test_get_sightings_negative_page():
+    event = create_event(path="/sightings", query_params={"page": "-1", "per_page": "10"})
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 400
+
+
+def test_get_sightings_without_pagination():
+    event = create_event(path="/sightings")
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert isinstance(body, list)
+    assert len(body) == 100
+
+
+def test_get_sightings_count():
+    event = create_event(path="/sightings/count")
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    count = json.loads(response["body"])
+    assert isinstance(count, int)
+    assert count >= 0
+
+
+def test_add_sighting(sample_sighting):
+    event = create_event(method="POST", path="/sightings", body=sample_sighting.model_dump())
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 201  # Created
+    body = response["body"]
+    assert body["id"] == sample_sighting.id
+    assert body["ring"] == sample_sighting.ring
+    assert body["date"] == "2024-03-20"  # Date should be serialized as ISO format
+
+
+def test_add_invalid_sighting(invalid_sighting):
+    event = create_event(method="POST", path="/sightings", body=invalid_sighting)
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 400
+
+
+def test_get_sighting_by_id(sample_sighting):
+    # First add a sighting
+    add_event = create_event(method="POST", path="/sightings", body=sample_sighting.model_dump())
+    app.resolve(add_event, {})
+
+    # Then get it by id
+    event = create_event(path=f"/sightings/{sample_sighting.id}")
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert body["id"] == sample_sighting.id
+
+
+def test_get_sighting_by_id_not_found():
+    event = create_event(path="/sightings/nonexistent-id")
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 404
+
+
+def test_get_bird_suggestions():
+    event = create_event(path="/birds/suggestions/2903*")
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert isinstance(body, list)
+
+
+def test_get_bird_suggestions_empty_query():
+    event = create_event(path="/birds/suggestions/")
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 400
+
+
+def test_get_bird_suggestions_back():
+    event = create_event(path="/birds/suggestions/290...")
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert isinstance(body, list)
+
+
+def test_get_bird_suggestions_front():
+    event = create_event(path="/birds/suggestions/...E2")
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert isinstance(body, list)
+
+
+def test_get_bird_suggestions_mid():
+    event = create_event(path="/birds/suggestions/12*23")
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert isinstance(body, list)
+
+
+def test_get_bird_suggestions_outer():
+    event = create_event(path="/birds/suggestions/...2222...")
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert isinstance(body, list)
+
+
+def test_get_bird_by_ring():
+    event = create_event(path="/birds/AB123")
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert isinstance(body, dict)
+
+
+def test_get_bird_by_ring_not_found():
+    event = create_event(path="/birds/NONEXISTENT")
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 404
+
+
+def test_update_sighting(sample_sighting):
+    # First add a sighting
+    add_event = create_event(method="POST", path="/sightings", body=sample_sighting.model_dump())
+    app.resolve(add_event, {})
+
+    # Update the sighting
+    updated_sighting = sample_sighting.model_dump()
+    updated_sighting["comment"] = "Updated comment"
+    event = create_event(method="PUT", path="/sightings", body=updated_sighting)
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert body["comment"] == "Updated comment"
+
+
+def test_update_nonexistent_sighting(sample_sighting):
+    nonexistent_sighting = sample_sighting.model_dump()
+    nonexistent_sighting["id"] = "nonexistent-id"
+    event = create_event(method="PUT", path="/sightings", body=nonexistent_sighting)
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 404
+
+
+def test_delete_sighting(sample_sighting):
+    # First add a sighting
+    add_event = create_event(method="POST", path="/sightings", body=sample_sighting.model_dump())
+    app.resolve(add_event, {})
+
+    # Delete the sighting
+    event = create_event(method="DELETE", path=f"/sightings/{sample_sighting.id}")
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 204
+
+    # Verify it's deleted
+    get_event = create_event(path=f"/sightings/{sample_sighting.id}")
+    get_response = app.resolve(get_event, {})
+    assert get_response["statusCode"] == 404
+
+
+def test_delete_nonexistent_sighting(sample_sighting):
+    event = create_event(method="DELETE", path="/sightings/nonexistent-id")
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 404
+
+
+def test_bad_request():
+    event = create_event(method="POST", path="/sightings", body=None)
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 400
+
+
+def test_not_found():
+    event = create_event(path="/nonexistent-endpoint")
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 404
