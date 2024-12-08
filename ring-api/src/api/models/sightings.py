@@ -30,6 +30,7 @@ class BirdMeta(BaseModel):
     last_seen: _date
     first_seen: _date
     other_species_identifications: dict[str, int]
+    sightings: list[Sighting]
 
     def __hash__(self):
         return hash(self.ring)

@@ -25,6 +25,7 @@ def get_bird_by_ring(ring: str) -> BirdMeta | None:
         last_seen=last_seen,
         first_seen=first_seen,
         other_species_identifications=other_species_identifications,
+        sightings=sightings,
     )
 
 

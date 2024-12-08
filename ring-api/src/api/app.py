@@ -27,22 +27,28 @@ metrics = Metrics(namespace="Powertools")
 
 app.enable_swagger(path="/swagger")
 
+headers = {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token",
+    "Access-Control-Allow-Methods": "OPTIONS,POST,GET,PUT,DELETE",
+}
+
 
 @app.exception_handler(ValidationError)
 def handle_validation_error(error: ValidationError):
-    return Response(status_code=400, body=error.errors())
+    return Response(status_code=400, body=json.dumps(error.errors()), headers=headers)
 
 
 @app.get("/health")
 def health():
     logger.info("Health API - HTTP 200")
-    return {"message": "healthy", "version": __version__}
+    return Response(status_code=200, body=json.dumps({"message": "healthy", "version": __version__}), headers=headers)
 
 
 @app.get("/sightings/count")
 def get_sightings_count() -> int:
     logger.info("Get sightings count")
-    return service.get_sightings_count()
+    return Response(status_code=200, body=json.dumps(service.get_sightings_count()), headers=headers)
 
 
 @app.get("/sightings/<id>")
@@ -51,7 +57,7 @@ def get_sighting_by_id(id: str) -> Sighting | None:
     sighting = service.get_sighting_by_id(id)
     if sighting is None:
         raise NotFoundError(f"Sighting with id {id} not found")
-    return sighting.model_dump()
+    return Response(status_code=200, body=json.dumps(sighting.model_dump()), headers=headers)
 
 
 @app.get("/sightings")
@@ -87,7 +93,9 @@ def get_sightings(
     if page < 1 or per_page < 1:
         raise BadRequestError("Page and per_page must be greater than 0")
     sightings = sightings[(page - 1) * per_page : page * per_page]
-    return [sighting.model_dump() for sighting in sightings]
+    return Response(
+        status_code=200, body=json.dumps([sighting.model_dump() for sighting in sightings]), headers=headers
+    )
 
 
 @app.get("/birds/suggestions/<partial_reading>")
@@ -100,7 +108,7 @@ def get_bird_suggestions_by_partial_reading(partial_reading: str) -> list[BirdMe
     suggestions = service.get_bird_suggestions_by_partial_reading(partial_reading)
     if suggestions is None:
         raise NotFoundError(f"No suggestions found for partial reading: {partial_reading}")
-    return [bird.model_dump() for bird in suggestions]
+    return Response(status_code=200, body=json.dumps([bird.model_dump() for bird in suggestions]), headers=headers)
 
 
 @app.get("/birds/<ring>")
@@ -109,7 +117,11 @@ def get_bird_by_ring(ring: str) -> BirdMeta | None:
     if ring == "suggestions":
         return get_bird_suggestions_by_partial_reading("")
     bird = service.get_bird_by_ring(ring)
-    return bird.model_dump() if bird else Response(status_code=404)
+    return (
+        Response(status_code=200, body=json.dumps(bird.model_dump()), headers=headers)
+        if bird
+        else Response(status_code=404, headers=headers)
+    )
 
 
 @app.post("/sightings")
@@ -129,7 +141,7 @@ def add_sighting():
         raise InternalServerError("An error occurred while adding the sighting")
     logger.info(f"Sighting added: {sighting}")
 
-    return Response(status_code=201, body=json.dumps(sighting.model_dump()), content_type="application/json")
+    return Response(status_code=201, body=json.dumps(sighting.model_dump()), headers=headers)
 
 
 @app.put("/sightings")
@@ -142,7 +154,7 @@ def update_sighting():
     if service.get_sighting_by_id(sighting.id) is None:
         raise NotFoundError(f"Sighting with id {sighting.id} not found")
     service.update_sighting(sighting)
-    return sighting.model_dump()
+    return Response(status_code=200, body=json.dumps(sighting.model_dump()), headers=headers)
 
 
 @app.delete("/sightings/<id>")
@@ -151,7 +163,7 @@ def delete_sighting(id: str):
     if service.get_sighting_by_id(id) is None:
         raise NotFoundError(f"Sighting with id {id} not found")
     service.delete_sighting(id)
-    return Response(status_code=204)
+    return Response(status_code=204, headers=headers)
 
 
 # Analytics
@@ -160,17 +172,22 @@ def delete_sighting(id: str):
 @app.get("/analytics/history/<ring>")
 def get_all_sightings_from_ring(ring: str) -> list[Sighting]:
     logger.info(f"Get all history from ring: {ring}")
-    return service.get_all_sightings_from_ring(ring)
+    return Response(status_code=200, body=json.dumps(service.get_all_sightings_from_ring(ring)), headers=headers)
 
 
 @app.get("/analytics/groups/<ring>")
 def get_groups_from_ring(ring: str) -> FriendResponse:
     logger.info(f"Get groups from ring: {ring}")
-    return service.get_friends_from_ring(ring)
+    return Response(status_code=200, body=json.dumps(service.get_friends_from_ring(ring)), headers=headers)
 
 
 @logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST)
 @metrics.log_metrics(capture_cold_start_metric=True)
 def lambda_handler(event: dict, context: LambdaContext) -> dict:
     logger.info(f"Event: {event}")
+
+    # For OPTIONS requests (preflight)
+    if event["httpMethod"] == "OPTIONS":
+        return Response(status_code=200, headers=headers, body="")
+
     return app.resolve(event, context)

@@ -7,6 +7,11 @@ Globals: # https://docs.aws.amazon.com/serverless-application-model/latest/devel
     Timeout: 5
     MemorySize: 128
     Runtime: python3.12
+  Api:
+    Cors:
+      AllowMethods: "'*'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+      AllowOrigin: "'*'"
 
 Resources:
   RingApiFunction:
