@@ -25,6 +25,13 @@
           </v-col>
           <v-col cols="12" md="6">
             <v-text-field
+              v-model="sighting.date"
+              label="Datum"
+              type="date"
+            ></v-text-field>
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-text-field
               v-model="sighting.species"
               label="Spezies"
             ></v-text-field>
@@ -114,11 +121,8 @@ const saveSighting = async () => {
     await store.createSighting(sighting.value);
     showSnackbar.value = true;
     
-    // Reset form except for place and date
-    const place = sighting.value.place;
-    const date = sighting.value.date;
-    const lat = sighting.value.lat;
-    const lon = sighting.value.lon;
+    // Reset form except for place, date, and coordinates
+    const { place, date, lat, lon } = sighting.value;
     
     sighting.value = {
       place,
