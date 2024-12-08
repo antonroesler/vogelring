@@ -1,3 +1,5 @@
+from datetime import date
+from typing_extensions import Annotated
 from aws_lambda_powertools.event_handler import APIGatewayRestResolver, Response
 from aws_lambda_powertools.utilities.typing import LambdaContext
 from aws_lambda_powertools.logging import correlation_paths
@@ -9,6 +11,7 @@ from aws_lambda_powertools.event_handler.exceptions import (
 )
 from aws_lambda_powertools import Metrics
 from pydantic import ValidationError
+from aws_lambda_powertools.event_handler.openapi.params import Query
 
 from api.models.responses import FriendResponse
 from api.version import __version__
@@ -18,7 +21,7 @@ from typing import Optional
 import json
 
 
-app = APIGatewayRestResolver()
+app = APIGatewayRestResolver(enable_validation=True)
 logger = Logger()
 metrics = Metrics(namespace="Powertools")
 
@@ -52,23 +55,38 @@ def get_sighting_by_id(id: str) -> Sighting | None:
 
 
 @app.get("/sightings")
-def get_sightings() -> list[Sighting]:
-    # Get query parameters from the request
-    query_params = app.current_event.query_string_parameters or {}
-    page = query_params.get("page", "1")
-    per_page = query_params.get("per_page", "100")
-
-    # Convert parameters to integers
-    try:
-        page = int(page)
-        if page < 1:
-            raise BadRequestError("Page must be a positive integer")
-    except ValueError:
-        raise BadRequestError("Invalid page parameter")
-    per_page = int(per_page) if str(per_page).isdigit() else None
-
+def get_sightings(
+    page: Annotated[Optional[int], Query()] = 1,
+    per_page: Annotated[Optional[int], Query()] = 100,
+    start_date: Annotated[Optional[date], Query(examples=["2024-01-01"])] = None,
+    end_date: Annotated[Optional[date], Query(examples=["2022-03-27"])] = None,
+    species: Annotated[Optional[str], Query(examples=["Kanadagans"])] = None,
+    place: Annotated[Optional[str], Query(examples=["Ostpark"])] = None,
+) -> list[Sighting]:
+    page = int(app.current_event.query_string_parameters.get("page", "1"))
+    per_page = int(app.current_event.query_string_parameters.get("per_page", "100"))
+    start_date = app.current_event.query_string_parameters.get("start_date", None)
+    end_date = app.current_event.query_string_parameters.get("end_date", None)
+    species = app.current_event.query_string_parameters.get("species", None)
+    place = app.current_event.query_string_parameters.get("place", None)
     logger.info(f"Get sightings page {page} with {per_page} per page")
-    sightings = service.get_sightings(page, per_page)
+
+    sightings = service.get_sightings()
+
+    if place is not None:
+        logger.info(f"Filtering by place: {place}")
+        sightings = [sighting for sighting in sightings if sighting.place == place]
+    if species is not None:
+        logger.info(f"Filtering by species: {species}")
+        sightings = [sighting for sighting in sightings if sighting.species == species]
+    if start_date is not None or end_date is not None:
+        start_date = date.fromisoformat(start_date) if start_date else date(year=1900, month=1, day=1)
+        end_date = date.fromisoformat(end_date) if end_date else date.today()
+        logger.info(f"Filtering by date range: {start_date} to {end_date}")
+        sightings = [sighting for sighting in sightings if sighting.date and start_date <= sighting.date <= end_date]
+    if page < 1 or per_page < 1:
+        raise BadRequestError("Page and per_page must be greater than 0")
+    sightings = sightings[(page - 1) * per_page : page * per_page]
     return [sighting.model_dump() for sighting in sightings]
 
 

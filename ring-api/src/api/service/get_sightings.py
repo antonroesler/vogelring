@@ -8,10 +8,9 @@ def get_sighting_by_id(id: str) -> Sighting | None:
     return next((sighting for sighting in loader.get_sightings() if sighting.id == id), None)
 
 
-def get_sightings(page: int = 1, per_page: int | None = None) -> list[Sighting]:
+def get_sightings() -> list[Sighting]:
     """Returns all sightings."""
-    sightings = loader.get_sightings()
-    return sightings if per_page is None else sightings[(page - 1) * per_page : page * per_page]
+    return loader.get_sightings()
 
 
 def get_sightings_count() -> int:

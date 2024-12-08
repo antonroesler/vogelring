@@ -37,29 +37,6 @@ def test_get_sightings_returns_list_of_sightings():
     assert all(isinstance(sighting, Sighting) for sighting in service.get_sightings())
 
 
-def test_get_sightings_paginated_returns_correct_number_of_sightings():
-    assert len(service.get_sightings(page=1, per_page=10)) == 10
-    assert len(service.get_sightings(page=2, per_page=10)) == 10
-    assert len(service.get_sightings(page=3, per_page=10)) == 10
-
-
-def test_get_sightings_paginated_returns_correct_number_of_sightings_with_custom_per_page():
-    assert len(service.get_sightings(page=1, per_page=50)) == 50
-    assert len(service.get_sightings(page=2, per_page=50)) == 50
-    assert len(service.get_sightings(page=3, per_page=50)) == 50
-
-
-def test_get_sightings_paginated_returns_correct_entries():
-    full_sightings = service.get_sightings()
-    assert service.get_sightings(page=1, per_page=100) == full_sightings[:100]
-    assert service.get_sightings(page=2, per_page=100) == full_sightings[100:200]
-    assert service.get_sightings(page=3, per_page=100) == full_sightings[200:300]
-
-
-def test_get_sightings_paginated_returns_all_sightings_if_per_page_is_none():
-    assert service.get_sightings(page=1, per_page=None) == service.get_sightings()
-
-
 def test_get_sightings_count():
     assert service.get_sightings_count() == len(service.get_sightings())
 

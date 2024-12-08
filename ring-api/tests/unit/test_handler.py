@@ -79,13 +79,81 @@ def test_get_sightings():
 def test_get_sightings_invalid_page():
     event = create_event(path="/sightings", query_params={"page": "invalid", "per_page": "10"})
     response = app.resolve(event, {})
-    assert response["statusCode"] == 400
+    assert response["statusCode"] == 422
 
 
 def test_get_sightings_negative_page():
     event = create_event(path="/sightings", query_params={"page": "-1", "per_page": "10"})
     response = app.resolve(event, {})
     assert response["statusCode"] == 400
+
+
+def test_get_sightings_paginated_returns_correct_number_of_sightings():
+    event = create_event(path="/sightings", query_params={"page": "1", "per_page": "10"})
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert len(body) == 10
+
+    event = create_event(path="/sightings", query_params={"page": "2", "per_page": "10"})
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert len(body) == 10
+
+    event = create_event(path="/sightings", query_params={"page": "3", "per_page": "10"})
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert len(body) == 10
+
+
+def test_get_sightings_paginated_returns_correct_number_of_sightings_with_custom_per_page():
+    event = create_event(path="/sightings", query_params={"page": "1", "per_page": "50"})
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert len(body) == 50
+
+    event = create_event(path="/sightings", query_params={"page": "2", "per_page": "50"})
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert len(body) == 50
+
+    event = create_event(path="/sightings", query_params={"page": "3", "per_page": "50"})
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert len(body) == 50
+
+
+def test_get_sightings_paginated_returns_correct_entries():
+    # Get full list of sightings
+    event = create_event(path="/sightings", query_params={"page": "1", "per_page": "1000"})
+    response = app.resolve(event, {})
+    full_sightings = json.loads(response["body"])
+
+    # Test first page
+    event = create_event(path="/sightings", query_params={"page": "1", "per_page": "100"})
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert body == full_sightings[:100]
+
+    # Test second page
+    event = create_event(path="/sightings", query_params={"page": "2", "per_page": "100"})
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert body == full_sightings[100:200]
+
+    # Test third page
+    event = create_event(path="/sightings", query_params={"page": "3", "per_page": "100"})
+    response = app.resolve(event, {})
+    assert response["statusCode"] == 200
+    body = json.loads(response["body"])
+    assert body == full_sightings[200:300]
 
 
 def test_get_sightings_without_pagination():
@@ -110,7 +178,7 @@ def test_add_sighting(sample_sighting):
     event = create_event(method="POST", path="/sightings", body=sample_sighting.model_dump())
     response = app.resolve(event, {})
     assert response["statusCode"] == 201  # Created
-    body = response["body"]
+    body = json.loads(response["body"])
     assert body["id"] == sample_sighting.id
     assert body["ring"] == sample_sighting.ring
     assert body["date"] == "2024-03-20"  # Date should be serialized as ISO format
