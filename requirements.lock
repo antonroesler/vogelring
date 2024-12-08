@@ -16,7 +16,7 @@ appnope==0.1.4
     # via ipykernel
 asttokens==2.4.1
     # via stack-data
-aws-lambda-powertools==3.2.0
+aws-lambda-powertools==3.3.0
     # via vogelring
 boto3==1.35.57
     # via vogelring

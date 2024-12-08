@@ -5,7 +5,7 @@ description = "Add your description here"
 authors = [{ name = "Anton Rösler", email = "github@antonroesler.com" }]
 dependencies = [
     "pydantic>=2.9.2",
-    "aws-lambda-powertools>=3.2.0",
+    "aws-lambda-powertools>=3.3.0",
     "boto3>=1.35.57",
     "ipykernel>=6.29.5",
     "pandas>=2.2.3",
