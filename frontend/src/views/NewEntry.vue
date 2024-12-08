@@ -72,6 +72,24 @@
               v-model:latitude="sighting.lat"
               v-model:longitude="sighting.lon"
             ></leaflet-map>
+            <v-row class="mt-2">
+              <v-col cols="6">
+                <v-text-field
+                  v-model="sighting.lat"
+                  label="Breitengrad"
+                  readonly
+                  density="compact"
+                ></v-text-field>
+              </v-col>
+              <v-col cols="6">
+                <v-text-field
+                  v-model="sighting.lon"
+                  label="Längengrad"
+                  readonly
+                  density="compact"
+                ></v-text-field>
+              </v-col>
+            </v-row>
           </v-col>
         </v-row>
         <v-card-actions>
