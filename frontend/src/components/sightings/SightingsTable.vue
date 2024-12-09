@@ -82,8 +82,9 @@ const formatDate = (date?: string) => {
   return date ? format(new Date(date), 'dd.MM.yyyy') : '';
 };
 
-const handleRowClick = (event: Event, item: Sighting) => {
-  router.push(`/entry/${item.id}`);
+const handleRowClick = (event: Event, item: any) => {
+  const sighting = item.item;
+  router.push(`/entry/${sighting.id}`);
 };
 
 const confirmDelete = (item: Sighting) => {
