@@ -10,6 +10,7 @@ import type { BirdMeta, AnalyticsBirdMeta } from '@/types';
 const props = defineProps<{
   bird: BirdMeta;
   friends: AnalyticsBirdMeta[];
+  friendColors?: Record<string, string>;
 }>();
 
 const mapContainer = ref<HTMLElement | null>(null);
@@ -39,32 +40,39 @@ const updateMarkers = () => {
   markers.value.forEach(marker => marker.remove());
   markers.value = [];
 
-  // Add selected bird's sightings (red)
-  props.bird.sightings.forEach(sighting => {
-    if (sighting.lat && sighting.lon) {
-      const marker = L.marker([sighting.lat, sighting.lon], {
-        icon: L.divIcon({
-          className: 'custom-div-icon',
-          html: '<div style="background-color: red; width: 10px; height: 10px; border-radius: 50%;"></div>'
-        })
-      }).addTo(map.value!);
-      markers.value.push(marker);
-    }
-  });
-
-  // Add friend birds' sightings (blue)
+  // Add friend birds' sightings first (so they'll be below)
   props.friends.forEach(friend => {
+    const color = props.friendColors?.[friend.ring] || 'blue';
     friend.sightings.forEach(sighting => {
       if (sighting.lat && sighting.lon) {
         const marker = L.marker([sighting.lat, sighting.lon], {
           icon: L.divIcon({
             className: 'custom-div-icon',
-            html: '<div style="background-color: blue; width: 10px; height: 10px; border-radius: 50%;"></div>'
-          })
+            html: `<div style="background-color: ${color}; opacity: 0.85; width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.8);"></div>`,
+            iconSize: [12, 12],
+            iconAnchor: [6, 6]
+          }),
+          zIndexOffset: 100
         }).addTo(map.value!);
         markers.value.push(marker);
       }
     });
+  });
+
+  // Add selected bird's sightings last (so they'll be on top)
+  props.bird.sightings.forEach(sighting => {
+    if (sighting.lat && sighting.lon) {
+      const marker = L.marker([sighting.lat, sighting.lon], {
+        icon: L.divIcon({
+          className: 'custom-div-icon',
+          html: '<div style="background-color: #FF0000; opacity: 0.95; width: 10px; height: 10px; border: 1px solid rgba(0,0,0,0.8);"></div>',
+          iconSize: [12, 12],
+          iconAnchor: [6, 6]
+        }),
+        zIndexOffset: 1000  // Higher z-index to stay on top
+      }).addTo(map.value!);
+      markers.value.push(marker);
+    }
   });
 
   // Fit bounds to include all markers
