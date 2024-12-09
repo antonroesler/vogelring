@@ -10,7 +10,7 @@
 
     <v-main>
       <v-container>
-        <router-view></router-view>
+        <router-view :key="$route.fullPath"></router-view>
       </v-container>
     </v-main>
   </v-app>

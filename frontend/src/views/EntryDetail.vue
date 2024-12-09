@@ -36,6 +36,27 @@
           </v-card-text>
         </v-card>
       </v-col>
+
+      <v-col cols="12">
+        <v-card class="mb-4">
+          <v-card-title>Andere Sichtungen dieses Vogels</v-card-title>
+          <v-card-text>
+            <sightings-table
+              v-if="otherSightings.length > 0"
+              :sightings="otherSightings"
+              :loading="false"
+              @deleted="handleSightingDeleted"
+            ></sightings-table>
+            <v-alert
+              v-else
+              type="info"
+              variant="tonal"
+            >
+              Keine weiteren Sichtungen gefunden
+            </v-alert>
+          </v-card-text>
+        </v-card>
+      </v-col>
     </v-row>
 
     <v-snackbar
@@ -48,13 +69,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import type { Sighting, BirdMeta } from '@/types';
 import * as api from '@/api';
 import SightingForm from '@/components/sightings/SightingForm.vue';
 import BirdDetails from '@/components/birds/BirdDetails.vue';
 import SightingsMap from '@/components/map/SightingsMap.vue';
+import SightingsTable from '@/components/sightings/SightingsTable.vue';
 import { useSightingsStore } from '@/stores/sightings';
 
 const route = useRoute();
@@ -88,6 +110,34 @@ const updateSighting = async (updatedSighting: Partial<Sighting>) => {
     loading.value = false;
   }
 };
+
+// Compute other sightings, excluding the current one
+const otherSightings = computed(() => {
+  if (!birdDetails.value?.sightings || !sighting.value) {
+    return [];
+  }
+  return birdDetails.value.sightings.filter(s => s.id !== sighting.value?.id);
+});
+
+const handleSightingDeleted = async (id: string) => {
+  try {
+    await store.deleteSighting(id);
+    showSnackbar.value = true;
+    await loadSighting(); // Reload the current sighting and bird details
+  } catch (error) {
+    console.error('Error deleting sighting:', error);
+  }
+};
+
+// Add a watch on the route params
+watch(
+  () => route.params.id,
+  (newId) => {
+    if (newId) {
+      loadSighting();
+    }
+  }
+);
 
 onMounted(loadSighting);
 </script>
