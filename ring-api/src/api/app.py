@@ -185,7 +185,8 @@ def get_all_sightings_from_ring(ring: str) -> list[Sighting]:
 @app.get("/analytics/groups/<ring>")
 def get_groups_from_ring(ring: str) -> FriendResponse:
     logger.info(f"Get groups from ring: {ring}")
-    return Response(status_code=200, body=json.dumps(service.get_friends_from_ring(ring)), headers=headers)
+    friends = service.get_friends_from_ring(ring)
+    return Response(status_code=200, body=json.dumps(friends.model_dump()), headers=headers)
 
 
 @logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST)
