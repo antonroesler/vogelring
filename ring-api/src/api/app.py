@@ -166,6 +166,13 @@ def delete_sighting(id: str):
     return Response(status_code=204, headers=headers)
 
 
+@app.get("/cache/invalidate")
+def invalidate_cache():
+    logger.info("Invalidate cache")
+    service.invalidate_cache()
+    return Response(status_code=200, headers=headers)
+
+
 # Analytics
 
 

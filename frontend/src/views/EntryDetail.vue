@@ -55,12 +55,14 @@ import * as api from '@/api';
 import SightingForm from '@/components/sightings/SightingForm.vue';
 import BirdDetails from '@/components/birds/BirdDetails.vue';
 import SightingsMap from '@/components/map/SightingsMap.vue';
+import { useSightingsStore } from '@/stores/sightings';
 
 const route = useRoute();
 const sighting = ref<Sighting | null>(null);
 const birdDetails = ref<BirdMeta | null>(null);
 const loading = ref(false);
 const showSnackbar = ref(false);
+const store = useSightingsStore();
 
 const loadSighting = async () => {
   const id = route.params.id as string;
@@ -77,9 +79,9 @@ const loadSighting = async () => {
 const updateSighting = async (updatedSighting: Partial<Sighting>) => {
   loading.value = true;
   try {
-    await api.updateSighting(updatedSighting);
+    await store.updateSighting(updatedSighting);
     showSnackbar.value = true;
-    await loadSighting(); // Reload data
+    await loadSighting(); // Reload the current sighting details
   } catch (error) {
     console.error('Error updating sighting:', error);
   } finally {

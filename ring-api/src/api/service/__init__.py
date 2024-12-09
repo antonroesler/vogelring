@@ -18,6 +18,8 @@ from api.service.upsert_sighting import (
 )
 from api.service.analytics import get_all_sightings_from_ring, get_friends_from_ring
 
+from api.service.cache import invalidate_cache
+
 
 __all__ = [
     "add_sighting",
@@ -34,4 +36,5 @@ __all__ = [
     "get_bird_suggestions_by_partial_reading",
     "get_all_sightings_from_ring",
     "get_friends_from_ring",
+    "invalidate_cache",
 ]

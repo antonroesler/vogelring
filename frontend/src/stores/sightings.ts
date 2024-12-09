@@ -7,6 +7,7 @@ export const useSightingsStore = defineStore('sightings', () => {
   const sightings = ref<Sighting[]>([]);
   const loading = ref(false);
   const error = ref<string | null>(null);
+  const initialized = ref(false);
 
   const fetchSightings = async (params?: {
     start_date?: string;
@@ -18,14 +19,13 @@ export const useSightingsStore = defineStore('sightings', () => {
     error.value = null;
     
     try {
-      console.log('Fetching all sightings with params:', params);
       const response = await api.getSightings({
         per_page: 10000,
         ...params
       });
       
       sightings.value = response;
-      console.log('Successfully fetched sightings:', sightings.value);
+      initialized.value = true;
     } catch (err) {
       console.error('Error fetching sightings:', err);
       error.value = err instanceof Error ? err.message : 'Failed to fetch sightings';
@@ -37,10 +37,35 @@ export const useSightingsStore = defineStore('sightings', () => {
 
   const createSighting = async (sighting: Partial<Sighting>) => {
     try {
-      await api.createSighting(sighting);
-      await fetchSightings();
+      const newSighting = await api.createSighting(sighting);
+      sightings.value.push(newSighting);
+      return newSighting;
     } catch (error) {
       console.error('Error creating sighting:', error);
+      throw error;
+    }
+  };
+
+  const updateSighting = async (sighting: Partial<Sighting>) => {
+    try {
+      const updatedSighting = await api.updateSighting(sighting);
+      const index = sightings.value.findIndex(s => s.id === updatedSighting.id);
+      if (index !== -1) {
+        sightings.value[index] = updatedSighting;
+      }
+      return updatedSighting;
+    } catch (error) {
+      console.error('Error updating sighting:', error);
+      throw error;
+    }
+  };
+
+  const deleteSighting = async (id: string) => {
+    try {
+      await api.deleteSighting(id);
+      sightings.value = sightings.value.filter(s => s.id !== id);
+    } catch (error) {
+      console.error('Error deleting sighting:', error);
       throw error;
     }
   };
@@ -49,7 +74,10 @@ export const useSightingsStore = defineStore('sightings', () => {
     sightings,
     loading,
     error,
+    initialized,
     fetchSightings,
-    createSighting
+    createSighting,
+    updateSighting,
+    deleteSighting
   };
 });

@@ -1,6 +1,14 @@
 <template>
   <div>
-    <h1 class="text-h4 mb-4">Eintragliste</h1>
+    <div class="d-flex align-center mb-4">
+      <h1 class="text-h4 flex-grow-1">Eintragliste</h1>
+      <v-btn
+        icon="mdi-refresh"
+        @click="loadSightings"
+        :loading="store.loading"
+        variant="text"
+      ></v-btn>
+    </div>
     
     <v-alert
       v-if="store.error"
@@ -25,7 +33,7 @@
     ></sightings-filter>
 
     <sightings-table
-      :sightings="store.sightings"
+      :sightings="filteredSightings"
       :loading="store.loading"
       @deleted="handleSightingDeleted"
     ></sightings-table>
@@ -40,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useSightingsStore } from '@/stores/sightings';
 import SightingsFilter from '@/components/sightings/SightingsFilter.vue';
 import SightingsTable from '@/components/sightings/SightingsTable.vue';
@@ -48,22 +56,56 @@ import SightingsTable from '@/components/sightings/SightingsTable.vue';
 const store = useSightingsStore();
 const showDeleteSnackbar = ref(false);
 const filters = ref({
-  start_date: undefined,
-  end_date: undefined,
-  species: undefined,
-  place: undefined
+  start_date: undefined as string | undefined,
+  end_date: undefined as string | undefined,
+  species: undefined as string | undefined,
+  place: undefined as string | undefined,
+  ring: undefined as string | undefined,
+  melder: undefined as string | undefined,
+  melded: undefined as boolean | undefined
+});
+
+const filteredSightings = computed(() => {
+  return store.sightings.filter(sighting => {
+    let matches = true;
+    
+    if (filters.value.species) {
+      matches = matches && sighting.species?.toLowerCase().includes(filters.value.species.toLowerCase());
+    }
+    if (filters.value.ring) {
+      matches = matches && sighting.ring?.includes(filters.value.ring);
+    }
+    if (filters.value.place) {
+      matches = matches && sighting.place?.toLowerCase().includes(filters.value.place.toLowerCase());
+    }
+    if (filters.value.melder) {
+      matches = matches && sighting.melder?.toLowerCase().includes(filters.value.melder.toLowerCase());
+    }
+    if (filters.value.start_date) {
+      matches = matches && sighting.date >= filters.value.start_date;
+    }
+    if (filters.value.end_date) {
+      matches = matches && sighting.date <= filters.value.end_date;
+    }
+    if (filters.value.melded !== undefined) {
+      matches = matches && sighting.melded === filters.value.melded;
+    }
+    
+    return matches;
+  });
 });
 
 const loadSightings = async () => {
-  console.log('Loading sightings...');
-  await store.fetchSightings({
-    ...filters.value
-  });
+  await store.fetchSightings();
 };
 
-const handleSightingDeleted = () => {
-  showDeleteSnackbar.value = true;
-  loadSightings();
+const handleSightingDeleted = async (id: string) => {
+  try {
+    await store.deleteSighting(id);
+    showDeleteSnackbar.value = true;
+  } catch (error) {
+    console.error('Error deleting sighting:', error);
+  }
 };
 
 const retryLoading = () => {
@@ -71,13 +113,9 @@ const retryLoading = () => {
   loadSightings();
 };
 
-// Watch for changes in filters
-watch(filters, () => {
-  loadSightings();
-}, { deep: true });
-
-onMounted(() => {
-  console.log('EntryList component mounted');
-  loadSightings();
+onMounted(async () => {
+  if (!store.initialized) {
+    await loadSightings();
+  }
 });
 </script>

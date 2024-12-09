@@ -4,6 +4,7 @@ import pickle
 from datetime import datetime
 from api.models.sightings import Sighting
 import csv
+import random
 
 outfile = Path("data/pkl/sightings.pkl")
 
@@ -20,13 +21,17 @@ class SightingCols(Enum):
     melder = 8
 
 
+def remove_all_non_letter_chars(s: str) -> str:
+    return "".join(e for e in s if e.isalpha())
+
+
 with open("data/out/main.csv") as f:
     data = list(csv.reader(f))
 
 with open("data/out/orte.csv") as f:
     place_data = list(csv.reader(f, delimiter=";"))
 
-places = {p[1]: p for p in place_data}
+places = {remove_all_non_letter_chars(p[1]): p for p in place_data}
 
 
 s = []
@@ -54,9 +59,9 @@ def extract_sighting_data(entry: list[str]) -> dict:
 
 
 def add_coordinates(json_data: dict, places: dict) -> dict:
-    if "place" in json_data and (p := places.get(json_data["place"])):
-        json_data["lat"] = float(p[2]) if p[2] else None
-        json_data["lon"] = float(p[3]) if p[3] else None
+    if "place" in json_data and (p := places.get(remove_all_non_letter_chars(json_data["place"]))):
+        json_data["lat"] = float(p[2]) + (0.5 - random.random()) * 0.0009 if p[2] else None
+        json_data["lon"] = float(p[3]) + (0.5 - random.random()) * 0.0009 if p[3] else None
     return json_data
 
 

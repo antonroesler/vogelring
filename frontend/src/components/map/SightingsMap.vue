@@ -35,24 +35,27 @@ const updateMarkers = () => {
   markers.value.forEach(marker => marker.remove());
   markers.value = [];
 
-  // Add current sighting marker (red)
+  // Add current sighting marker (saturated red)
   if (props.currentSighting.lat && props.currentSighting.lon) {
     const currentMarker = L.marker([props.currentSighting.lat, props.currentSighting.lon], {
       icon: L.divIcon({
         className: 'custom-div-icon',
-        html: '<div style="background-color: red; width: 10px; height: 10px; border-radius: 50%;"></div>'
+        html: '<div style="background-color: #E53935; width: 10px; height: 10px; border-radius: 0%;"></div>'
       })
     }).addTo(map.value);
     markers.value.push(currentMarker);
   }
 
-  // Add other sightings markers (blue)
+  // Add other sightings markers (saturated blue with transparency)
   props.otherSightings?.forEach(sighting => {
+    // Skip if this is the current sighting
+    if (sighting.id === props.currentSighting.id) return;
+    
     if (sighting.lat && sighting.lon) {
       const marker = L.marker([sighting.lat, sighting.lon], {
         icon: L.divIcon({
           className: 'custom-div-icon',
-          html: '<div style="background-color: blue; width: 10px; height: 10px; border-radius: 50%;"></div>'
+          html: '<div style="background-color: rgba(25, 118, 210, 0.85); width: 10px; height: 10px; border-radius: 50%;"></div>'
         })
       }).addTo(map.value);
       markers.value.push(marker);
