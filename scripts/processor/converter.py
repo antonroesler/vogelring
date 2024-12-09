@@ -24,9 +24,10 @@ with open("data/out/main.csv") as f:
     data = list(csv.reader(f))
 
 with open("data/out/orte.csv") as f:
-    place_data = list(csv.reader(f))
+    place_data = list(csv.reader(f, delimiter=";"))
 
-places = {p[0]: p for p in place_data}
+places = {p[1]: p for p in place_data}
+
 
 s = []
 
@@ -54,8 +55,8 @@ def extract_sighting_data(entry: list[str]) -> dict:
 
 def add_coordinates(json_data: dict, places: dict) -> dict:
     if "place" in json_data and (p := places.get(json_data["place"])):
-        json_data["lat"] = p[1]
-        json_data["lon"] = p[2]
+        json_data["lat"] = float(p[2]) if p[2] else None
+        json_data["lon"] = float(p[3]) if p[3] else None
     return json_data
 
 
