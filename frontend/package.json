@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "bash deploy/deploy.sh",
+    "deploy:setup": "bash deploy/setup.sh"
   },
   "dependencies": {
     "vue": "^3.4.38",

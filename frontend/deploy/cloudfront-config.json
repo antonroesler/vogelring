@@ -1,0 +1,36 @@
+{
+    "CallerReference": "vogelring-com-setup-1",
+    "Comment": "Distribution for vogelring.com",
+    "Origins": {
+        "Quantity": 1,
+        "Items": [
+            {
+                "Id": "S3-vogelring.com",
+                "DomainName": "vogelring.com.s3.amazonaws.com",
+                "S3OriginConfig": {
+                    "OriginAccessIdentity": ""
+                }
+            }
+        ]
+    },
+    "DefaultRootObject": "index.html",
+    "Aliases": {
+        "Quantity": 1,
+        "Items": ["vogelring.com"]
+    },
+    "DefaultCacheBehavior": {
+        "TargetOriginId": "S3-vogelring.com",
+        "ViewerProtocolPolicy": "redirect-to-https",
+        "AllowedMethods": {
+            "Quantity": 2,
+            "Items": ["GET", "HEAD"]
+        },
+        "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6"
+    },
+    "ViewerCertificate": {
+        "ACMCertificateArn": "arn:aws:acm:us-east-1:847994532797:certificate/1e616dd6-d609-4754-955b-29cb091c537a",
+        "SSLSupportMethod": "sni-only",
+        "MinimumProtocolVersion": "TLSv1.2_2021"
+    },
+    "Enabled": true
+}
