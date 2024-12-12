@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Source the API key from root .env file
+export VITE_API_KEY=$(grep RING_API_KEY ../.env | cut -d '=' -f2)
+
 # Build the project
 npm run build
 
@@ -7,4 +10,4 @@ npm run build
 aws s3 sync dist/ s3://vogelring.com
 
 # Invalidate CloudFront cache
-aws cloudfront create-invalidation --distribution-id YOUR_CLOUDFRONT_DISTRIBUTION_ID --paths "/*" 
+aws cloudfront create-invalidation --distribution-id E1JFMT0RGVCMKH --paths "/*" 

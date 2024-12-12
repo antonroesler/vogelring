@@ -1,3 +1,4 @@
+import os
 from datetime import date
 from typing_extensions import Annotated
 from aws_lambda_powertools.event_handler import APIGatewayRestResolver, Response
@@ -199,5 +200,9 @@ def lambda_handler(event: dict, context: LambdaContext) -> dict:
     # For OPTIONS requests (preflight)
     if event["httpMethod"] == "OPTIONS":
         return Response(status_code=200, headers=headers, body="")
+
+    # Check API key
+    if "x-api-key" not in event["headers"] or event["headers"]["x-api-key"] != os.environ["API_KEY"]:
+        return {"statusCode": 401, "headers": headers}
 
     return app.resolve(event, context)

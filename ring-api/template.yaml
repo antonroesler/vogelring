@@ -2,6 +2,12 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: ring-api
 
+Parameters:
+  RingApiKey:
+    Type: String
+    Description: API Key for Ring API
+    NoEcho: true
+
 Globals: # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-specification-template-anatomy-globals.html
   Function:
     Timeout: 5
@@ -10,7 +16,7 @@ Globals: # https://docs.aws.amazon.com/serverless-application-model/latest/devel
   Api:
     Cors:
       AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
-      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Accept'"
       AllowOrigin: "'https://vogelring.com'"
       AllowCredentials: "'true'"
 
@@ -39,6 +45,7 @@ Resources:
           LOG_LEVEL: INFO
           BUCKET: vogelring-data
           SIGHTINGS_FILE: sightings.pkl
+          API_KEY: !Ref RingApiKey
       Tags:
         LambdaPowertools: python
 

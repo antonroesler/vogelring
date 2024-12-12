@@ -2,9 +2,13 @@ import axios from 'axios';
 import type { Sighting, BirdMeta, FriendResponse } from '../types';
 
 const API_BASE_URL = 'https://782syzefh4.execute-api.eu-central-1.amazonaws.com/Prod';
+const API_KEY = import.meta.env.VITE_API_KEY;
 
 const api = axios.create({
-  baseURL: API_BASE_URL
+  baseURL: API_BASE_URL,
+  headers: {
+    'x-api-key': API_KEY
+  }
 });
 
 // Add request interceptor for logging
