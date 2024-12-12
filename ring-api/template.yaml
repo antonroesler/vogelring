@@ -9,9 +9,10 @@ Globals: # https://docs.aws.amazon.com/serverless-application-model/latest/devel
     Runtime: python3.12
   Api:
     Cors:
-      AllowMethods: "'*'"
+      AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
       AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-      AllowOrigin: "'*'"
+      AllowOrigin: "'https://vogelring.com'"
+      AllowCredentials: "'true'"
 
 Resources:
   RingApiFunction:
