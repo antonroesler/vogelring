@@ -19,11 +19,13 @@ const markers = ref<L.Marker[]>([]);
 const createMap = () => {
   if (!mapContainer.value || !props.currentSighting.lat || !props.currentSighting.lon) return;
 
-  map.value = L.map(mapContainer.value).setView([props.currentSighting.lat, props.currentSighting.lon], 13);
+  const mapInstance = L.map(mapContainer.value).setView([props.currentSighting.lat, props.currentSighting.lon], 13);
+
+  map.value = mapInstance;
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
-  }).addTo(map.value);
+  }).addTo(mapInstance);
 
   updateMarkers();
 };
@@ -35,25 +37,27 @@ const updateMarkers = () => {
   markers.value.forEach(marker => marker.remove());
   markers.value = [];
 
-  // Add other sightings markers first (saturated blue with transparency)
-  props.otherSightings?.forEach(sighting => {
-    // Skip if this is the current sighting
-    if (sighting.id === props.currentSighting.id) return;
-    
-    if (sighting.lat && sighting.lon) {
-      const marker = L.marker([sighting.lat, sighting.lon], {
-        icon: L.divIcon({
-          className: 'custom-div-icon',
-          html: '<div style="background-color: rgba(25, 118, 210, 0.85); width: 10px; height: 10px; border-radius: 50%;"></div>',
-          iconSize: [10, 10],
-          iconAnchor: [5, 5]
-        })
-      }).addTo(map.value);
-      markers.value.push(marker);
-    }
-  });
+  // Add other sightings markers first (if they exist)
+  if (props.otherSightings) {
+    props.otherSightings.forEach(sighting => {
+      if (sighting.id === props.currentSighting.id) return;
+      
+      if (sighting.lat && sighting.lon) {
+        const marker = L.marker([sighting.lat, sighting.lon], {
+          icon: L.divIcon({
+            className: 'custom-div-icon',
+            html: '<div style="background-color: rgba(25, 118, 210, 0.85); width: 10px; height: 10px; border-radius: 50%;"></div>',
+            iconSize: [10, 10],
+            iconAnchor: [5, 5]
+          })
+        });
+        marker.addTo(map.value);
+        markers.value.push(marker);
+      }
+    });
+  }
 
-  // Add current sighting marker last (saturated red)
+  // Add current sighting marker
   if (props.currentSighting.lat && props.currentSighting.lon) {
     const currentMarker = L.marker([props.currentSighting.lat, props.currentSighting.lon], {
       icon: L.divIcon({
@@ -62,8 +66,9 @@ const updateMarkers = () => {
         iconSize: [10, 10],
         iconAnchor: [5, 5]
       }),
-      zIndexOffset: 1000  // This ensures the marker stays on top
-    }).addTo(map.value);
+      zIndexOffset: 1000
+    });
+    currentMarker.addTo(map.value);
     markers.value.push(currentMarker);
   }
 };

@@ -8,6 +8,7 @@
           <v-card-title>Sichtung bearbeiten</v-card-title>
           <v-card-text>
             <sighting-form
+              v-if="sighting"
               :sighting="sighting"
               :loading="loading"
               @submit="updateSighting"
