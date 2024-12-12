@@ -4,6 +4,7 @@
 
     <v-tabs v-model="activeTab">
       <v-tab value="friends">Freunde</v-tab>
+      <v-tab value="radius">Umkreis</v-tab>
     </v-tabs>
 
     <v-window v-model="activeTab">
@@ -141,24 +142,111 @@
           </v-card-text>
         </v-card>
       </v-window-item>
+      <v-window-item value="radius">
+        <v-card class="mt-4">
+          <v-card-text>
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-card>
+                  <v-card-title>Standort wählen</v-card-title>
+                  <v-card-text>
+                    <leaflet-map
+                      v-model:latitude="selectedLat"
+                      v-model:longitude="selectedLon"
+                      :radius="radius"
+                    ></leaflet-map>
+                    <v-slider
+                      v-model="radius"
+                      label="Radius"
+                      :ticks="radiusValues"
+                      :tick-size="4"
+                      :min="Math.min(...radiusValues)"
+                      :max="Math.max(...radiusValues)"
+                      :step="null"
+                      thumb-label
+                      :thumb-label-value="formatRadiusLabel(radius)"
+                      class="mt-4"
+                    ></v-slider>
+                    <v-btn
+                      color="primary"
+                      block
+                      :disabled="!selectedLat || !selectedLon"
+                      @click="fetchRadiusData"
+                      :loading="isLoadingRadius"
+                    >
+                      Suchen
+                    </v-btn>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+              <v-col cols="12" md="6" v-if="radiusStats">
+                <v-card>
+                  <v-card-title>Arten im Umkreis</v-card-title>
+                  <v-card-text>
+                    <v-chart class="chart" :option="speciesChartOption" autoresize></v-chart>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+              <v-col cols="12" v-if="radiusStats">
+                <v-card>
+                  <v-card-title>Top 10 Vögel</v-card-title>
+                  <v-card-text>
+                    <v-chart class="chart" :option="topBirdsChartOption" autoresize></v-chart>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
+      </v-window-item>
     </v-window>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { format } from 'date-fns';
-import type { BirdMeta, AnalyticsBirdMeta } from '@/types';
+import type { BirdMeta, AnalyticsBirdMeta, Sighting } from '@/types';
 import * as api from '@/api';
 import BirdDetails from '@/components/birds/BirdDetails.vue';
 import FriendsMap from '@/components/map/FriendsMap.vue';
-import { type Ref } from 'vue';
+import LeafletMap from '@/components/map/LeafletMap.vue';
+import VChart from 'vue-echarts';
+import { use } from 'echarts/core';
+import { CanvasRenderer } from 'echarts/renderers';
+import { BarChart, PieChart } from 'echarts/charts';
+import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
+import { getSpeciesColor } from '@/utils/colors';
+
+use([
+  CanvasRenderer,
+  BarChart,
+  PieChart,
+  GridComponent,
+  TooltipComponent,
+  LegendComponent
+]);
 
 const activeTab = ref('friends');
 const searchQuery = ref('');
 const suggestions = ref<BirdMeta[]>([]);
 const selectedBird = ref<BirdMeta | null>(null);
 const friends = ref<AnalyticsBirdMeta[]>([]);
+const map = ref<typeof LeafletMap | null>(null);
+
+// Watch for tab changes to trigger map resize
+watch(activeTab, (newTab) => {
+  if (newTab === 'radius') {
+    // Force map resize after tab becomes visible
+    setTimeout(() => {
+      const mapElement = document.querySelector('.map-container');
+      if (mapElement) {
+        const event = new Event('resize');
+        window.dispatchEvent(event);
+      }
+    }, 100);
+  }
+});
 
 const friendColors = computed(() => {
   const colors = [
@@ -220,6 +308,187 @@ const selectBird = async (bird: BirdMeta) => {
 const formatDate = (date: string) => {
   return format(new Date(date), 'dd.MM.yyyy');
 };
+
+// Radius tab data
+const selectedLat = ref<number | null>(50.1109);
+const selectedLon = ref<number | null>(8.6821);
+const radius = ref(100);
+const radiusValues = computed(() => {
+  const values = [];
+  // 10m to 100m in steps of 10
+  for (let i = 10; i <= 100; i += 10) values.push(i);
+  // 100m to 1000m in steps of 100
+  for (let i = 200; i <= 1000; i += 100) values.push(i);
+  // 1km to 10km
+  for (let i = 2000; i <= 10000; i += 1000) values.push(i);
+  return values;
+});
+
+const formatRadiusLabel = (value: number) => {
+  return value >= 1000 ? `${value/1000}km` : `${value}m`;
+};
+
+const radiusStats = ref<{
+  speciesCounts: Record<string, number>;
+  topBirds: { ring: string; count: number }[];
+} | null>(null);
+const isLoadingRadius = ref(false);
+
+const fetchRadiusData = async () => {
+  if (!selectedLat.value || !selectedLon.value) return;
+  
+  isLoadingRadius.value = true;
+  try {
+    const sightings = await api.getSightingsInRadius(
+      selectedLat.value,
+      selectedLon.value,
+      radius.value
+    );
+    
+    // Calculate species counts
+    const speciesCounts: Record<string, number> = {};
+    const birdCounts: Record<string, { count: number; species: string }> = {};
+    
+    sightings.forEach(sighting => {
+      // Count species
+      if (sighting.species) {
+        speciesCounts[sighting.species] = (speciesCounts[sighting.species] || 0) + 1;
+      }
+      
+      // Count individual birds
+      if (sighting.ring) {
+        // Initialize if first time seeing this ring
+        if (!birdCounts[sighting.ring]) {
+          birdCounts[sighting.ring] = {
+            count: 0,
+            species: sighting.species || ''
+          };
+        }
+        // Increment the count
+        birdCounts[sighting.ring].count += 1;
+      }
+    });
+    
+    // Get top 10 birds
+    const topBirds = Object.entries(birdCounts)
+      .map(([ring, data]) => ({
+        ring,
+        count: data.count,
+        species: data.species
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+    
+    radiusStats.value = {
+      speciesCounts,
+      topBirds
+    };
+  } catch (error) {
+    console.error('Error fetching radius data:', error);
+  } finally {
+    isLoadingRadius.value = false;
+  }
+};
+
+const speciesChartOption = computed(() => {
+  if (!radiusStats.value) return {};
+  
+  const { speciesCounts } = radiusStats.value;
+  return {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c} ({d}%)'
+    },
+    legend: {
+      type: 'scroll',
+      orient: 'vertical',
+      right: 10,
+      top: 20,
+      bottom: 20,
+      textStyle: {
+        overflow: 'truncate',
+        width: 150
+      }
+    },
+    grid: {
+      containLabel: true
+    },
+    series: [{
+      type: 'pie',
+      radius: ['40%', '70%'],
+      center: ['40%', '50%'],
+      avoidLabelOverlap: true,
+      itemStyle: {
+        borderRadius: 10,
+        borderColor: '#fff',
+        borderWidth: 2
+      },
+      label: {
+        show: false
+      },
+      emphasis: {
+        label: {
+          show: true,
+          fontSize: 16,
+          fontWeight: 'bold'
+        }
+      },
+      data: Object.entries(speciesCounts)
+        .map(([name, value]) => ({
+          name,
+          value,
+          itemStyle: {
+            color: getSpeciesColor(name)
+          }
+        }))
+        .sort((a, b) => b.value - a.value) // Sort by count to show most frequent species first
+    }]
+  };
+});
+
+const topBirdsChartOption = computed(() => {
+  if (!radiusStats.value) return {};
+  
+  const { topBirds } = radiusStats.value;
+  // Sort birds in ascending order for display
+  const sortedBirds = [...topBirds].sort((a, b) => a.count - b.count);
+
+  return {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      },
+      formatter: (params: any) => {
+        const dataIndex = params[0].dataIndex;
+        const bird = sortedBirds[dataIndex];
+        return `${bird.ring}${bird.species ? ` (${bird.species})` : ''}: ${bird.count}`;
+      }
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'value'
+    },
+    yAxis: {
+      type: 'category',
+      data: sortedBirds.map(bird => bird.ring)
+    },
+    series: [{
+      type: 'bar',
+      data: sortedBirds.map(bird => ({
+        value: bird.count,
+        itemStyle: {
+          color: getSpeciesColor(bird.species || '')
+        }
+      }))
+    }]
+  };
+});
 </script>
 
 <style scoped>
@@ -238,5 +507,9 @@ const formatDate = (date: string) => {
   height: 12px;
   border-radius: 50%;
   margin-right: 8px;
+}
+
+.chart {
+  height: 400px;
 }
 </style>

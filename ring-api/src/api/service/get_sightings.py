@@ -1,6 +1,7 @@
+from datetime import date as _date
 from api.db import loader
 from api.models.sightings import Sighting
-from datetime import date as _date
+from api.utils import distance
 
 
 def get_sighting_by_id(id: str) -> Sighting | None:
@@ -41,6 +42,14 @@ def get_sightings_by_date_range(start: _date, end: _date) -> list[Sighting]:
 def get_next_sighting_id() -> str:
     """Returns the next sighting id."""
     return str(len(loader.get_sightings()) + 1)
+
+
+def get_sightings_by_radius(lat: float, lon: float, radius_m: int) -> list[Sighting]:
+    """Returns all sightings within a given radius."""
+    sightings_with_location = [sighting for sighting in loader.get_sightings() if sighting.lat and sighting.lon]
+    return [
+        sighting for sighting in sightings_with_location if distance(sighting.lat, sighting.lon, lat, lon) <= radius_m
+    ]
 
 
 if __name__ == "__main__":

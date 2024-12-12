@@ -6,6 +6,7 @@ from api.service.get_sightings import (
     get_sightings_by_ring,
     get_sightings_by_date,
     get_sightings_by_date_range,
+    get_sightings_by_radius,
 )
 from api.service.get_bird import (
     get_bird_by_ring,
@@ -37,4 +38,5 @@ __all__ = [
     "get_all_sightings_from_ring",
     "get_friends_from_ring",
     "invalidate_cache",
+    "get_sightings_by_radius",
 ]

@@ -53,7 +53,9 @@ const updateMarkers = () => {
             iconAnchor: [6, 6]
           }),
           zIndexOffset: 100
-        }).addTo(map.value!);
+        })
+          .bindTooltip(friend.ring)
+          .addTo(map.value!);
         markers.value.push(marker);
       }
     });
@@ -70,7 +72,9 @@ const updateMarkers = () => {
           iconAnchor: [6, 6]
         }),
         zIndexOffset: 1000  // Higher z-index to stay on top
-      }).addTo(map.value!);
+      })
+        .bindTooltip(props.bird.ring)
+        .addTo(map.value!);
       markers.value.push(marker);
     }
   });

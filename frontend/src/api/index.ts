@@ -109,3 +109,16 @@ export const getBirdFriends = async (ring: string) => {
   console.log('Received friends:', response.data);
   return response.data;
 };
+
+export const getSightingsInRadius = async (lat: number, lon: number, radius: number) => {
+  console.log('Fetching sightings within radius:', { lat, lon, radius });
+  const response = await api.get<Sighting[]>('/sightings/radius', {
+    params: {
+      lat,
+      lon,
+      radius_m: Math.round(radius)
+    }
+  });
+  console.log('Received sightings in radius:', response.data);
+  return response.data;
+};

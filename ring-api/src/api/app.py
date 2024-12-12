@@ -54,6 +54,23 @@ def get_sightings_count() -> int:
     return Response(status_code=200, body=json.dumps(service.get_sightings_count()), headers=headers)
 
 
+@app.get("/sightings/radius")
+def get_sightings_by_radius(
+    lat: Annotated[float, Query(description="Latitude")],
+    lon: Annotated[float, Query(description="Longitude")],
+    radius_m: Annotated[int, Query(description="Radius in meters")],
+) -> list[Sighting]:
+    logger.info(f"Get sightings by radius: {lat}, {lon}, {radius_m}")
+    lat = float(app.current_event.query_string_parameters.get("lat", "0"))
+    lon = float(app.current_event.query_string_parameters.get("lon", "0"))
+    radius_m = int(app.current_event.query_string_parameters.get("radius_m", "0"))
+    return Response(
+        status_code=200,
+        body=json.dumps([sighting.model_dump() for sighting in service.get_sightings_by_radius(lat, lon, radius_m)]),
+        headers=headers,
+    )
+
+
 @app.get("/sightings/<id>")
 def get_sighting_by_id(id: str) -> Sighting | None:
     logger.info(f"Get sighting by id: {id}")
