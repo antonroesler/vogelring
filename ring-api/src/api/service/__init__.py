@@ -21,6 +21,8 @@ from api.service.analytics import get_all_sightings_from_ring, get_friends_from_
 
 from api.service.cache import invalidate_cache
 
+from api.service.dashboard import get_dashboard
+
 
 __all__ = [
     "add_sighting",
@@ -39,4 +41,5 @@ __all__ = [
     "get_friends_from_ring",
     "invalidate_cache",
     "get_sightings_by_radius",
+    "get_dashboard",
 ]

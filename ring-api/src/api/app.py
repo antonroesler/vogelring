@@ -193,6 +193,15 @@ def invalidate_cache():
     return Response(status_code=200, headers=headers)
 
 
+# Dashboard
+
+
+@app.get("/dashboard")
+def get_dashboard() -> list[Sighting]:
+    logger.info(f"Get dashboard")
+    return Response(status_code=200, body=json.dumps(service.get_dashboard().model_dump()), headers=headers)
+
+
 # Analytics
 
 

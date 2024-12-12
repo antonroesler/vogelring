@@ -3,11 +3,150 @@
     <h1 class="text-h4 mb-4">Statistiken</h1>
 
     <v-tabs v-model="activeTab">
+      <v-tab value="dashboard">Dashboard</v-tab>
       <v-tab value="friends">Freunde</v-tab>
       <v-tab value="radius">Umkreis</v-tab>
     </v-tabs>
 
     <v-window v-model="activeTab">
+      <v-window-item value="dashboard">
+        <v-card class="mt-4">
+          <v-card-text>
+            <v-row>
+              <!-- Weekly Stats Card -->
+              <v-col cols="12" md="6" lg="3">
+                <v-card>
+                  <v-card-text class="text-center">
+                    <div class="text-h6 mb-2">Diese Woche</div>
+                    <div class="text-h4 mb-2">{{ dashboardData?.bird_count_this_week || 0 }}</div>
+                    <div :class="[
+                      'text-subtitle-1',
+                      weeklyTrend > 0 ? 'text-success' : weeklyTrend < 0 ? 'text-error' : ''
+                    ]">
+                      <v-icon :icon="weeklyTrend > 0 ? 'mdi-trending-up' : weeklyTrend < 0 ? 'mdi-trending-down' : 'mdi-trending-neutral'"></v-icon>
+                      {{ Math.abs(weeklyTrend) }}% vs letzte Woche
+                    </div>
+                    <div class="text-caption">Letzte Woche: {{ dashboardData?.bird_count_last_week || 0 }}</div>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+
+              <!-- Daily Stats Card -->
+              <v-col cols="12" md="6" lg="3">
+                <v-card>
+                  <v-card-text class="text-center">
+                    <div class="text-h6 mb-2">Heute</div>
+                    <div class="text-h4 mb-2">{{ dashboardData?.bird_count_today || 0 }}</div>
+                    <div :class="[
+                      'text-subtitle-1',
+                      dailyTrend > 0 ? 'text-success' : dailyTrend < 0 ? 'text-error' : ''
+                    ]">
+                      <v-icon :icon="dailyTrend > 0 ? 'mdi-trending-up' : dailyTrend < 0 ? 'mdi-trending-down' : 'mdi-trending-neutral'"></v-icon>
+                      {{ Math.abs(dailyTrend) }}% vs gestern
+                    </div>
+                    <div class="text-caption">Gestern: {{ dashboardData?.bird_count_yesterday || 0 }}</div>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+
+              <!-- Strike Days Card -->
+              <v-col cols="12" md="6" lg="3">
+                <v-card>
+                  <v-card-text class="text-center">
+                    <div class="text-h6 mb-2">Beobachtungs-Streak</div>
+                    <div class="text-h4 mb-2">
+                      <v-icon color="warning" icon="mdi-fire" class="me-2"></v-icon>
+                      {{ dashboardData?.strike_day_count || 0 }}
+                    </div>
+                    <div class="text-subtitle-1">Tage in Folge</div>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+
+              <!-- Total Stats Card -->
+              <v-col cols="12" md="6" lg="3">
+                <v-card>
+                  <v-card-text class="text-center">
+                    <div class="text-h6 mb-2">Gesamt</div>
+                    <div class="text-h4 mb-2">{{ dashboardData?.total_birds || 0 }}</div>
+                    <div class="text-subtitle-1">
+                      <v-icon icon="mdi-eye" class="me-1"></v-icon>
+                      {{ dashboardData?.total_sightings || 0 }} Sichtungen
+                    </div>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+
+              <!-- Top Birds This Year -->
+              <v-col cols="12" md="6">
+                <v-card>
+                  <v-card-title class="d-flex align-center">
+                    <v-icon icon="mdi-medal" class="me-2"></v-icon>
+                    Top 3 Vögel dieses Jahr
+                  </v-card-title>
+                  <v-card-text>
+                    <v-list>
+                      <v-list-item
+                        v-for="(bird, index) in dashboardData?.top_3_birds_this_year"
+                        :key="bird.ring"
+                        :subtitle="`${bird.sighting_count} Sichtungen`"
+                      >
+                        <template v-slot:prepend>
+                          <v-icon
+                            :icon="index === 0 ? 'mdi-medal-outline' : ''"
+                            :color="index === 0 ? 'warning' : index === 1 ? 'grey' : 'brown'"
+                          ></v-icon>
+                        </template>
+                        {{ bird.ring }} - {{ bird.species }}
+                      </v-list-item>
+                    </v-list>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+
+              <!-- Top Places This Year -->
+              <v-col cols="12" md="6">
+                <v-card>
+                  <v-card-title class="d-flex align-center">
+                    <v-icon icon="mdi-map-marker" class="me-2"></v-icon>
+                    Top 3 Orte dieses Jahr
+                  </v-card-title>
+                  <v-card-text>
+                    <v-list>
+                      <v-list-item
+                        v-for="(place, index) in dashboardData?.top_3_places_this_year"
+                        :key="place.place"
+                        :subtitle="`${place.count} Sichtungen`"
+                      >
+                        <template v-slot:prepend>
+                          <v-icon
+                            :icon="index === 0 ? 'mdi-map-marker-star' : 'mdi-map-marker'"
+                            :color="index === 0 ? 'success' : index === 1 ? 'info' : 'grey'"
+                          ></v-icon>
+                        </template>
+                        {{ place.place }}
+                      </v-list-item>
+                    </v-list>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+
+              <!-- Species Chart -->
+              <v-col cols="12">
+                <v-card>
+                  <v-card-title class="d-flex align-center">
+                    <v-icon icon="mdi-chart-line" class="me-2"></v-icon>
+                    Sichtungen pro Art (12 Monate)
+                  </v-card-title>
+                  <v-card-text>
+                    <v-chart class="chart" :option="speciesTimelineOption" autoresize></v-chart>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
+      </v-window-item>
       <v-window-item value="friends">
         <v-card class="mt-4">
           <v-card-text>
@@ -204,9 +343,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { format } from 'date-fns';
-import type { BirdMeta, AnalyticsBirdMeta, Sighting } from '@/types';
+import type { BirdMeta, AnalyticsBirdMeta, Sighting, Dashboard } from '@/types';
 import * as api from '@/api';
 import BirdDetails from '@/components/birds/BirdDetails.vue';
 import FriendsMap from '@/components/map/FriendsMap.vue';
@@ -214,7 +353,7 @@ import LeafletMap from '@/components/map/LeafletMap.vue';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
-import { BarChart, PieChart } from 'echarts/charts';
+import { BarChart, PieChart, LineChart } from 'echarts/charts';
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
 import { getSpeciesColor } from '@/utils/colors';
 
@@ -222,17 +361,19 @@ use([
   CanvasRenderer,
   BarChart,
   PieChart,
+  LineChart,
   GridComponent,
   TooltipComponent,
   LegendComponent
 ]);
 
-const activeTab = ref('friends');
+const activeTab = ref('dashboard');
 const searchQuery = ref('');
 const suggestions = ref<BirdMeta[]>([]);
 const selectedBird = ref<BirdMeta | null>(null);
 const friends = ref<AnalyticsBirdMeta[]>([]);
 const map = ref<typeof LeafletMap | null>(null);
+const dashboardData = ref<Dashboard | null>(null);
 
 // Watch for tab changes to trigger map resize
 watch(activeTab, (newTab) => {
@@ -489,24 +630,100 @@ const topBirdsChartOption = computed(() => {
     }]
   };
 });
+
+const weeklyTrend = computed(() => {
+  if (!dashboardData.value) return 0;
+  const thisWeek = dashboardData.value.bird_count_this_week;
+  const lastWeek = dashboardData.value.bird_count_last_week;
+  if (lastWeek === 0) return 100;
+  return Math.round(((thisWeek - lastWeek) / lastWeek) * 100);
+});
+
+const dailyTrend = computed(() => {
+  if (!dashboardData.value) return 0;
+  const today = dashboardData.value.bird_count_today;
+  const yesterday = dashboardData.value.bird_count_yesterday;
+  if (yesterday === 0) return 100;
+  return Math.round(((today - yesterday) / yesterday) * 100);
+});
+
+const speciesTimelineOption = computed(() => {
+  if (!dashboardData.value) return {};
+
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+  const data = dashboardData.value.rolling_year_count_per_month_per_species;
+  
+  // Get all months in the last year as x-axis labels
+  const today = new Date();
+  const xAxisData = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(today.getFullYear(), today.getMonth() - (11 - i));
+    return `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+  });
+
+  // Prepare series data
+  const series = Object.entries(data).map(([species, counts]) => {
+    const monthData = new Array(12).fill(0);
+    counts.forEach(count => {
+      const monthIndex = count.month - 1;
+      monthData[monthIndex] = count.count;
+    });
+
+    return {
+      name: species,
+      type: 'line',
+      data: monthData,
+      smooth: true,
+      itemStyle: {
+        color: getSpeciesColor(species)
+      }
+    };
+  });
+
+  return {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow'
+      }
+    },
+    legend: {
+      type: 'scroll',
+      orient: 'horizontal',
+      top: 'bottom'
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '15%',
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: xAxisData
+    },
+    yAxis: {
+      type: 'value'
+    },
+    series
+  };
+});
+
+onMounted(async () => {
+  try {
+    dashboardData.value = await api.getDashboard();
+  } catch (error) {
+    console.error('Error fetching dashboard data:', error);
+  }
+});
 </script>
 
 <style scoped>
-.friend-details {
-  white-space: normal !important;
-  overflow: visible !important;
+.text-success {
+  color: #4CAF50 !important;
 }
 
-.places-list {
-  margin-top: 4px;
-  word-wrap: break-word;
-}
-
-.color-marker {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  margin-right: 8px;
+.text-error {
+  color: #FF5252 !important;
 }
 
 .chart {

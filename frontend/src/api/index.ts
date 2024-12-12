@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Sighting, BirdMeta, FriendResponse } from '../types';
+import type { Sighting, BirdMeta, FriendResponse, Dashboard } from '../types';
 
 const API_BASE_URL = 'https://782syzefh4.execute-api.eu-central-1.amazonaws.com/Prod';
 const API_KEY = import.meta.env.VITE_API_KEY;
@@ -122,3 +122,8 @@ export const getSightingsInRadius = async (lat: number, lon: number, radius: num
   console.log('Received sightings in radius:', response.data);
   return response.data;
 };
+
+export async function getDashboard(): Promise<Dashboard> {
+  const response = await api.get<Dashboard>('/dashboard');
+  return response.data;
+}
