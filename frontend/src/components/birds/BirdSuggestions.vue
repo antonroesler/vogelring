@@ -14,7 +14,7 @@
       <v-card-text>
         <v-list>
           <v-list-item
-            v-for="suggestion in suggestions"
+            v-for="suggestion in [...suggestions].sort((a, b) => b.sightings.length - a.sightings.length)"
             :key="suggestion.ring"
             @click="selectSuggestion(suggestion)"
           >
@@ -22,7 +22,8 @@
               {{ suggestion.ring }} - {{ suggestion.species }}
             </v-list-item-title>
             <v-list-item-subtitle>
-              Letzte Sichtung: {{ formatDate(suggestion.last_seen) }}
+              {{ suggestion.sightings.length }} Sichtung{{ suggestion.sightings.length !== 1 ? 'en' : '' }} |
+              Letzte Sichtung: {{ formatDate(suggestion.last_seen) }} 
             </v-list-item-subtitle>
           </v-list-item>
         </v-list>

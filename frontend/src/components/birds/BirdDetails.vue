@@ -28,12 +28,13 @@
       <v-divider class="my-4"></v-divider>
 
       <h3 class="text-h6 mb-2">Andere Artenbestimmungen</h3>
-      <v-list>
+      <v-list v-if="Object.keys(bird.other_species_identifications).length > 0">
         <v-list-item v-for="(count, species) in bird.other_species_identifications" :key="species">
           <v-list-item-title>{{ species }}</v-list-item-title>
           <v-list-item-subtitle>{{ count }} mal</v-list-item-subtitle>
         </v-list-item>
       </v-list>
+      <p v-else class="text-body-1">Ausschließlich als {{ bird.species }} identifiziert.</p>
     </v-card-text>
   </v-card>
 </template>

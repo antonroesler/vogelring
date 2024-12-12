@@ -62,7 +62,7 @@
                         {{ bird.ring }} - {{ bird.species }}
                       </v-list-item-title>
                       <v-list-item-subtitle>
-                        {{ bird.sighting_count }} Sichtungen | Letzte Sichtung: {{ formatDate(bird.last_seen) }}
+                        {{ bird.sighting_count }} Sichtung{{ bird.sighting_count !== 1 ? 'en' : '' }} | Letzte Sichtung: {{ formatDate(bird.last_seen) }}
                       </v-list-item-subtitle>
                     </v-list-item>
                   </template>

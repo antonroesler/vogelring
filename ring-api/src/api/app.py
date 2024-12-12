@@ -29,7 +29,7 @@ metrics = Metrics(namespace="Powertools")
 app.enable_swagger(path="/swagger")
 
 headers = {
-    "Access-Control-Allow-Origin": "https://vogelring.com",
+    "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Accept",
     "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
     "Access-Control-Allow-Credentials": "true",
