@@ -68,7 +68,10 @@
                 <v-card>
                   <v-card-text class="text-center">
                     <div class="text-h6 mb-2">Gesamt</div>
-                    <div class="text-h4 mb-2">{{ dashboardData?.total_birds || 0 }}</div>
+                    <div class="text-h4 mb-2">
+                      <v-icon icon="mdi-bird" class="me-2"></v-icon>
+                      {{ dashboardData?.total_birds || 0 }}
+                    </div>
                     <div class="text-subtitle-1">
                       <v-icon icon="mdi-eye" class="me-1"></v-icon>
                       {{ dashboardData?.total_sightings || 0 }} Sichtungen
