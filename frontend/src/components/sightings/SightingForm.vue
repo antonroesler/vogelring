@@ -57,12 +57,15 @@
         ></leaflet-map>
       </v-col>
     </v-row>
-    <v-card-actions>
+    <v-card-actions class="mt-4">
       <v-spacer></v-spacer>
       <v-btn
         color="primary"
         type="submit"
         :loading="loading"
+        size="large"
+        variant="elevated"
+        class="px-8"
       >
         Speichern
       </v-btn>

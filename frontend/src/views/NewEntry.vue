@@ -98,6 +98,8 @@
             color="primary"
             type="submit"
             :loading="loading"
+            size="large"
+            prepend-icon="mdi-content-save"
           >
             Speichern
           </v-btn>

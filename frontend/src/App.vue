@@ -1,15 +1,27 @@
 <template>
   <v-app>
-    <v-app-bar>
-      <v-app-bar-title>Vogelring</v-app-bar-title>
+    <v-app-bar flat color="primary">
+      <v-app-bar-title class="text-white">Vogelring</v-app-bar-title>
       <v-spacer></v-spacer>
-      <v-btn to="/new-entry">Neuer Eintrag</v-btn>
-      <v-btn to="/entries">Eintragliste</v-btn>
-      <v-btn to="/statistics">Statistiken</v-btn>
+      <v-btn 
+        to="/new-entry" 
+        variant="text"
+        color="white"
+      >Neuer Eintrag</v-btn>
+      <v-btn 
+        to="/entries" 
+        variant="text"
+        color="white"
+      >Eintragliste</v-btn>
+      <v-btn 
+        to="/statistics" 
+        variant="text"
+        color="white"
+      >Statistiken</v-btn>
     </v-app-bar>
 
     <v-main>
-      <v-container>
+      <v-container class="px-6">
         <router-view :key="$route.fullPath"></router-view>
       </v-container>
     </v-main>
@@ -18,3 +30,48 @@
 
 <script setup lang="ts">
 </script>
+
+<style>
+.v-btn {
+  margin-left: 8px;
+  text-transform: none;
+  font-weight: 400;
+  box-shadow: none !important;
+}
+
+/* Style for disabled buttons */
+.v-btn.v-btn--disabled {
+  background-color: #E0E0E0 !important;
+  color: #FFFFFF !important;
+  opacity: 1 !important;
+}
+
+.v-card {
+  border: 1px solid #E0E0E0 !important;
+  box-shadow: none !important;
+}
+
+.v-text-field .v-field {
+  box-shadow: none !important;
+  border: 1px solid #E0E0E0 !important;
+  border-radius: 8px !important;
+}
+
+.v-text-field .v-field:hover {
+  border-color: #BDBDBD !important;
+}
+
+.v-text-field .v-field--focused {
+  border-color: var(--v-primary-base) !important;
+}
+
+/* Remove underline from input fields */
+.v-field__outline {
+  --v-field-border-width: 0 !important;
+}
+
+/* Remove underline from select fields as well */
+.v-select .v-field__outline {
+  --v-field-border-width: 0 !important;
+}
+</style>

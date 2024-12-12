@@ -8,13 +8,12 @@ import App from './App.vue'
 import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
 import 'leaflet/dist/leaflet.css'
+import { theme } from './theme'
 
 const vuetify = createVuetify({
   components,
   directives,
-  theme: {
-    defaultTheme: 'light'
-  }
+  theme
 })
 
 const router = createRouter({

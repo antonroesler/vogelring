@@ -4,6 +4,7 @@
     :items="sightings"
     :loading="loading"
     hover
+    class="elevation-0 border rounded"
     @click:row="handleRowClick"
   >
     <template v-slot:item.date="{ item }">
@@ -22,14 +23,18 @@
 
   <!-- Delete Confirmation Dialog -->
   <v-dialog v-model="showDeleteDialog" max-width="400">
-    <v-card>
-      <v-card-title>Sichtung löschen</v-card-title>
-      <v-card-text>
+    <v-card class="pa-4">
+      <v-card-title class="text-h6 px-0">Sichtung löschen</v-card-title>
+      <v-card-text class="px-0">
         Möchten Sie diese Sichtung wirklich löschen?
       </v-card-text>
-      <v-card-actions>
+      <v-card-actions class="px-0">
         <v-spacer></v-spacer>
-        <v-btn color="primary" variant="text" @click="showDeleteDialog = false">
+        <v-btn 
+          color="grey-darken-1" 
+          variant="text" 
+          @click="showDeleteDialog = false"
+        >
           Abbrechen
         </v-btn>
         <v-btn
@@ -107,3 +112,20 @@ const handleDelete = async () => {
   }
 };
 </script>
+
+<style scoped>
+.v-data-table {
+  border: 1px solid #E0E0E0;
+  border-radius: 8px;
+}
+
+.v-data-table :deep(th) {
+  font-weight: 600 !important;
+  color: rgba(0, 0, 0, 0.87) !important;
+  background: #FAFAFA;
+}
+
+.v-data-table :deep(tr:hover) {
+  background: #FAFAFA !important;
+}
+</style>
