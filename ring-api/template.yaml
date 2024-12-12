@@ -8,21 +8,27 @@ Parameters:
     Description: API Key for Ring API
     NoEcho: true
 
-Globals: # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-specification-template-anatomy-globals.html
+Globals:
   Function:
-    Timeout: 5
+    Timeout: 10
     MemorySize: 128
     Runtime: python3.12
   Api:
     Cors:
       AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
       AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Accept'"
-      AllowOrigin: "'https://vogelring.com'"
+      AllowOrigin: "'*'"
       AllowCredentials: "'true'"
+    MethodSettings:
+      - ThrottlingRateLimit: 2
+        ThrottlingBurstLimit: 10
+        MetricsEnabled: true
+        ResourcePath: "/*"
+        HttpMethod: "*"
 
 Resources:
   RingApiFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html
+    Type: AWS::Serverless::Function
     Properties:
       ReservedConcurrentExecutions: 1
       Handler: api.app.lambda_handler
@@ -33,11 +39,10 @@ Resources:
       Tracing: Active
       Events:
         RingApiPath:
-          Type: Api # More info about API Event Source: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-api.html
+          Type: Api
           Properties:
             Path: /{proxy+}
             Method: ANY
-            # Powertools env vars: https://awslabs.github.io/aws-lambda-powertools-python/#environment-variables
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: PowertoolsRingApi
