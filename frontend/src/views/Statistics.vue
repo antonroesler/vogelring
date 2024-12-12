@@ -732,4 +732,13 @@ onMounted(async () => {
 .chart {
   height: 400px;
 }
+
+.color-marker {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0,0,0,0.2);
+  display: inline-block;
+  margin-right: 8px;
+}
 </style>
