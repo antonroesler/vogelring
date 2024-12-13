@@ -49,7 +49,10 @@ def get_dashboard() -> Dashboard:
 
     # Calculate rolling year counts per month per species
     rolling_year_counts: dict[str, list[RollingYearCountPerMonth]] = defaultdict(list)
-    twelve_months_ago = today - timedelta(days=365)
+    if today.month == 12:
+        twelve_months_ago = date(year=today.year, month=1, day=1)
+    else:
+        twelve_months_ago = date(year=today.year - 1, month=today.month + 1, day=1)
 
     for s in dated_sightings:
         if s.date >= twelve_months_ago and s.species is not None:  # Only process if species exists
