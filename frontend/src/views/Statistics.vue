@@ -232,10 +232,10 @@
               </v-col>
 
               <v-col cols="12" md="8">
-                <v-card>
+                <v-card class="bird-details-card">
                   <v-card-title>Freunde</v-card-title>
-                  <v-card-text>
-                    <v-list>
+                  <v-card-text class="friends-list-container">
+                    <v-list class="friends-list">
                       <v-list-item
                         v-for="friend in friends"
                         :key="friend.ring"
@@ -740,5 +740,21 @@ onMounted(async () => {
   border: 1px solid rgba(0,0,0,0.2);
   display: inline-block;
   margin-right: 8px;
+}
+
+.bird-details-card {
+  height: 450px;
+}
+
+.friends-list-container {
+  height: calc(100% - 64px);
+  padding: 0;
+  max-height: calc(450px - 64px);
+}
+
+.friends-list {
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px;
 }
 </style>
