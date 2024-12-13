@@ -9,6 +9,7 @@ import '@mdi/font/css/materialdesignicons.css'
 import 'vuetify/styles'
 import 'leaflet/dist/leaflet.css'
 import { theme } from './theme'
+import BirdDetail from './views/BirdDetail.vue'
 
 const vuetify = createVuetify({
   components,
@@ -32,12 +33,16 @@ const router = createRouter({
       component: () => import('./views/EntryList.vue')
     },
     {
-      path: '/entry/:id',
+      path: '/entries/:id',
       component: () => import('./views/EntryDetail.vue')
     },
     {
       path: '/statistics',
       component: () => import('./views/Statistics.vue')
+    },
+    {
+      path: '/birds/:ring',
+      component: BirdDetail
     }
   ]
 })

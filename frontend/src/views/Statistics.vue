@@ -333,7 +333,7 @@
                 <v-card>
                   <v-card-title>Top 10 Vögel</v-card-title>
                   <v-card-text>
-                    <v-chart class="chart" :option="topBirdsChartOption" autoresize></v-chart>
+                    <v-chart class="chart" :option="topBirdsChartOption" autoresize @click="handleChartClick"></v-chart>
                   </v-card-text>
                 </v-card>
               </v-col>
@@ -359,6 +359,7 @@ import { CanvasRenderer } from 'echarts/renderers';
 import { BarChart, PieChart, LineChart } from 'echarts/charts';
 import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
 import { getSpeciesColor } from '@/utils/colors';
+import { useRouter } from 'vue-router';
 
 use([
   CanvasRenderer,
@@ -377,6 +378,7 @@ const selectedBird = ref<BirdMeta | null>(null);
 const friends = ref<AnalyticsBirdMeta[]>([]);
 const map = ref<typeof LeafletMap | null>(null);
 const dashboardData = ref<Dashboard | null>(null);
+const router = useRouter();
 
 // Watch for tab changes to trigger map resize
 watch(activeTab, (newTab) => {
@@ -629,7 +631,16 @@ const topBirdsChartOption = computed(() => {
         itemStyle: {
           color: getSpeciesColor(bird.species || '')
         }
-      }))
+      })),
+      emphasis: {
+        itemStyle: {
+          opacity: 0.8,
+          shadowBlur: 10,
+          shadowOffsetX: 0,
+          shadowColor: 'rgba(0, 0, 0, 0.5)'
+        }
+      },
+      cursor: 'pointer'
     }]
   };
 });
@@ -710,6 +721,15 @@ const speciesTimelineOption = computed(() => {
     series
   };
 });
+
+const handleChartClick = (params: any) => {
+  if (params.componentType === 'series' && radiusStats.value?.topBirds) {
+    const bird = radiusStats.value.topBirds[params.dataIndex];
+    if (bird?.ring) {
+      router.push(`/birds/${bird.ring}`);
+    }
+  }
+};
 
 onMounted(async () => {
   try {

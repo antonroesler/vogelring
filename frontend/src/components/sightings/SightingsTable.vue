@@ -89,7 +89,7 @@ const formatDate = (date?: string) => {
 
 const handleRowClick = (event: Event, item: any) => {
   const sighting = item.item;
-  router.push(`/entry/${sighting.id}`);
+  router.push(`/entries/${sighting.id}`);
 };
 
 const confirmDelete = (item: Sighting) => {
