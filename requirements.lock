@@ -23,8 +23,12 @@ boto3==1.35.57
 botocore==1.35.57
     # via boto3
     # via s3transfer
+cffi==1.17.1
+    # via cryptography
 comm==0.2.2
     # via ipykernel
+cryptography==44.0.0
+    # via vogelring
 debugpy==1.8.8
     # via ipykernel
 decorator==5.1.1
@@ -71,6 +75,8 @@ ptyprocess==0.7.0
     # via pexpect
 pure-eval==0.2.3
     # via stack-data
+pycparser==2.22
+    # via cffi
 pydantic==2.9.2
     # via pydantic-settings
     # via vogelring

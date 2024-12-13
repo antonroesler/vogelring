@@ -51,8 +51,22 @@ Resources:
           BUCKET: vogelring-data
           SIGHTINGS_FILE: sightings.pkl
           API_KEY: !Ref RingApiKey
+          CLOUDFRONT_DOMAIN: vogelring.com
+          CLOUDFRONT_KEY_PAIR_ID: KTPUWAUUDMT2M
+          CLOUDFRONT_PRIVATE_KEY_PARAM_NAME: /vogelring/cloudfront-private-key
       Tags:
         LambdaPowertools: python
+      Policies:
+        - S3ReadPolicy:
+            BucketName: vogelring-data
+        - S3CrudPolicy:
+            BucketName: vogelring-data
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/vogelring/cloudfront-private-key"
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
@@ -67,6 +81,7 @@ Resources:
       ResourceGroupName:
         Ref: ApplicationResourceGroup
       AutoConfigurationEnabled: "true"
+
 Outputs:
   RingApi:
     Description: API Gateway endpoint URL for Prod environment for Health API

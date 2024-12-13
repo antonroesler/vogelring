@@ -218,6 +218,28 @@ def get_groups_from_ring(ring: str) -> FriendResponse:
     return Response(status_code=200, body=json.dumps(friends.model_dump()), headers=headers)
 
 
+# Report
+
+
+@app.post("/report/shareable")
+def post_shareable_report(days: Annotated[int, Query(description="Number of days until expiration")]):
+    logger.info(f"Post shareable report with expiration days: {days}")
+    days = int(app.current_event.query_string_parameters.get("days", "30"))
+
+    try:
+        assert 0 < days <= 365, "Days must be between 1 and 365"
+        shareable_report = service.get_shareable_report(days)
+        return Response(status_code=200, body=json.dumps(shareable_report.model_dump()), headers=headers)
+    except AssertionError as e:
+        raise BadRequestError(str(e))
+    except Exception as e:
+        logger.error(f"Error generating shareable report: {str(e)}")
+        raise InternalServerError("Error generating shareable report")
+
+
+# Main
+
+
 @logger.inject_lambda_context(correlation_id_path=correlation_paths.API_GATEWAY_REST)
 @metrics.log_metrics(capture_cold_start_metric=True)
 def lambda_handler(event: dict, context: LambdaContext) -> dict:

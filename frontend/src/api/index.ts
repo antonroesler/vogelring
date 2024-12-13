@@ -127,3 +127,18 @@ export async function getDashboard(): Promise<Dashboard> {
   const response = await api.get<Dashboard>('/dashboard');
   return response.data;
 }
+
+export const getShareableReportUrls = async (days: number) => {
+  const response = await fetch(`${API_BASE_URL}/report/shareable?days=${days}`, {
+    method: 'POST',
+    headers: {
+      'x-api-key': API_KEY
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to get shareable report URLs');
+  }
+  
+  return response.json();
+};

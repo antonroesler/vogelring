@@ -1,5 +1,5 @@
 <template>
-  <div ref="mapContainer" style="height: 400px; width: 100%"></div>
+  <div ref="mapContainer" style="height: 400px;"></div>
 </template>
 
 <script setup lang="ts">
@@ -14,18 +14,56 @@ const props = defineProps<{
 
 const mapContainer = ref<HTMLElement | null>(null);
 const map = ref<L.Map | null>(null);
-const markers = ref<L.Marker[]>([]);
 
-const createMap = () => {
-  if (!mapContainer.value || !props.currentSighting.lat || !props.currentSighting.lon) return;
+const formatDate = (dateString: string) => {
+  return new Date(dateString).toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+};
 
-  const mapInstance = L.map(mapContainer.value).setView([props.currentSighting.lat, props.currentSighting.lon], 13);
+// Define custom icons
+const currentIcon = L.divIcon({
+  html: '<div style="background-color: #FF4444; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white;"></div>',
+  className: 'custom-div-icon',
+  iconSize: [20, 20],
+  iconAnchor: [10, 10]
+});
 
-  map.value = mapInstance;
+const otherIcon = L.divIcon({
+  html: '<div style="background-color: #FFB300; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
+  className: 'custom-div-icon',
+  iconSize: [16, 16],
+  iconAnchor: [8, 8]
+});
 
+const initMap = () => {
+  if (!mapContainer.value) return;
+
+  // Initialize map
+  map.value = L.map(mapContainer.value).setView(
+    [props.currentSighting.lat, props.currentSighting.lon],
+    13
+  );
+
+  // Add tile layer
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
-  }).addTo(mapInstance);
+  }).addTo(map.value);
+
+  // Add CSS for markers
+  const style = document.createElement('style');
+  style.textContent = `
+    .custom-div-icon {
+      background: none !important;
+      border: none !important;
+    }
+    .custom-div-icon div {
+      box-shadow: 0 0 3px rgba(0,0,0,0.3);
+    }
+  `;
+  document.head.appendChild(style);
 
   updateMarkers();
 };
@@ -34,48 +72,59 @@ const updateMarkers = () => {
   if (!map.value) return;
 
   // Clear existing markers
-  markers.value.forEach(marker => marker.remove());
-  markers.value = [];
-
-  // Add other sightings markers first (if they exist)
-  if (props.otherSightings) {
-    props.otherSightings.forEach(sighting => {
-      if (sighting.id === props.currentSighting.id) return;
-      
-      if (sighting.lat && sighting.lon) {
-        const marker = L.marker([sighting.lat, sighting.lon], {
-          icon: L.divIcon({
-            className: 'custom-div-icon',
-            html: '<div style="background-color: rgba(25, 118, 210, 0.85); width: 10px; height: 10px; border-radius: 50%;"></div>',
-            iconSize: [10, 10],
-            iconAnchor: [5, 5]
-          })
-        });
-        marker.addTo(map.value);
-        markers.value.push(marker);
-      }
-    });
-  }
+  map.value.eachLayer((layer) => {
+    if (layer instanceof L.Marker) {
+      map.value?.removeLayer(layer);
+    }
+  });
 
   // Add current sighting marker
-  if (props.currentSighting.lat && props.currentSighting.lon) {
-    const currentMarker = L.marker([props.currentSighting.lat, props.currentSighting.lon], {
-      icon: L.divIcon({
-        className: 'custom-div-icon',
-        html: '<div style="background-color: #E53935; width: 10px; height: 10px; border-radius: 0%; z-index: 1000;"></div>',
-        iconSize: [10, 10],
-        iconAnchor: [5, 5]
-      }),
-      zIndexOffset: 1000
-    });
-    currentMarker.addTo(map.value);
-    markers.value.push(currentMarker);
+  L.marker(
+    [props.currentSighting.lat, props.currentSighting.lon],
+    { icon: currentIcon }
+  )
+    .addTo(map.value)
+    .bindPopup(`Aktuelle Sichtung (${formatDate(props.currentSighting.date)})`);
+
+  // Add other sightings markers
+  if (props.otherSightings) {
+    props.otherSightings
+      .filter(sighting => sighting.id !== props.currentSighting.id)
+      .forEach(sighting => {
+        if (sighting.lat && sighting.lon) {
+          L.marker(
+            [sighting.lat, sighting.lon],
+            { icon: otherIcon }
+          )
+            .addTo(map.value!)
+            .bindPopup(`Sichtung am ${formatDate(sighting.date)}`);
+        }
+      });
   }
 };
 
-onMounted(createMap);
+// Watch for changes in sightings
+watch(
+  () => [props.currentSighting, props.otherSightings],
+  () => {
+    if (map.value) {
+      updateMarkers();
+    }
+  },
+  { deep: true }
+);
 
-watch([() => props.currentSighting, () => props.otherSightings], () => {
-  updateMarkers();
-}, { deep: true });
+onMounted(() => {
+  initMap();
+});
 </script>
+
+<style scoped>
+.custom-div-icon {
+  background: none !important;
+  border: none !important;
+}
+.custom-div-icon div {
+  box-shadow: 0 0 3px rgba(0,0,0,0.3);
+}
+</style>

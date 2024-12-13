@@ -1,6 +1,12 @@
 <template>
   <div>
-    <h1 class="text-h4 mb-4">Eintrag Details</h1>
+    <v-row>
+      <v-col cols="12" class="d-flex align-center">
+        <h1 class="text-h4">Eintrag Details</h1>
+        <v-spacer></v-spacer>
+        <share-dialog :generate-html="generateStaticHTML" />
+      </v-col>
+    </v-row>
 
     <v-row>
       <v-col cols="12" md="8">
@@ -79,6 +85,8 @@ import BirdDetails from '@/components/birds/BirdDetails.vue';
 import SightingsMap from '@/components/map/SightingsMap.vue';
 import SightingsTable from '@/components/sightings/SightingsTable.vue';
 import { useSightingsStore } from '@/stores/sightings';
+import { useTheme } from 'vuetify';
+import ShareDialog from '@/components/dialogs/ShareDialog.vue';
 
 const route = useRoute();
 const sighting = ref<Sighting | null>(null);
@@ -86,6 +94,7 @@ const birdDetails = ref<BirdMeta | null>(null);
 const loading = ref(false);
 const showSnackbar = ref(false);
 const store = useSightingsStore();
+const theme = useTheme();
 
 const loadSighting = async () => {
   const id = route.params.id as string;
@@ -141,4 +150,223 @@ watch(
 );
 
 onMounted(loadSighting);
+
+const generateStaticHTML = () => {
+  // Helper function for date formatting
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  return `<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sighting ${sighting.value?.id}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vuetify@3.3.3/dist/vuetify.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@latest/css/materialdesignicons.min.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>
+    <style>
+      .v-application {
+        background: #fff;
+        color: rgba(0, 0, 0, 0.87);
+      }
+      .v-card {
+        border: 1px solid #E0E0E0 !important;
+        box-shadow: none !important;
+        margin-bottom: 16px;
+      }
+      .v-card-title {
+        padding: 16px;
+        font-size: 1.25rem;
+        font-weight: 500;
+      }
+      .v-card-text {
+        padding: 16px;
+      }
+      .container {
+        padding: 16px;
+        max-width: 1280px;
+        margin: 0 auto;
+      }
+      .v-row {
+        display: flex;
+        flex-wrap: wrap;
+        margin: -12px;
+      }
+      .v-col {
+        padding: 12px;
+      }
+      .v-col-12 {
+        flex: 0 0 100%;
+        max-width: 100%;
+      }
+      @media (min-width: 960px) {
+        .md-8 {
+          flex: 0 0 66.666667%;
+          max-width: 66.666667%;
+        }
+        .md-4 {
+          flex: 0 0 33.333333%;
+          max-width: 33.333333%;
+        }
+      }
+      .v-table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .v-table th, .v-table td {
+        padding: 8px;
+        text-align: left;
+        border-bottom: 1px solid #E0E0E0;
+      }
+      #map {
+        height: 400px;
+        margin-bottom: 20px;
+        z-index: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="v-application">
+      <div class="v-main">
+        <div class="container">
+          <h1 class="text-h4 mb-4">Eintrag Details</h1>
+          
+          <div class="v-row">
+            <div class="v-col v-col-12 md-8">
+              <div class="v-card">
+                <div class="v-card-title">Sichtung Details</div>
+                <div class="v-card-text">
+                  <div class="v-row">
+                    <div class="v-col v-col-12 md-6">
+                      <p><strong>Ablesung:</strong> ${sighting.value?.reading || '-'}</p>
+                      <p><strong>Ring:</strong> ${sighting.value?.ring || '-'}</p>
+                      <p><strong>Spezies:</strong> ${sighting.value?.species || '-'}</p>
+                      <p><strong>Ort:</strong> ${sighting.value?.place || '-'}</p>
+                    </div>
+                    <div class="v-col v-col-12 md-6">
+                      <p><strong>Gruppengröße:</strong> ${sighting.value?.group_size || '-'}</p>
+                      <p><strong>Melder:</strong> ${sighting.value?.melder || '-'}</p>
+                      <p><strong>Gemeldet:</strong> ${sighting.value?.melded ? 'Ja' : 'Nein'}</p>
+                      <p><strong>Kommentare:</strong> ${sighting.value?.comment || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            ${birdDetails.value ? `
+              <div class="v-col v-col-12 md-4">
+                <div class="v-card">
+                  <div class="v-card-title">Vogel Details</div>
+                  <div class="v-card-text">
+                    <p><strong>Ring:</strong> ${birdDetails.value.ring || '-'}</p>
+                    <p><strong>Spezies:</strong> ${birdDetails.value.species || '-'}</p>
+                    <p><strong>Erste Sichtung:</strong> ${birdDetails.value.first_sighting || '-'}</p>
+                    <p><strong>Letzte Sichtung:</strong> ${birdDetails.value.last_sighting || '-'}</p>
+                  </div>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+
+          <div id="map"></div>
+
+          ${otherSightings.value.length > 0 ? `
+            <div class="v-card">
+              <div class="v-card-title">Andere Sichtungen</div>
+              <div class="v-card-text">
+                <table class="v-table">
+                  <thead>
+                    <tr>
+                      <th>Datum</th>
+                      <th>Ort</th>
+                      <th>Ring</th>
+                      <th>Spezies</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${otherSightings.value.map(s => `
+                      <tr>
+                        <td>${formatDate(s.date)}</td>
+                        <td>${s.place || '-'}</td>
+                        <td>${s.ring || '-'}</td>
+                        <td>${s.species || '-'}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    </div>
+
+    <script>
+      window.onload = function() {
+        const map = L.map('map').setView([${sighting.value?.lat || 50.1109}, ${sighting.value?.lon || 8.6821}], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Define custom icons
+        const currentIcon = L.divIcon({
+          html: '<div style="background-color: #FF4444; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white;"></div>',
+          className: 'custom-div-icon',
+          iconSize: [20, 20],
+          iconAnchor: [10, 10]
+        });
+
+        const otherIcon = L.divIcon({
+          html: '<div style="background-color: #FFB300; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
+          className: 'custom-div-icon',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        });
+
+        // Add current sighting marker
+        L.marker(
+          [${sighting.value?.lat || 50.1109}, ${sighting.value?.lon || 8.6821}],
+          { icon: currentIcon }
+        )
+          .addTo(map)
+          .bindPopup(\`Aktuelle Sichtung (${formatDate(sighting.value?.date)})\`);
+
+        // Add other sightings markers
+        ${JSON.stringify(otherSightings.value)}.forEach(s => {
+          if (s.lat && s.lon) {
+            L.marker([s.lat, s.lon], { icon: otherIcon })
+              .addTo(map)
+              .bindPopup(\`Sichtung am \${new Date(s.date).toLocaleDateString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+              })}\`);
+          }
+        });
+
+        // Add CSS for markers
+        const style = document.createElement('style');
+        style.textContent = \`
+          .custom-div-icon {
+            background: none !important;
+            border: none !important;
+          }
+          .custom-div-icon div {
+            box-shadow: 0 0 3px rgba(0,0,0,0.3);
+          }
+        \`;
+        document.head.appendChild(style);
+      };
+    <\/script>
+  </body>
+</html>`;
+};
 </script>
