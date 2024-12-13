@@ -23,8 +23,8 @@
                       'text-subtitle-1',
                       weeklyTrend > 0 ? 'text-success' : weeklyTrend < 0 ? 'text-error' : ''
                     ]">
-                      <v-icon :icon="weeklyTrend > 0 ? 'mdi-trending-up' : weeklyTrend < 0 ? 'mdi-trending-down' : 'mdi-trending-neutral'"></v-icon>
-                      {{ Math.abs(weeklyTrend) }}% vs letzte Woche
+                      <v-icon :icon="weeklyTrend > 0 ? 'mdi-arrow-up' : weeklyTrend < 0 ? 'mdi-arrow-down' : 'mdi-minus'"></v-icon>
+                      {{ weeklyTrend > 0 ? '+' : ''}}{{ dashboardData?.bird_count_this_week - (dashboardData?.bird_count_last_week || 0) }}
                     </div>
                     <div class="text-caption">Letzte Woche: {{ dashboardData?.bird_count_last_week || 0 }}</div>
                   </v-card-text>
@@ -41,8 +41,8 @@
                       'text-subtitle-1',
                       dailyTrend > 0 ? 'text-success' : dailyTrend < 0 ? 'text-error' : ''
                     ]">
-                      <v-icon :icon="dailyTrend > 0 ? 'mdi-trending-up' : dailyTrend < 0 ? 'mdi-trending-down' : 'mdi-trending-neutral'"></v-icon>
-                      {{ Math.abs(dailyTrend) }}% vs gestern
+                      <v-icon :icon="dailyTrend > 0 ? 'mdi-arrow-up' : dailyTrend < 0 ? 'mdi-arrow-down' : 'mdi-minus'"></v-icon>
+                      {{ dailyTrend > 0 ? '+' : ''}}{{ dashboardData?.bird_count_today - (dashboardData?.bird_count_yesterday || 0) }}
                     </div>
                     <div class="text-caption">Gestern: {{ dashboardData?.bird_count_yesterday || 0 }}</div>
                   </v-card-text>
