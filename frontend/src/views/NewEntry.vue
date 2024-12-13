@@ -45,6 +45,9 @@
               :loading="!places.length"
               hide-no-data
               autocomplete="off"
+              clearable
+              :filter="() => true"
+              :return-object="false"
             ></v-autocomplete>
           </v-col>
           <v-col cols="12" md="6">
@@ -143,14 +146,21 @@ onMounted(async () => {
 });
 
 const filterPlaces = (input: string) => {
-  if (!input || !Array.isArray(places.value)) {
-    filteredPlaces.value = [];
+  if (!input) {
+    filteredPlaces.value = places.value || [];
     return;
   }
   const searchTerm = input.toLowerCase();
-  filteredPlaces.value = places.value
+  const filtered = places.value
     .filter(place => place.toLowerCase().includes(searchTerm))
     .slice(0, 5); // Only show top 5 suggestions
+  
+  // Add the current input as an option if it's not in the filtered list
+  if (!filtered.includes(input)) {
+    filtered.unshift(input);
+  }
+  
+  filteredPlaces.value = filtered;
 };
 
 const sighting = ref<Partial<Sighting>>({
