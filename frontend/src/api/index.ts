@@ -11,6 +11,8 @@ const api = axios.create({
   }
 });
 
+export { api };
+
 // Add request interceptor for logging
 api.interceptors.request.use(
   (config) => {

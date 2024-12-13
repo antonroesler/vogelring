@@ -37,10 +37,15 @@
             ></v-text-field>
           </v-col>
           <v-col cols="12" md="6">
-            <v-text-field
+            <v-autocomplete
               v-model="sighting.place"
+              :items="filteredPlaces"
               label="Ort"
-            ></v-text-field>
+              @update:search="filterPlaces"
+              :loading="!places.length"
+              hide-no-data
+              autocomplete="off"
+            ></v-autocomplete>
           </v-col>
           <v-col cols="12" md="6">
             <v-text-field
@@ -113,15 +118,40 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useSightingsStore } from '@/stores/sightings';
 import type { Sighting, BirdMeta } from '@/types';
 import LeafletMap from '@/components/map/LeafletMap.vue';
 import BirdSuggestions from '@/components/birds/BirdSuggestions.vue';
+import { api } from '@/api';
 
 const store = useSightingsStore();
 const loading = ref(false);
 const showSnackbar = ref(false);
+
+const places = ref<string[]>([]);
+const filteredPlaces = ref<string[]>([]);
+
+onMounted(async () => {
+  try {
+    const response = await api.get('/places');
+    places.value = response.data;
+  } catch (error) {
+    console.error('Error fetching places:', error);
+    places.value = [];
+  }
+});
+
+const filterPlaces = (input: string) => {
+  if (!input || !Array.isArray(places.value)) {
+    filteredPlaces.value = [];
+    return;
+  }
+  const searchTerm = input.toLowerCase();
+  filteredPlaces.value = places.value
+    .filter(place => place.toLowerCase().includes(searchTerm))
+    .slice(0, 5); // Only show top 5 suggestions
+};
 
 const sighting = ref<Partial<Sighting>>({
   date: new Date().toISOString().split('T')[0],

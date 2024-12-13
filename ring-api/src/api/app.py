@@ -124,7 +124,7 @@ def get_bird_suggestions_by_partial_reading(partial_reading: str) -> list[BirdMe
     if partial_reading == "":
         raise BadRequestError("Partial reading is required")
     if not any([c in partial_reading for c in ["*", "…", "..."]]):
-        raise BadRequestError("Partial reading must contain exactly one wildcard symbol: * or … or ...")
+        partial_reading = f"*{partial_reading}*"
     suggestions = service.get_bird_suggestions_by_partial_reading(partial_reading)
     if suggestions is None:
         raise NotFoundError(f"No suggestions found for partial reading: {partial_reading}")
@@ -191,6 +191,14 @@ def invalidate_cache():
     logger.info("Invalidate cache")
     service.invalidate_cache()
     return Response(status_code=200, headers=headers)
+
+
+# Places
+
+
+@app.get("/places")
+def get_place_name_list() -> list[str]:
+    return Response(status_code=200, body=json.dumps(service.get_place_name_list()), headers=headers)
 
 
 # Dashboard
