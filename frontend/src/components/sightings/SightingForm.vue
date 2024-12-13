@@ -52,8 +52,8 @@
       </v-col>
       <v-col cols="12">
         <leaflet-map
-          v-model:latitude="localSighting.lat"
-          v-model:longitude="localSighting.lon"
+          v-model:latitude="latitude"
+          v-model:longitude="longitude"
         ></leaflet-map>
       </v-col>
     </v-row>
@@ -74,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import type { Sighting } from '@/types';
 import LeafletMap from '@/components/map/LeafletMap.vue';
 
@@ -96,4 +96,14 @@ watch(() => props.sighting, (newSighting) => {
 const saveSighting = () => {
   emit('submit', localSighting.value);
 };
+
+const latitude = computed({
+  get: () => localSighting.value.lat ?? 50.1109,
+  set: (val) => localSighting.value.lat = val
+});
+
+const longitude = computed({
+  get: () => localSighting.value.lon ?? 8.6821,
+  set: (val) => localSighting.value.lon = val
+});
 </script>
