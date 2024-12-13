@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # Source the API key from root .env file
-export VITE_API_KEY=$(grep RING_API_KEY ../.env | cut -d '=' -f2)
+export VITE_API_KEY=$RING_API_KEY
+
+echo "VITE_API_KEY=$VITE_API_KEY"
 
 # Build the project
 npm run build
