@@ -157,15 +157,20 @@ const updateMarkers = () => {
     }
   });
 
+  // Helper function to check if coordinates are valid
+  const hasValidCoordinates = (lat: number | null | undefined, lon: number | null | undefined): boolean => {
+    return lat != null && lon != null && !isNaN(lat) && !isNaN(lon);
+  };
+
   if (timelineMode.value && props.otherSightings) {
     // Add timeline markers
     props.otherSightings.forEach(sighting => {
-      if (sighting.lat && sighting.lon && sighting.date) {
+      if (hasValidCoordinates(sighting.lat, sighting.lon) && sighting.date) {
         L.marker(
-          [sighting.lat, sighting.lon],
+          [sighting.lat!, sighting.lon!],
           { 
             icon: createTimelineIcon(sighting.date),
-            zIndexOffset: 0  // Base z-index for regular sightings
+            zIndexOffset: 0
           }
         )
           .addTo(map.value!)
@@ -173,17 +178,16 @@ const updateMarkers = () => {
       }
     });
   } else {
-    // Original marker logic
     if (props.otherSightings) {
       props.otherSightings
         .filter(sighting => !props.currentSighting || sighting.id !== props.currentSighting.id)
         .forEach(sighting => {
-          if (sighting.lat && sighting.lon) {
+          if (hasValidCoordinates(sighting.lat, sighting.lon)) {
             L.marker(
-              [sighting.lat, sighting.lon],
+              [sighting.lat!, sighting.lon!],
               { 
                 icon: otherIcon,
-                zIndexOffset: 0  // Base z-index for other sightings
+                zIndexOffset: 0
               }
             )
               .addTo(map.value!)
@@ -193,12 +197,12 @@ const updateMarkers = () => {
     }
 
     // Add current sighting marker last (on top)
-    if (props.currentSighting) {
+    if (props.currentSighting && hasValidCoordinates(props.currentSighting.lat, props.currentSighting.lon)) {
       L.marker(
-        [props.currentSighting.lat, props.currentSighting.lon],
+        [props.currentSighting.lat!, props.currentSighting.lon!],
         { 
           icon: currentIcon,
-          zIndexOffset: 1000  // Higher z-index to appear on top
+          zIndexOffset: 1000
         }
       )
         .addTo(map.value)
@@ -207,12 +211,12 @@ const updateMarkers = () => {
   }
 
   // Always add ringing marker if available (on top of everything)
-  if (props.ringingData?.lat && props.ringingData?.lon) {
+  if (props.ringingData && hasValidCoordinates(props.ringingData.lat, props.ringingData.lon)) {
     L.marker(
-      [props.ringingData.lat, props.ringingData.lon],
+      [props.ringingData.lat!, props.ringingData.lon!],
       { 
         icon: ringingIcon,
-        zIndexOffset: 2000  // Highest z-index to always be on top
+        zIndexOffset: 2000
       }
     )
       .addTo(map.value)
@@ -223,17 +227,17 @@ const updateMarkers = () => {
   const bounds = L.latLngBounds([]);
   let hasPoints = false;
   
-  if (props.currentSighting) {
-    bounds.extend([props.currentSighting.lat, props.currentSighting.lon]);
+  if (props.currentSighting && hasValidCoordinates(props.currentSighting.lat, props.currentSighting.lon)) {
+    bounds.extend([props.currentSighting.lat!, props.currentSighting.lon!]);
     hasPoints = true;
   }
-  if (props.ringingData?.lat && props.ringingData?.lon) {
-    bounds.extend([props.ringingData.lat, props.ringingData.lon]);
+  if (props.ringingData && hasValidCoordinates(props.ringingData.lat, props.ringingData.lon)) {
+    bounds.extend([props.ringingData.lat!, props.ringingData.lon!]);
     hasPoints = true;
   }
   props.otherSightings?.forEach(s => {
-    if (s.lat && s.lon) {
-      bounds.extend([s.lat, s.lon]);
+    if (hasValidCoordinates(s.lat, s.lon)) {
+      bounds.extend([s.lat!, s.lon!]);
       hasPoints = true;
     }
   });
