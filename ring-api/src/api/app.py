@@ -43,6 +43,11 @@ def handle_validation_error(error: ValidationError):
     return Response(status_code=400, body=json.dumps(error.errors()), headers=headers)
 
 
+@app.exception_handler(NotFoundError)
+def handle_not_found_error(error: NotFoundError):
+    return Response(status_code=404, headers=headers)
+
+
 @app.get("/health")
 def health():
     logger.info("Health API - HTTP 200")
@@ -201,6 +206,8 @@ def invalidate_cache():
 def get_ringing_by_ring(ring: str) -> Ringing | None:
     logger.info(f"Get ringing by ring: {ring}")
     ringing = service.get_ringing_by_ring(ring)
+    if ringing is None:
+        raise NotFoundError(f"Ringing with ring {ring} not found")
     return Response(status_code=200, body=json.dumps(ringing.model_dump()), headers=headers)
 
 
@@ -217,7 +224,7 @@ def get_place_name_list() -> list[str]:
 
 @app.get("/dashboard")
 def get_dashboard() -> list[Sighting]:
-    logger.info(f"Get dashboard")
+    logger.info("Get dashboard")
     return Response(status_code=200, body=json.dumps(service.get_dashboard().model_dump()), headers=headers)
 
 

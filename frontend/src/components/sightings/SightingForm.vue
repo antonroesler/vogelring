@@ -15,6 +15,13 @@
       </v-col>
       <v-col cols="12" md="6">
         <v-text-field
+          v-model="localSighting.date"
+          label="Datum"
+          type="date"
+        ></v-text-field>
+      </v-col>
+      <v-col cols="12" md="6">
+        <v-text-field
           v-model="localSighting.species"
           label="Spezies"
         ></v-text-field>

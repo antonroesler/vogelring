@@ -11,7 +11,13 @@
     <v-row>
       <v-col cols="12" md="8">
         <v-card class="mb-4">
-          <v-card-title>Sichtung bearbeiten</v-card-title>
+          <v-card-title class="d-flex align-center">
+            Sichtung bearbeiten
+            <v-spacer></v-spacer>
+            <span v-if="sighting?.excel_id" class="text-caption text-medium-emphasis">
+              Excel ID: {{ sighting.excel_id }}
+            </span>
+          </v-card-title>
           <v-card-text>
             <sighting-form
               v-if="sighting"
