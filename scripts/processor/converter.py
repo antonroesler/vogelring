@@ -5,6 +5,7 @@ from datetime import datetime
 from api.models.sightings import Sighting
 import csv
 import random
+import math
 
 outfile = Path("data/pkl/sightings.pkl")
 
@@ -60,8 +61,13 @@ def extract_sighting_data(entry: list[str]) -> dict:
 
 def add_coordinates(json_data: dict, places: dict) -> dict:
     if "place" in json_data and (p := places.get(remove_all_non_letter_chars(json_data["place"]))):
-        json_data["lat"] = float(p[2]) + (0.5 - random.random()) * 0.0009 if p[2] else None
-        json_data["lon"] = float(p[3]) + (0.5 - random.random()) * 0.0009 if p[3] else None
+        # Generate random angle and radius for circular distribution
+        angle = random.uniform(0, 2 * math.pi)
+        radius = random.uniform(0, 0.0009)  # Max radius same as previous square diagonal
+
+        # Convert polar coordinates to lat/lon offsets
+        json_data["lat"] = float(p[2]) + radius * math.cos(angle) if p[2] else None
+        json_data["lon"] = float(p[3]) + radius * math.sin(angle) if p[3] else None
     return json_data
 
 
