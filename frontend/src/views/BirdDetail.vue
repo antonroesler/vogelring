@@ -19,15 +19,18 @@
       <!-- New Header Section -->
       <v-card class="mb-4">
         <v-card-text class="bird-header">
-          <div class="text-h3 mb-2">{{ bird?.species }}</div>
-          <div class="text-h4 text-medium-emphasis">Ring: {{ bird?.ring }}</div>
+          <div class="text-h3 mb-2">{{ bird?.species || 'Unbekannte Art' }}</div>
+          <div class="text-h4 text-medium-emphasis">Ring: {{ bird?.ring || 'Unbekannt' }}</div>
         </v-card-text>
       </v-card>
 
       <v-row>
         <!-- Basic Info Card -->
         <v-col cols="12" md="4">
-          <bird-details :bird="bird"></bird-details>
+          <bird-details 
+            :bird="bird"
+            :ringingData="ringingData"
+          ></bird-details>
         </v-col>
 
         <!-- Analytics Cards -->
@@ -53,11 +56,14 @@
             <v-card-title>Sichtungskarte</v-card-title>
             <v-card-text>
               <sightings-map
-                v-if="bird"
+                v-if="bird?.sightings"
                 :other-sightings="bird.sightings"
                 :ringing-data="ringingData"
                 :timeline-mode="true"
               ></sightings-map>
+              <p v-else class="text-body-1 text-medium-emphasis">
+                Keine Sichtungsdaten verfügbar.
+              </p>
             </v-card-text>
           </v-card>
         </v-col>
@@ -175,7 +181,7 @@ const navigateToSighting = (id: string) => {
 
 // Timeline Chart
 const timelineChartOption = computed(() => {
-  if (!bird.value) return {};
+  if (!bird.value?.sightings?.length) return {};
 
   const sightings = [...bird.value.sightings].sort((a, b) => {
     if (!a.date || !b.date) return 0;
@@ -317,7 +323,7 @@ const timelineChartOption = computed(() => {
 
 // Reporter Chart
 const reporterChartOption = computed(() => {
-  if (!bird.value) return {};
+  if (!bird.value?.sightings?.length) return {};
 
   const reporterCounts = bird.value.sightings.reduce((acc, sighting) => {
     const reporter = sighting.melder || 'Unbekannt';

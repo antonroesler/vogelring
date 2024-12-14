@@ -24,13 +24,13 @@ class Sighting(BaseModel):
 
 
 class BirdMeta(BaseModel):
-    species: str
-    ring: str
-    sighting_count: int
-    last_seen: _date
-    first_seen: _date
-    other_species_identifications: dict[str, int]
-    sightings: list[Sighting]
+    species: str | None = None
+    ring: str | None = None
+    sighting_count: int | None = None
+    last_seen: _date | None = None
+    first_seen: _date | None = None
+    other_species_identifications: dict[str, int] | None = None
+    sightings: list[Sighting] | None = None
 
     def __hash__(self):
         return hash(self.ring)

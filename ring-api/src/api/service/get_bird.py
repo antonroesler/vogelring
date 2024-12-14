@@ -12,7 +12,9 @@ def get_bird_by_ring(ring: str) -> BirdMeta | None:
     species_counts = Counter(sighting.species for sighting in sightings)
     most_likely_species, _ = species_counts.most_common(1)[0]
     other_species_identifications = {
-        species: count for species, count in species_counts.items() if species != most_likely_species
+        species: count
+        for species, count in species_counts.items()
+        if species != most_likely_species and species is not None
     }
 
     last_seen = max(sightings, key=lambda sighting: sighting.date).date

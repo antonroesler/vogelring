@@ -4,7 +4,7 @@
       Vogel Details
       <v-spacer></v-spacer>
       <v-btn
-        v-if="bird"
+        v-if="bird?.ring"
         icon
         variant="text"
         :to="`/birds/${bird.ring}`"
@@ -25,21 +25,21 @@
         <v-list>
           <v-list-item>
             <v-list-item-title>Spezies</v-list-item-title>
-            <v-list-item-subtitle>{{ bird.species }}</v-list-item-subtitle>
+            <v-list-item-subtitle>{{ bird.species || 'Unbekannt' }}</v-list-item-subtitle>
           </v-list-item>
           <v-list-item>
             <v-list-item-title>Ring</v-list-item-title>
-            <v-list-item-subtitle>{{ bird.ring }}</v-list-item-subtitle>
+            <v-list-item-subtitle>{{ bird.ring || 'Unbekannt' }}</v-list-item-subtitle>
           </v-list-item>
           <v-list-item>
             <v-list-item-title>Anzahl Sichtungen</v-list-item-title>
-            <v-list-item-subtitle>{{ bird.sighting_count }}</v-list-item-subtitle>
+            <v-list-item-subtitle>{{ bird.sighting_count ?? 0 }}</v-list-item-subtitle>
           </v-list-item>
-          <v-list-item>
+          <v-list-item v-if="bird.first_seen">
             <v-list-item-title>Erste Sichtung</v-list-item-title>
             <v-list-item-subtitle>{{ formatDate(bird.first_seen) }}</v-list-item-subtitle>
           </v-list-item>
-          <v-list-item>
+          <v-list-item v-if="bird.last_seen">
             <v-list-item-title>Letzte Sichtung</v-list-item-title>
             <v-list-item-subtitle>{{ formatDate(bird.last_seen) }}</v-list-item-subtitle>
           </v-list-item>
@@ -109,13 +109,15 @@
         <v-divider class="my-4"></v-divider>
 
         <h3 class="text-h6 mb-2">Andere Artenbestimmungen</h3>
-        <v-list v-if="Object.keys(bird.other_species_identifications).length > 0">
+        <v-list v-if="bird.other_species_identifications && Object.keys(bird.other_species_identifications).length > 0">
           <v-list-item v-for="(count, species) in bird.other_species_identifications" :key="species">
             <v-list-item-title>{{ species }}</v-list-item-title>
             <v-list-item-subtitle>{{ count }} mal</v-list-item-subtitle>
           </v-list-item>
         </v-list>
-        <p v-else class="text-body-1">Ausschließlich als {{ bird.species }} identifiziert.</p>
+        <p v-else class="text-body-1">
+          {{ bird.species ? `Ausschließlich als ${bird.species} identifiziert.` : 'Keine Artenbestimmungen verfügbar.' }}
+        </p>
       </template>
     </v-card-text>
   </v-card>
@@ -129,29 +131,13 @@ import * as api from '@/api';
 
 const props = defineProps<{
   bird: BirdMeta | null;
+  ringingData: Ringing | null;
 }>();
 
-const ringingData = ref<Ringing | null>(null);
 const isLoadingRinging = ref(false);
 
-const loadRingingData = async (ring: string) => {
-  isLoadingRinging.value = true;
-  try {
-    ringingData.value = await api.getRingingByRing(ring);
-  } catch (error) {
-    console.error('Error loading ringing data:', error);
-  } finally {
-    isLoadingRinging.value = false;
-  }
-};
-
-watch(() => props.bird?.ring, (newRing) => {
-  if (newRing) {
-    loadRingingData(newRing);
-  }
-}, { immediate: true });
-
-const formatDate = (date: string) => {
+const formatDate = (date: string | null) => {
+  if (!date) return 'Unbekannt';
   return format(new Date(date), 'dd.MM.yyyy');
 };
 
