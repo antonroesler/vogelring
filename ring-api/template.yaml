@@ -61,6 +61,8 @@ Resources:
             BucketName: vogelring-data
         - S3CrudPolicy:
             BucketName: vogelring-data
+        - DynamoDBReadPolicy:
+            TableName: vogelring
         - Statement:
             - Effect: Allow
               Action:

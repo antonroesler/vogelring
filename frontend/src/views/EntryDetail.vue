@@ -39,6 +39,7 @@
               v-if="sighting"
               :current-sighting="sighting"
               :other-sightings="birdDetails?.sightings"
+              :ringing-data="ringingData"
             ></sightings-map>
           </v-card-text>
         </v-card>
@@ -78,7 +79,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import type { Sighting, BirdMeta } from '@/types';
+import type { Sighting, BirdMeta, Ringing } from '@/types';
 import * as api from '@/api';
 import SightingForm from '@/components/sightings/SightingForm.vue';
 import BirdDetails from '@/components/birds/BirdDetails.vue';
@@ -95,6 +96,8 @@ const loading = ref(false);
 const showSnackbar = ref(false);
 const store = useSightingsStore();
 const theme = useTheme();
+const ringingData = ref<Ringing | null>(null);
+const isLoadingRinging = ref(false);
 
 const loadSighting = async () => {
   const id = route.params.id as string;
@@ -102,6 +105,7 @@ const loadSighting = async () => {
     sighting.value = await api.getSightingById(id);
     if (sighting.value?.ring) {
       birdDetails.value = await api.getBirdByRing(sighting.value.ring);
+      await loadRingingData(sighting.value.ring);
     }
   } catch (error) {
     console.error('Error loading sighting:', error);
@@ -368,5 +372,35 @@ const generateStaticHTML = () => {
     <\/script>
   </body>
 </html>`;
+};
+
+const loadRingingData = async (ring: string) => {
+  isLoadingRinging.value = true;
+  try {
+    ringingData.value = await api.getRingingByRing(ring);
+  } catch (error) {
+    console.error('Error loading ringing data:', error);
+  } finally {
+    isLoadingRinging.value = false;
+  }
+};
+
+const formatAge = (age: number) => {
+  switch (age) {
+    case 1: return 'Nestling';
+    case 2: return 'Flügge';
+    case 3: return 'Juvenil';
+    case 4: return 'Adult';
+    default: return `Code ${age}`;
+  }
+};
+
+const formatSex = (sex: number) => {
+  switch (sex) {
+    case 1: return 'Männlich';
+    case 2: return 'Weiblich';
+    case 0: return 'Unbekannt';
+    default: return `Code ${sex}`;
+  }
 };
 </script>

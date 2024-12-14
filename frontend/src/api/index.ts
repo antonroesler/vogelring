@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Sighting, BirdMeta, FriendResponse, Dashboard } from '../types';
+import type { Sighting, BirdMeta, FriendResponse, Dashboard, Ringing } from '../types';
 
 const API_BASE_URL = 'https://782syzefh4.execute-api.eu-central-1.amazonaws.com/Prod';
 const API_KEY = import.meta.env.VITE_API_KEY;
@@ -143,4 +143,18 @@ export const getShareableReportUrls = async (days: number) => {
   }
   
   return response.json();
+};
+
+export const getRingingByRing = async (ring: string) => {
+  console.log('Fetching ringing data for ring:', ring);
+  try {
+    const response = await api.get<Ringing>(`/ringing/${ring}`);
+    console.log('Received ringing data:', response.data);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
 };

@@ -65,3 +65,17 @@ export interface Dashboard {
   top_3_birds_this_year: SimpleBirdMeta[];  // top 3 birds by number of sightings
   top_3_places_this_year: SimplePlaceMeta[];  // top 3 places by number of sightings
 }
+
+export interface Ringing {
+  id: string;
+  ring: string;
+  ring_scheme: string;
+  species: string;
+  date: string;  // ISO format date string
+  place: string;
+  lat: number;
+  lon: number;
+  ringer: string;
+  sex: number;
+  age: number;
+}

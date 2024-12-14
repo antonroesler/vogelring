@@ -27,6 +27,7 @@ from api.service.report import get_shareable_report
 
 from api.service.places import get_place_name_list
 
+from api.service.get_ringing import get_ringing_by_ring
 
 __all__ = [
     "add_sighting",
@@ -48,4 +49,5 @@ __all__ = [
     "get_dashboard",
     "get_shareable_report",
     "get_place_name_list",
+    "get_ringing_by_ring",
 ]

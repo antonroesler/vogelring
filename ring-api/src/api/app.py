@@ -18,6 +18,7 @@ from api.models.responses import FriendResponse
 from api.version import __version__
 from api import service
 from api.models.sightings import BirdMeta, Sighting
+from api.models.ringing import Ringing
 from typing import Optional
 import json
 
@@ -191,6 +192,16 @@ def invalidate_cache():
     logger.info("Invalidate cache")
     service.invalidate_cache()
     return Response(status_code=200, headers=headers)
+
+
+# Ringing
+
+
+@app.get("/ringing/<ring>")
+def get_ringing_by_ring(ring: str) -> Ringing | None:
+    logger.info(f"Get ringing by ring: {ring}")
+    ringing = service.get_ringing_by_ring(ring)
+    return Response(status_code=200, body=json.dumps(ringing.model_dump()), headers=headers)
 
 
 # Places

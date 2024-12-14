@@ -5,11 +5,12 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import L from 'leaflet';
-import type { Sighting } from '@/types';
+import type { Sighting, Ringing } from '@/types';
 
 const props = defineProps<{
   currentSighting: Sighting;
   otherSightings?: Sighting[];
+  ringingData?: Ringing | null;
 }>();
 
 const mapContainer = ref<HTMLElement | null>(null);
@@ -36,6 +37,13 @@ const otherIcon = L.divIcon({
   className: 'custom-div-icon',
   iconSize: [16, 16],
   iconAnchor: [8, 8]
+});
+
+const ringingIcon = L.divIcon({
+  html: '<div style="background-color: #4CAF50; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white;"></div>',
+  className: 'custom-div-icon',
+  iconSize: [20, 20],
+  iconAnchor: [10, 10]
 });
 
 const initMap = () => {
@@ -86,6 +94,16 @@ const updateMarkers = () => {
     .addTo(map.value)
     .bindPopup(`Aktuelle Sichtung (${formatDate(props.currentSighting.date)})`);
 
+  // Add ringing location marker if available
+  if (props.ringingData?.lat && props.ringingData?.lon) {
+    L.marker(
+      [props.ringingData.lat, props.ringingData.lon],
+      { icon: ringingIcon }
+    )
+      .addTo(map.value)
+      .bindPopup(`Beringungsort (${formatDate(props.ringingData.date)})`);
+  }
+
   // Add other sightings markers
   if (props.otherSightings) {
     props.otherSightings
@@ -101,11 +119,22 @@ const updateMarkers = () => {
         }
       });
   }
+
+  // Adjust bounds to include all markers
+  const bounds = L.latLngBounds([]);
+  bounds.extend([props.currentSighting.lat, props.currentSighting.lon]);
+  if (props.ringingData?.lat && props.ringingData?.lon) {
+    bounds.extend([props.ringingData.lat, props.ringingData.lon]);
+  }
+  props.otherSightings?.forEach(s => {
+    if (s.lat && s.lon) bounds.extend([s.lat, s.lon]);
+  });
+  map.value.fitBounds(bounds, { padding: [50, 50] });
 };
 
 // Watch for changes in sightings
 watch(
-  () => [props.currentSighting, props.otherSightings],
+  () => [props.currentSighting, props.otherSightings, props.ringingData],
   () => {
     if (map.value) {
       updateMarkers();
