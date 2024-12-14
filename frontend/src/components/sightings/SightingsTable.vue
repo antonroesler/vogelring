@@ -10,6 +10,12 @@
     <template v-slot:item.date="{ item }">
       {{ formatDate(item.date) }}
     </template>
+    <template v-slot:item.melded="{ item }">
+      <v-icon
+        :color="item.melded ? 'success' : 'grey'"
+        :icon="item.melded ? 'mdi-check-circle' : 'mdi-circle-outline'"
+      ></v-icon>
+    </template>
     <template v-slot:item.actions="{ item }">
       <v-btn
         icon="mdi-delete"
@@ -77,7 +83,6 @@ const headers = [
   { title: 'Ablesung', key: 'reading', sortable: true },
   { title: 'Spezies', key: 'species', sortable: true },
   { title: 'Ort', key: 'place', sortable: true },
-  { title: 'Gruppengröße', key: 'group_size', sortable: true },
   { title: 'Melder', key: 'melder', sortable: true },
   { title: 'Gemeldet', key: 'melded', sortable: true },
   { title: 'Aktionen', key: 'actions', sortable: false }
