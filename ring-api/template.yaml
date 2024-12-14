@@ -25,24 +25,48 @@ Globals:
         MetricsEnabled: true
         ResourcePath: "/*"
         HttpMethod: "*"
+    GatewayResponses:
+      DEFAULT_4XX:
+        ResponseParameters:
+          Headers:
+            Access-Control-Allow-Origin: "'*'"
+            Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Accept'"
+            Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
+      DEFAULT_5XX:
+        ResponseParameters:
+          Headers:
+            Access-Control-Allow-Origin: "'*'"
+            Access-Control-Allow-Headers: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Accept'"
+            Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
 
 Resources:
-  RingApiFunction:
+  # Writer Lambda for POST, PUT, DELETE
+  RingApiWriterFunction:
     Type: AWS::Serverless::Function
     Properties:
       ReservedConcurrentExecutions: 1
       Handler: api.app.lambda_handler
       CodeUri: src
-      Description: Ring API Lambda function
+      Description: Ring API Writer Lambda function (POST, PUT, DELETE)
       Architectures:
         - x86_64
       Tracing: Active
       Events:
-        RingApiPath:
+        PostRequest:
           Type: Api
           Properties:
             Path: /{proxy+}
-            Method: ANY
+            Method: POST
+        PutRequest:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: PUT
+        DeleteRequest:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: DELETE
       Environment:
         Variables:
           POWERTOOLS_SERVICE_NAME: PowertoolsRingApi
@@ -60,6 +84,53 @@ Resources:
         - S3ReadPolicy:
             BucketName: vogelring-data
         - S3CrudPolicy:
+            BucketName: vogelring-data
+        - DynamoDBReadPolicy:
+            TableName: vogelring
+        - Statement:
+            - Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource:
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/vogelring/cloudfront-private-key"
+
+  # Reader Lambda for GET requests
+  RingApiReaderFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      ReservedConcurrentExecutions: 3
+      Handler: api.app.lambda_handler
+      CodeUri: src
+      Description: Ring API Reader Lambda function (GET only)
+      Architectures:
+        - x86_64
+      Tracing: Active
+      Events:
+        GetRequest:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: GET
+        OptionsRequest:
+          Type: Api
+          Properties:
+            Path: /{proxy+}
+            Method: OPTIONS
+      Environment:
+        Variables:
+          POWERTOOLS_SERVICE_NAME: PowertoolsRingApi
+          POWERTOOLS_METRICS_NAMESPACE: Powertools
+          LOG_LEVEL: INFO
+          BUCKET: vogelring-data
+          SIGHTINGS_FILE: sightings.pkl
+          API_KEY: !Ref RingApiKey
+          CLOUDFRONT_DOMAIN: vogelring.com
+          CLOUDFRONT_KEY_PAIR_ID: KTPUWAUUDMT2M
+          CLOUDFRONT_PRIVATE_KEY_PARAM_NAME: /vogelring/cloudfront-private-key
+      Tags:
+        LambdaPowertools: python
+      Policies:
+        - S3ReadPolicy:
             BucketName: vogelring-data
         - DynamoDBReadPolicy:
             TableName: vogelring
@@ -89,6 +160,10 @@ Outputs:
     Description: API Gateway endpoint URL for Prod environment for Health API
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/health"
 
-  RingApiFunction:
-    Description: Ring API Lambda Function ARN
-    Value: !GetAtt RingApiFunction.Arn
+  RingApiWriterFunction:
+    Description: Ring API Writer Lambda Function ARN
+    Value: !GetAtt RingApiWriterFunction.Arn
+
+  RingApiReaderFunction:
+    Description: Ring API Reader Lambda Function ARN
+    Value: !GetAtt RingApiReaderFunction.Arn
