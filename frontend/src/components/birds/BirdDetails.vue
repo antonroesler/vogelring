@@ -158,19 +158,19 @@ const formatDate = (date: string) => {
 const formatAge = (age: number) => {
   // This is a simplified example - adjust based on your age coding system
   switch (age) {
-    case 1: return 'Nestling';
-    case 2: return 'Flügge';
-    case 3: return 'Juvenil';
-    case 4: return 'Adult';
+    case 1: return 'Nestling (1)';
+    case 2: return 'Flügge (2)';
+    case 3: return 'Juvenil (3)';
+    case 4: return 'Adult (4)';
     default: return `Code ${age}`;
   }
 };
 
 const formatSex = (sex: number) => {
   switch (sex) {
-    case 1: return 'Männlich';
-    case 2: return 'Weiblich';
-    case 0: return 'Unbekannt';
+    case 1: return 'Männlich (1)';
+    case 2: return 'Weiblich (2)';
+    case 0: return 'Unbekannt (0)';
     default: return `Code ${sex}`;
   }
 };
