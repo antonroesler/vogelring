@@ -21,6 +21,7 @@ from api.models.sightings import BirdMeta, Sighting
 from api.models.ringing import Ringing
 from typing import Optional
 import json
+import re
 
 
 app = APIGatewayRestResolver(enable_validation=True)
@@ -34,8 +35,14 @@ headers = {
     "Access-Control-Allow-Headers": "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Accept",
     "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
     "Access-Control-Allow-Credentials": "true",
-    "Access-Control-Max-Age": "300",
 }
+
+
+def is_read_operation(method: str, path: str) -> bool:
+    """Determine if the request is a read operation"""
+    if method == "GET" or method == "OPTIONS":
+        return True
+    return False
 
 
 @app.exception_handler(ValidationError)
@@ -271,12 +278,31 @@ def post_shareable_report(days: Annotated[int, Query(description="Number of days
 def lambda_handler(event: dict, context: LambdaContext) -> dict:
     logger.info(f"Event: {event}")
 
+    method = event["httpMethod"]
+    path = event["path"]
+
     # For OPTIONS requests (preflight)
-    if event["httpMethod"] == "OPTIONS":
-        return Response(status_code=200, headers=headers, body="")
+    if method == "OPTIONS":
+        return {"statusCode": 200, "headers": headers, "body": ""}
+
+    # Check if this request matches the Lambda's role (reader vs writer)
+    is_reader_lambda = "ReaderFunction" in context.function_name
+    is_read_request = is_read_operation(method, path)
+
+    if is_reader_lambda != is_read_request:
+        logger.warning(f"Request mismatch - Reader Lambda: {is_reader_lambda}, Read Request: {is_read_request}")
+        return {
+            "statusCode": 403,
+            "headers": headers,
+            "body": json.dumps({"message": "Operation not allowed on this endpoint"}),
+        }
 
     # Check API key
     if "x-api-key" not in event["headers"] or event["headers"]["x-api-key"] != os.environ["API_KEY"]:
-        return {"statusCode": 401, "headers": headers}
+        return {"statusCode": 401, "headers": headers, "body": json.dumps({"message": "Unauthorized"})}
 
-    return app.resolve(event, context)
+    try:
+        return app.resolve(event, context)
+    except Exception as e:
+        logger.exception("Error processing request")
+        return {"statusCode": 500, "headers": headers, "body": json.dumps({"message": str(e)})}

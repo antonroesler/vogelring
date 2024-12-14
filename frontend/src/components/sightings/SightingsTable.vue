@@ -107,11 +107,8 @@ const handleDelete = async () => {
   
   deleteLoading.value = true;
   try {
-    await api.deleteSighting(selectedSighting.value.id);
     emit('deleted', selectedSighting.value.id);
     showDeleteDialog.value = false;
-  } catch (error) {
-    console.error('Error deleting sighting:', error);
   } finally {
     deleteLoading.value = false;
   }
