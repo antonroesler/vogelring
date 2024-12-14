@@ -7,8 +7,12 @@ const API_KEY = import.meta.env.VITE_API_KEY;
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'x-api-key': API_KEY
-  }
+    'x-api-key': API_KEY,
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+  },
+  timeout: 10000,
+  withCredentials: false
 });
 
 export { api };
@@ -100,9 +104,23 @@ export const getBirdSuggestions = async (partialReading: string) => {
 
 export const getBirdByRing = async (ring: string) => {
   console.log('Fetching bird with ring:', ring);
-  const response = await api.get<BirdMeta>(`/birds/${ring}`);
-  console.log('Received bird:', response.data);
-  return response.data;
+  const encodedRing = encodeURIComponent(ring);
+  try {
+    const response = await api.get<BirdMeta>(`/birds/${encodedRing}`);
+    console.log('Received bird:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching bird:', error);
+    if (axios.isAxiosError(error) && error.response?.status === 502) {
+      // Log more details about the error
+      console.error('Full error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers
+      });
+    }
+    throw error;
+  }
 };
 
 export const getBirdFriends = async (ring: string) => {
@@ -147,13 +165,22 @@ export const getShareableReportUrls = async (days: number) => {
 
 export const getRingingByRing = async (ring: string) => {
   console.log('Fetching ringing data for ring:', ring);
+  const encodedRing = encodeURIComponent(ring);
   try {
-    const response = await api.get<Ringing>(`/ringing/${ring}`);
+    const response = await api.get<Ringing>(`/ringing/${encodedRing}`);
     console.log('Received ringing data:', response.data);
     return response.data;
   } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.status === 404) {
-      return null;
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error details:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        headers: error.response?.headers
+      });
+      // Return null for 404 and handle CORS errors
+      if (error.response?.status === 404 || error.code === 'ERR_NETWORK') {
+        return null;
+      }
     }
     throw error;
   }

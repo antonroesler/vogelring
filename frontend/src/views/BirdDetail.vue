@@ -125,6 +125,7 @@ import {
   LegendComponent,
   DataZoomComponent 
 } from 'echarts/components';
+import axios from 'axios';
 
 use([
   CanvasRenderer,
@@ -150,13 +151,28 @@ onMounted(async () => {
   try {
     isLoading.value = true;
     error.value = null;
+    
+    // Add more detailed error logging
+    console.log('Attempting to load bird with ring:', ring);
+    
     bird.value = await api.getBirdByRing(ring);
+    
     if (bird.value?.ring) {
-      ringingData.value = await api.getRingingByRing(bird.value.ring);
+      try {
+        ringingData.value = await api.getRingingByRing(bird.value.ring);
+      } catch (ringingError) {
+        console.error('Error loading ringing data:', ringingError);
+        // Don't fail the whole component if ringing data fails to load
+        ringingData.value = null;
+      }
     }
   } catch (err) {
     console.error('Error loading bird:', err);
-    error.value = 'Fehler beim Laden der Vogeldaten';
+    if (axios.isAxiosError(err)) {
+      error.value = `Fehler beim Laden der Vogeldaten: ${err.response?.status === 502 ? 'Server nicht erreichbar' : err.message}`;
+    } else {
+      error.value = 'Fehler beim Laden der Vogeldaten';
+    }
   } finally {
     isLoading.value = false;
   }
