@@ -1,3 +1,22 @@
+#!/bin/bash
+# Get current version
+version=$(cat ring-api/src/api/version.py | grep __version__ | awk -F'"' '{print $2}') # version is an integer
+
+# Increment version
+version=$((version + 1))
+
+# Update version in file
+echo "__version__ = \"$version\"" > ring-api/src/api/version.py
+
+# Bumped version
+echo "Bumped version to $version"
+commit_message="Bumped version to $version"
+
+# Commit and push
+git add ring-api/src/api/version.py
+git commit -m "$commit_message"q
+git push
+
 echo "Deploying API"
 
 source .env
