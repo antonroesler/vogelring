@@ -362,6 +362,25 @@ const generateStaticHTML = () => {
 
     <script>
       window.onload = function() {
+        // Base maps configuration
+        const baseMaps = {
+          osm: {
+            name: 'Standard',
+            url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            attribution: '© OpenStreetMap contributors'
+          },
+          cartoLight: {
+            name: 'Hell',
+            url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+            attribution: '© OpenStreetMap contributors, © CARTO'
+          },
+          cartoDark: {
+            name: 'Dunkel',
+            url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+            attribution: '© OpenStreetMap contributors, © CARTO'
+          }
+        };
+
         // Create map controls
         const mapControls = document.createElement('div');
         mapControls.className = 'map-controls';
@@ -375,8 +394,8 @@ const generateStaticHTML = () => {
         document.getElementById('map').appendChild(mapControls);
 
         const map = L.map('map').setView([${sighting.value?.lat || 50.1109}, ${sighting.value?.lon || 8.6821}], 13);
-        let currentLayer = L.tileLayer(${JSON.stringify(baseMaps.osm.url)}, {
-          attribution: ${JSON.stringify(baseMaps.osm.attribution)}
+        let currentLayer = L.tileLayer(baseMaps.osm.url, {
+          attribution: baseMaps.osm.attribution
         }).addTo(map);
 
         // Handle base map changes
