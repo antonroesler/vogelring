@@ -47,6 +47,21 @@
           </v-card>
         </v-col>
 
+        <!-- Map Card -->
+        <v-col cols="12">
+          <v-card class="mb-4">
+            <v-card-title>Sichtungskarte</v-card-title>
+            <v-card-text>
+              <sightings-map
+                v-if="bird"
+                :other-sightings="bird.sightings"
+                :ringing-data="ringingData"
+                :timeline-mode="true"
+              ></sightings-map>
+            </v-card-text>
+          </v-card>
+        </v-col>
+
         <!-- Sightings List -->
         <v-col cols="12">
           <v-card>
@@ -90,9 +105,10 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { format } from 'date-fns';
-import type { BirdMeta } from '@/types';
+import type { BirdMeta, Ringing } from '@/types';
 import * as api from '@/api';
 import BirdDetails from '@/components/birds/BirdDetails.vue';
+import SightingsMap from '@/components/map/SightingsMap.vue';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -118,6 +134,7 @@ use([
 const route = useRoute();
 const router = useRouter();
 const bird = ref<BirdMeta | null>(null);
+const ringingData = ref<Ringing | null>(null);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
 
@@ -128,6 +145,9 @@ onMounted(async () => {
     isLoading.value = true;
     error.value = null;
     bird.value = await api.getBirdByRing(ring);
+    if (bird.value?.ring) {
+      ringingData.value = await api.getRingingByRing(bird.value.ring);
+    }
   } catch (err) {
     console.error('Error loading bird:', err);
     error.value = 'Fehler beim Laden der Vogeldaten';

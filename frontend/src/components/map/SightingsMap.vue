@@ -1,16 +1,50 @@
 <template>
-  <div ref="mapContainer" style="height: 400px;"></div>
+  <div>
+    <div ref="mapContainer" style="height: 400px;"></div>
+    <div class="map-legend">
+      <template v-if="timelineMode">
+        <div class="legend-item">
+          <div class="legend-gradient"></div>
+          <div class="legend-labels-horizontal">
+            <span>Ältere</span>
+            <span class="arrow">→</span>
+            <span>Neuere</span>
+            <span>Sichtungen</span>
+          </div>
+        </div>
+        <div v-if="props.ringingData" class="legend-item">
+          <div class="legend-marker ringing"></div>
+          <span>Beringungsort</span>
+        </div>
+      </template>
+      <template v-else>
+        <div class="legend-item">
+          <div class="legend-marker current"></div>
+          <span>Aktuelle Sichtung</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-marker other"></div>
+          <span>Frühere Sichtungen</span>
+        </div>
+        <div v-if="props.ringingData" class="legend-item">
+          <div class="legend-marker ringing"></div>
+          <span>Beringungsort</span>
+        </div>
+      </template>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, computed } from 'vue';
 import L from 'leaflet';
 import type { Sighting, Ringing } from '@/types';
 
 const props = defineProps<{
-  currentSighting: Sighting;
+  currentSighting?: Sighting;
   otherSightings?: Sighting[];
   ringingData?: Ringing | null;
+  timelineMode?: boolean;
 }>();
 
 const mapContainer = ref<HTMLElement | null>(null);
@@ -21,6 +55,33 @@ const formatDate = (dateString: string) => {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
+  });
+};
+
+const timelineMode = computed(() => props.timelineMode);
+
+const getTimelineColor = (date: string) => {
+  const sightingDate = new Date(date);
+  const now = new Date();
+  const oldestDate = new Date(Math.min(...props.otherSightings!.map(s => new Date(s.date!).getTime())));
+  
+  const totalDays = (now.getTime() - oldestDate.getTime()) / (1000 * 60 * 60 * 24);
+  const daysSince = (now.getTime() - sightingDate.getTime()) / (1000 * 60 * 60 * 24);
+  
+  const hue = Math.round(60 * (daysSince / totalDays));
+  const saturation = 100;
+  const lightness = 50;
+  
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+};
+
+const createTimelineIcon = (date: string) => {
+  const color = getTimelineColor(date);
+  return L.divIcon({
+    html: `<div style="background-color: ${color}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
+    className: 'custom-div-icon',
+    iconSize: [16, 16],
+    iconAnchor: [8, 8]
   });
 };
 
@@ -49,11 +110,21 @@ const ringingIcon = L.divIcon({
 const initMap = () => {
   if (!mapContainer.value) return;
 
+  // Default to a central point (e.g., center of Germany)
+  const defaultCenter: [number, number] = [51.1657, 10.4515];
+
+  // Find initial center from available coordinates
+  let initialCenter = defaultCenter;
+  if (props.currentSighting?.lat && props.currentSighting?.lon) {
+    initialCenter = [props.currentSighting.lat, props.currentSighting.lon];
+  } else if (props.otherSightings?.[0]?.lat && props.otherSightings[0]?.lon) {
+    initialCenter = [props.otherSightings[0].lat, props.otherSightings[0].lon];
+  } else if (props.ringingData?.lat && props.ringingData?.lon) {
+    initialCenter = [props.ringingData.lat, props.ringingData.lon];
+  }
+
   // Initialize map
-  map.value = L.map(mapContainer.value).setView(
-    [props.currentSighting.lat, props.currentSighting.lon],
-    13
-  );
+  map.value = L.map(mapContainer.value).setView(initialCenter, 13);
 
   // Add tile layer
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -86,50 +157,89 @@ const updateMarkers = () => {
     }
   });
 
-  // Add current sighting marker
-  L.marker(
-    [props.currentSighting.lat, props.currentSighting.lon],
-    { icon: currentIcon }
-  )
-    .addTo(map.value)
-    .bindPopup(`Aktuelle Sichtung (${formatDate(props.currentSighting.date)})`);
+  if (timelineMode.value && props.otherSightings) {
+    // Add timeline markers
+    props.otherSightings.forEach(sighting => {
+      if (sighting.lat && sighting.lon && sighting.date) {
+        L.marker(
+          [sighting.lat, sighting.lon],
+          { 
+            icon: createTimelineIcon(sighting.date),
+            zIndexOffset: 0  // Base z-index for regular sightings
+          }
+        )
+          .addTo(map.value!)
+          .bindPopup(`Sichtung am ${formatDate(sighting.date)}`);
+      }
+    });
+  } else {
+    // Original marker logic
+    if (props.otherSightings) {
+      props.otherSightings
+        .filter(sighting => !props.currentSighting || sighting.id !== props.currentSighting.id)
+        .forEach(sighting => {
+          if (sighting.lat && sighting.lon) {
+            L.marker(
+              [sighting.lat, sighting.lon],
+              { 
+                icon: otherIcon,
+                zIndexOffset: 0  // Base z-index for other sightings
+              }
+            )
+              .addTo(map.value!)
+              .bindPopup(`Sichtung am ${formatDate(sighting.date)}`);
+          }
+        });
+    }
 
-  // Add ringing location marker if available
+    // Add current sighting marker last (on top)
+    if (props.currentSighting) {
+      L.marker(
+        [props.currentSighting.lat, props.currentSighting.lon],
+        { 
+          icon: currentIcon,
+          zIndexOffset: 1000  // Higher z-index to appear on top
+        }
+      )
+        .addTo(map.value)
+        .bindPopup(`Aktuelle Sichtung (${formatDate(props.currentSighting.date)})`);
+    }
+  }
+
+  // Always add ringing marker if available (on top of everything)
   if (props.ringingData?.lat && props.ringingData?.lon) {
     L.marker(
       [props.ringingData.lat, props.ringingData.lon],
-      { icon: ringingIcon }
+      { 
+        icon: ringingIcon,
+        zIndexOffset: 2000  // Highest z-index to always be on top
+      }
     )
       .addTo(map.value)
       .bindPopup(`Beringungsort (${formatDate(props.ringingData.date)})`);
   }
 
-  // Add other sightings markers
-  if (props.otherSightings) {
-    props.otherSightings
-      .filter(sighting => sighting.id !== props.currentSighting.id)
-      .forEach(sighting => {
-        if (sighting.lat && sighting.lon) {
-          L.marker(
-            [sighting.lat, sighting.lon],
-            { icon: otherIcon }
-          )
-            .addTo(map.value!)
-            .bindPopup(`Sichtung am ${formatDate(sighting.date)}`);
-        }
-      });
-  }
-
-  // Adjust bounds to include all markers
+  // Adjust bounds
   const bounds = L.latLngBounds([]);
-  bounds.extend([props.currentSighting.lat, props.currentSighting.lon]);
+  let hasPoints = false;
+  
+  if (props.currentSighting) {
+    bounds.extend([props.currentSighting.lat, props.currentSighting.lon]);
+    hasPoints = true;
+  }
   if (props.ringingData?.lat && props.ringingData?.lon) {
     bounds.extend([props.ringingData.lat, props.ringingData.lon]);
+    hasPoints = true;
   }
   props.otherSightings?.forEach(s => {
-    if (s.lat && s.lon) bounds.extend([s.lat, s.lon]);
+    if (s.lat && s.lon) {
+      bounds.extend([s.lat, s.lon]);
+      hasPoints = true;
+    }
   });
-  map.value.fitBounds(bounds, { padding: [50, 50] });
+  if (hasPoints) {
+    map.value.fitBounds(bounds, { padding: [50, 50] });
+  }
 };
 
 // Watch for changes in sightings
@@ -149,11 +259,74 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.map-legend {
+  background: white;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-top: 8px;
+  display: flex;
+  gap: 16px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.legend-marker {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 0 3px rgba(0,0,0,0.3);
+}
+
+.legend-marker.current {
+  background-color: #FF4444;
+}
+
+.legend-marker.other {
+  background-color: #FFB300;
+  width: 12px;
+  height: 12px;
+}
+
+.legend-marker.ringing {
+  background-color: #4CAF50;
+}
+
 .custom-div-icon {
   background: none !important;
   border: none !important;
 }
+
 .custom-div-icon div {
   box-shadow: 0 0 3px rgba(0,0,0,0.3);
+}
+
+.legend-gradient {
+  width: 100px;
+  height: 16px;
+  background: linear-gradient(to right, hsl(60, 100%, 50%), hsl(0, 100%, 50%));
+  border-radius: 4px;
+}
+
+.legend-labels-horizontal {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+  font-size: 0.8rem;
+  gap: 4px;
+}
+
+.legend-labels-horizontal .arrow {
+  color: #666;
+  font-weight: bold;
+}
+
+.legend-labels-horizontal span:last-child {
+  margin-left: 4px;
 }
 </style>
