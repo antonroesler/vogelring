@@ -8,7 +8,7 @@ import random
 import math
 
 
-outfile = Path("data/pkl/sightings-2.pkl")
+outfile = Path("data/pkl/sightings-latest.pkl")
 infile = Path("data/main-02.csv")
 orte_file = Path("data/out/orte.csv")
 
@@ -93,13 +93,15 @@ def add_coordinates(json_data: dict, places: dict) -> dict:
     return json_data
 
 
+eid = 0
 for entry in data[1:]:
+    eid += 1
     json_data = extract_sighting_data(entry)
     json_data = add_coordinates(json_data, places)
     # Skip entries without any bird identification data
     if not any(len(json_data.get(field, "")) > 0 for field in ["species", "ring", "reading"]):
         continue
-    s.append(Sighting(**json_data))
+    s.append(Sighting(**json_data, excel_id=eid))
 
 with open(outfile, "wb+") as f:
     pickle.dump(s, f)

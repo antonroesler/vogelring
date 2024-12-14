@@ -65,8 +65,8 @@ def local_file_version_reader(file: str) -> str:
 
 def s3_version_reader(file: str) -> str:
     logger.info(f"Loading version from {conf.BUCKET}/{file}")
-    obj = s3.get_object(Bucket=conf.BUCKET, Key=file)
-    return obj["VersionId"]
+    head = s3.head_object(Bucket=conf.BUCKET, Key=file)
+    return head["VersionId"]
 
 
 def get_version_reader() -> Callable[[str], str]:
