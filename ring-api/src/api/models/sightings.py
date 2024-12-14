@@ -17,6 +17,7 @@ class Sighting(BaseModel):
     melded: bool | None = None
     lat: float | None = None
     lon: float | None = None
+    habitat: str | None = None
 
     @field_serializer("date")
     def serialize_date(self, v: _date | None, _info):

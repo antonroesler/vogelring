@@ -23,8 +23,12 @@
               v-if="sighting"
               :sighting="sighting"
               :loading="loading"
+              :is-new-entry="false"
+              :show-bird-suggestions="false"
+              :show-place-suggestions="false"
+              :show-coordinates="false"
               @submit="updateSighting"
-            ></sighting-form>
+            />
           </v-card-text>
         </v-card>
       </v-col>
@@ -33,6 +37,7 @@
         <bird-details
           v-if="birdDetails"
           :bird="birdDetails"
+          :ringingData="ringingData"
           class="mb-4"
         ></bird-details>
       </v-col>

@@ -2,117 +2,15 @@
   <v-card class="mb-4">
     <v-card-title>Neuer Eintrag</v-card-title>
     <v-card-text>
-      <v-form @submit.prevent="saveSighting">
-        <v-row>
-          <v-col cols="12" md="6">
-            <v-text-field
-              v-model="sighting.reading"
-              label="Ablesung"
-              hint="Nutze ... oder * als Platzhalter"
-              persistent-hint
-            ></v-text-field>
-            <bird-suggestions
-              :reading="sighting.reading || ''"
-              @select="handleSuggestionSelect"
-              class="mt-2"
-            ></bird-suggestions>
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field
-              v-model="sighting.ring"
-              label="Ring"
-            ></v-text-field>
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field
-              v-model="sighting.date"
-              label="Datum"
-              type="date"
-            ></v-text-field>
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field
-              v-model="sighting.species"
-              label="Spezies"
-            ></v-text-field>
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-autocomplete
-              v-model="sighting.place"
-              :items="filteredPlaces"
-              label="Ort"
-              @update:search="filterPlaces"
-              :loading="!places.length"
-              hide-no-data
-              autocomplete="off"
-              clearable
-              :filter="() => true"
-              :return-object="false"
-            ></v-autocomplete>
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field
-              v-model="sighting.group_size"
-              label="Gruppengröße"
-              type="number"
-            ></v-text-field>
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-text-field
-              v-model="sighting.melder"
-              label="Melder"
-            ></v-text-field>
-          </v-col>
-          <v-col cols="12" md="6">
-            <v-checkbox
-              v-model="sighting.melded"
-              label="Gemeldet"
-            ></v-checkbox>
-          </v-col>
-          <v-col cols="12">
-            <v-textarea
-              v-model="sighting.comment"
-              label="Kommentare"
-            ></v-textarea>
-          </v-col>
-          <v-col cols="12">
-            <leaflet-map
-              v-model:latitude="sighting.lat"
-              v-model:longitude="sighting.lon"
-            ></leaflet-map>
-            <v-row class="mt-2">
-              <v-col cols="6">
-                <v-text-field
-                  v-model="sighting.lat"
-                  label="Breitengrad"
-                  readonly
-                  density="compact"
-                ></v-text-field>
-              </v-col>
-              <v-col cols="6">
-                <v-text-field
-                  v-model="sighting.lon"
-                  label="Längengrad"
-                  readonly
-                  density="compact"
-                ></v-text-field>
-              </v-col>
-            </v-row>
-          </v-col>
-        </v-row>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn
-            color="primary"
-            type="submit"
-            :loading="loading"
-            size="large"
-            prepend-icon="mdi-content-save"
-          >
-            Speichern
-          </v-btn>
-        </v-card-actions>
-      </v-form>
+      <sighting-form
+        :sighting="sighting"
+        :loading="loading"
+        :is-new-entry="true"
+        :show-bird-suggestions="true"
+        :show-place-suggestions="true"
+        :show-coordinates="true"
+        @submit="saveSighting"
+      />
     </v-card-text>
   </v-card>
   <v-snackbar v-model="showSnackbar" color="success">
@@ -121,47 +19,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 import { useSightingsStore } from '@/stores/sightings';
-import type { Sighting, BirdMeta } from '@/types';
-import LeafletMap from '@/components/map/LeafletMap.vue';
-import BirdSuggestions from '@/components/birds/BirdSuggestions.vue';
-import { api } from '@/api';
+import type { Sighting } from '@/types';
+import SightingForm from '@/components/sightings/SightingForm.vue';
 
 const store = useSightingsStore();
 const loading = ref(false);
 const showSnackbar = ref(false);
-
-const places = ref<string[]>([]);
-const filteredPlaces = ref<string[]>([]);
-
-onMounted(async () => {
-  try {
-    const response = await api.get('/places');
-    places.value = response.data;
-  } catch (error) {
-    console.error('Error fetching places:', error);
-    places.value = [];
-  }
-});
-
-const filterPlaces = (input: string) => {
-  if (!input) {
-    filteredPlaces.value = places.value || [];
-    return;
-  }
-  const searchTerm = input.toLowerCase();
-  const filtered = places.value
-    .filter(place => place.toLowerCase().includes(searchTerm))
-    .slice(0, 5); // Only show top 5 suggestions
-  
-  // Add the current input as an option if it's not in the filtered list
-  if (!filtered.includes(input)) {
-    filtered.unshift(input);
-  }
-  
-  filteredPlaces.value = filtered;
-};
 
 const sighting = ref<Partial<Sighting>>({
   date: new Date().toISOString().split('T')[0],
@@ -170,20 +35,14 @@ const sighting = ref<Partial<Sighting>>({
   melded: false
 });
 
-const handleSuggestionSelect = (suggestion: BirdMeta) => {
-  sighting.value.ring = suggestion.ring;
-  sighting.value.species = suggestion.species;
-};
-
-const saveSighting = async () => {
+const saveSighting = async (newSighting: Partial<Sighting>) => {
   loading.value = true;
   try {
-    await store.createSighting(sighting.value);
+    await store.createSighting(newSighting);
     showSnackbar.value = true;
     
     // Reset form except for place, date, and coordinates
-    const { place, date, lat, lon } = sighting.value;
-    
+    const { place, date, lat, lon } = newSighting;
     sighting.value = {
       place,
       date,

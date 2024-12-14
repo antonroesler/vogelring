@@ -6,6 +6,7 @@ export interface Sighting {
   reading?: string;
   date?: string;
   place?: string;
+  habitat?: string;
   group_size?: number;
   comment?: string;
   melder?: string;
