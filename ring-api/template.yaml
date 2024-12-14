@@ -10,8 +10,8 @@ Parameters:
 
 Globals:
   Function:
-    Timeout: 10
-    MemorySize: 128
+    Timeout: 20
+    MemorySize: 256
     Runtime: python3.12
   Api:
     Cors:

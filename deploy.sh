@@ -12,10 +12,10 @@ echo "__version__ = \"$version\"" > ring-api/src/api/version.py
 echo "Bumped version to $version"
 commit_message="Bumped version to $version"
 
-# Commit and push
+# Commit
 git add ring-api/src/api/version.py
-git commit -m "$commit_message"q
-git push
+git commit -m "$commit_message"
+
 
 echo "Deploying API"
 
