@@ -16,7 +16,6 @@ commit_message="Bumped version to $version"
 git add ring-api/src/api/version.py
 git commit -m "$commit_message"
 
-
 echo "Deploying API"
 
 source .env
