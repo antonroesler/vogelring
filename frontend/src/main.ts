@@ -38,7 +38,28 @@ const router = createRouter({
     },
     {
       path: '/statistics',
-      component: () => import('./views/Statistics.vue')
+      component: () => import('./views/Statistics.vue'),
+      children: [
+        {
+          path: '',
+          redirect: { name: 'statistics-dashboard' }
+        },
+        {
+          path: 'dashboard',
+          name: 'statistics-dashboard',
+          component: () => import('./views/statistics/DashboardView.vue')
+        },
+        {
+          path: 'friends',
+          name: 'statistics-friends',
+          component: () => import('./views/statistics/FriendsView.vue')
+        },
+        {
+          path: 'radius',
+          name: 'statistics-radius',
+          component: () => import('./views/statistics/RadiusView.vue')
+        }
+      ]
     },
     {
       path: '/birds/:ring',
