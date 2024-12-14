@@ -1,6 +1,19 @@
 <template>
   <div>
     <div ref="mapContainer" style="height: 400px;"></div>
+    <div class="map-controls">
+      <v-btn-group density="compact" variant="outlined">
+        <v-btn
+          v-for="(map, key) in baseMaps"
+          :key="key"
+          :active="currentBaseMap === key"
+          @click="switchBaseMap(key)"
+          size="small"
+        >
+          {{ map.name }}
+        </v-btn>
+      </v-btn-group>
+    </div>
     <div class="map-legend">
       <template v-if="timelineMode">
         <div class="legend-item">
@@ -49,6 +62,26 @@ const props = defineProps<{
 
 const mapContainer = ref<HTMLElement | null>(null);
 const map = ref<L.Map | null>(null);
+const currentBaseMap = ref('osm');
+const baseMapLayer = ref<L.TileLayer | null>(null);
+
+const baseMaps = {
+  osm: {
+    name: 'Standard',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '© OpenStreetMap contributors'
+  },
+  cartoLight: {
+    name: 'Hell',
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+    attribution: '© OpenStreetMap contributors, © CARTO'
+  },
+  cartoDark: {
+    name: 'Dunkel',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+    attribution: '© OpenStreetMap contributors, © CARTO'
+  }
+};
 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleDateString('de-DE', {
@@ -126,9 +159,10 @@ const initMap = () => {
   // Initialize map
   map.value = L.map(mapContainer.value).setView(initialCenter, 13);
 
-  // Add tile layer
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
+  // Add initial base map
+  const initialMap = baseMaps[currentBaseMap.value];
+  baseMapLayer.value = L.tileLayer(initialMap.url, {
+    attribution: initialMap.attribution
   }).addTo(map.value);
 
   // Add CSS for markers
@@ -246,6 +280,21 @@ const updateMarkers = () => {
   }
 };
 
+const switchBaseMap = (mapKey: string) => {
+  if (!map.value || !baseMapLayer.value) return;
+  
+  currentBaseMap.value = mapKey;
+  const newMap = baseMaps[mapKey];
+  
+  // Remove current base layer
+  baseMapLayer.value.remove();
+  
+  // Add new base layer
+  baseMapLayer.value = L.tileLayer(newMap.url, {
+    attribution: newMap.attribution
+  }).addTo(map.value);
+};
+
 // Watch for changes in sightings
 watch(
   () => [props.currentSighting, props.otherSightings, props.ringingData],
@@ -332,5 +381,15 @@ onMounted(() => {
 
 .legend-labels-horizontal span:last-child {
   margin-left: 4px;
+}
+
+.map-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  background: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 </style>
