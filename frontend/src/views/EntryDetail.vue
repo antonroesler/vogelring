@@ -165,6 +165,25 @@ const generateStaticHTML = () => {
     });
   };
 
+  // Base maps configuration
+  const baseMaps = {
+    osm: {
+      name: 'Standard',
+      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      attribution: '© OpenStreetMap contributors'
+    },
+    cartoLight: {
+      name: 'Hell',
+      url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+      attribution: '© OpenStreetMap contributors, © CARTO'
+    },
+    cartoDark: {
+      name: 'Dunkel',
+      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+      attribution: '© OpenStreetMap contributors, © CARTO'
+    }
+  };
+
   return `<!DOCTYPE html>
 <html>
   <head>
@@ -234,6 +253,21 @@ const generateStaticHTML = () => {
         margin-bottom: 20px;
         z-index: 0;
       }
+      .map-controls {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1000;
+        background: white;
+        padding: 5px;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .map-controls select {
+        padding: 4px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+      }
     </style>
   </head>
   <body>
@@ -272,10 +306,23 @@ const generateStaticHTML = () => {
                   <div class="v-card-text">
                     <p><strong>Ring:</strong> ${birdDetails.value.ring || '-'}</p>
                     <p><strong>Spezies:</strong> ${birdDetails.value.species || '-'}</p>
-                    <p><strong>Erste Sichtung:</strong> ${birdDetails.value.first_sighting || '-'}</p>
-                    <p><strong>Letzte Sichtung:</strong> ${birdDetails.value.last_sighting || '-'}</p>
+                    <p><strong>Erste Sichtung:</strong> ${birdDetails.value.first_seen ? formatDate(birdDetails.value.first_seen) : '-'}</p>
+                    <p><strong>Letzte Sichtung:</strong> ${birdDetails.value.last_seen ? formatDate(birdDetails.value.last_seen) : '-'}</p>
                   </div>
                 </div>
+                ${ringingData.value ? `
+                  <div class="v-card mt-4">
+                    <div class="v-card-title">Beringungsdaten</div>
+                    <div class="v-card-text">
+                      <p><strong>Beringungsdatum:</strong> ${formatDate(ringingData.value.date)}</p>
+                      <p><strong>Beringungsort:</strong> ${ringingData.value.place}</p>
+                      <p><strong>Beringer:</strong> ${ringingData.value.ringer}</p>
+                      <p><strong>Ring Schema:</strong> ${ringingData.value.ring_scheme}</p>
+                      <p><strong>Alter bei Beringung:</strong> ${formatAge(ringingData.value.age)}</p>
+                      <p><strong>Geschlecht:</strong> ${formatSex(ringingData.value.sex)}</p>
+                    </div>
+                  </div>
+                ` : ''}
               </div>
             ` : ''}
           </div>
@@ -315,10 +362,33 @@ const generateStaticHTML = () => {
 
     <script>
       window.onload = function() {
+        // Create map controls
+        const mapControls = document.createElement('div');
+        mapControls.className = 'map-controls';
+        const select = document.createElement('select');
+        select.innerHTML = \`
+          <option value="osm">Standard</option>
+          <option value="cartoLight">Hell</option>
+          <option value="cartoDark">Dunkel</option>
+        \`;
+        mapControls.appendChild(select);
+        document.getElementById('map').appendChild(mapControls);
+
         const map = L.map('map').setView([${sighting.value?.lat || 50.1109}, ${sighting.value?.lon || 8.6821}], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors'
+        let currentLayer = L.tileLayer(${JSON.stringify(baseMaps.osm.url)}, {
+          attribution: ${JSON.stringify(baseMaps.osm.attribution)}
         }).addTo(map);
+
+        // Handle base map changes
+        select.onchange = function(e) {
+          const selectedMap = baseMaps[e.target.value];
+          if (currentLayer) {
+            map.removeLayer(currentLayer);
+          }
+          currentLayer = L.tileLayer(selectedMap.url, {
+            attribution: selectedMap.attribution
+          }).addTo(map);
+        };
 
         // Define custom icons
         const currentIcon = L.divIcon({
@@ -335,6 +405,13 @@ const generateStaticHTML = () => {
           iconAnchor: [8, 8]
         });
 
+        const ringingIcon = L.divIcon({
+          html: '<div style="background-color: #4CAF50; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white;"></div>',
+          className: 'custom-div-icon',
+          iconSize: [20, 20],
+          iconAnchor: [10, 10]
+        });
+
         // Add current sighting marker
         L.marker(
           [${sighting.value?.lat || 50.1109}, ${sighting.value?.lon || 8.6821}],
@@ -342,6 +419,13 @@ const generateStaticHTML = () => {
         )
           .addTo(map)
           .bindPopup(\`Aktuelle Sichtung (${formatDate(sighting.value?.date)})\`);
+
+        // Add ringing marker if available
+        ${ringingData.value ? `
+          L.marker([${ringingData.value.lat}, ${ringingData.value.lon}], { icon: ringingIcon })
+            .addTo(map)
+            .bindPopup(\`Beringungsort (${formatDate(ringingData.value.date)})\`);
+        ` : ''}
 
         // Add other sightings markers
         ${JSON.stringify(otherSightings.value)}.forEach(s => {
