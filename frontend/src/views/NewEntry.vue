@@ -13,8 +13,11 @@
       />
     </v-card-text>
   </v-card>
-  <v-snackbar v-model="showSnackbar" color="success">
+  <v-snackbar v-model="showSuccessSnackbar" color="success">
     Eintrag erfolgreich gespeichert
+  </v-snackbar>
+  <v-snackbar v-model="showErrorSnackbar" color="error">
+    {{ errorMessage }}
   </v-snackbar>
 </template>
 
@@ -26,7 +29,9 @@ import SightingForm from '@/components/sightings/SightingForm.vue';
 
 const store = useSightingsStore();
 const loading = ref(false);
-const showSnackbar = ref(false);
+const showSuccessSnackbar = ref(false);
+const showErrorSnackbar = ref(false);
+const errorMessage = ref('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
 
 const sighting = ref<Partial<Sighting>>({
   date: new Date().toISOString().split('T')[0],
@@ -39,7 +44,7 @@ const saveSighting = async (newSighting: Partial<Sighting>) => {
   loading.value = true;
   try {
     await store.createSighting(newSighting);
-    showSnackbar.value = true;
+    showSuccessSnackbar.value = true;
     
     // Reset form except for place, date, and coordinates
     const { place, date, lat, lon } = newSighting;
@@ -52,6 +57,7 @@ const saveSighting = async (newSighting: Partial<Sighting>) => {
     };
   } catch (error) {
     console.error('Error saving sighting:', error);
+    showErrorSnackbar.value = true;
   } finally {
     loading.value = false;
   }
