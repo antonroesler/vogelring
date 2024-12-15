@@ -80,3 +80,7 @@ export interface Ringing {
   sex: number;
   age: number;
 }
+
+export interface ShareableReport {
+  view_url: string;
+}

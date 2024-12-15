@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Sighting, BirdMeta, FriendResponse, Dashboard, Ringing } from '../types';
+import type { Sighting, BirdMeta, FriendResponse, Dashboard, Ringing, ShareableReport } from '../types';
 
 const API_BASE_URL = 'https://782syzefh4.execute-api.eu-central-1.amazonaws.com/Prod';
 const API_KEY = import.meta.env.VITE_API_KEY;
@@ -148,19 +148,19 @@ export async function getDashboard(): Promise<Dashboard> {
   return response.data;
 }
 
-export const getShareableReportUrls = async (days: number) => {
-  const response = await fetch(`${API_BASE_URL}/report/shareable?days=${days}`, {
-    method: 'POST',
-    headers: {
-      'x-api-key': API_KEY
-    }
-  });
-  
-  if (!response.ok) {
-    throw new Error('Failed to get shareable report URLs');
+export const getShareableReportUrls = async (days: number, htmlContent?: string): Promise<ShareableReport> => {
+  try {
+    const response = await api.post<ShareableReport>('/report/shareable', {
+      days,
+      html: htmlContent
+    });
+    
+    console.log('Received shareable URL:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error getting shareable report URL:', error);
+    throw new Error('Failed to generate shareable report');
   }
-  
-  return response.json();
 };
 
 export const getRingingByRing = async (ring: string) => {

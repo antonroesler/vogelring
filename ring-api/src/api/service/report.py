@@ -1,6 +1,7 @@
 import uuid
-from datetime import datetime, timedelta
 import boto3
+from aws_lambda_powertools import Logger
+from datetime import datetime, timedelta
 from botocore.config import Config
 from botocore.signers import CloudFrontSigner
 from cryptography.hazmat.primitives import serialization
@@ -8,6 +9,10 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
 from api.models.report import ShareableReport
 from api import conf
+
+
+logger = Logger()
+s3 = boto3.client("s3", config=Config(retries=dict(max_attempts=3)))
 
 
 def rsa_signer(message):
@@ -42,7 +47,7 @@ def rsa_signer(message):
         raise
 
 
-def get_shareable_report(days: int) -> ShareableReport:
+def post_shareable_report(days: int, html_content: str = None) -> ShareableReport:
     """Generate pre-signed URLs for S3 upload and CloudFront distribution"""
 
     # Get environment variables
@@ -56,12 +61,7 @@ def get_shareable_report(days: int) -> ShareableReport:
 
     try:
         # Generate pre-signed S3 URL for upload
-        s3_client = boto3.client("s3", config=Config(retries=dict(max_attempts=3)))
-        pre_signed_s3_upload_url = s3_client.generate_presigned_url(
-            "put_object",
-            Params={"Bucket": bucket_name, "Key": s3_key, "ContentType": "text/html"},
-            ExpiresIn=3600,  # URL valid for 1 hour
-        )
+        upload_shareable_report(bucket_name, s3_key, html_content)
 
         # Generate pre-signed CloudFront URL
         cloudfront_signer = CloudFrontSigner(key_pair_id, rsa_signer)
@@ -74,11 +74,14 @@ def get_shareable_report(days: int) -> ShareableReport:
             cloudfront_url, date_less_than=expire_date
         )
 
-        return ShareableReport(
-            pre_signed_s3_upload_url=pre_signed_s3_upload_url,
-            pre_signed_cloudfront_share_url=pre_signed_cloudfront_share_url,
-        )
+        return ShareableReport(view_url=pre_signed_cloudfront_share_url)
 
     except Exception as e:
         print(f"Error generating pre-signed URLs: {str(e)}")
         raise
+
+
+def upload_shareable_report(bucket, key, content) -> ShareableReport:
+    """Upload to s3"""
+    logger.info("Uploading HTML content to S3")
+    s3.put_object(Bucket=bucket, Key=key, Body=content.encode("utf-8"), ContentType="text/html")

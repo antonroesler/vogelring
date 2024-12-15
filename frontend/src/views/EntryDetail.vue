@@ -4,7 +4,7 @@
       <v-col cols="12" class="d-flex align-center">
         <h1 class="text-h4">Eintrag Details</h1>
         <v-spacer></v-spacer>
-        <share-dialog :generate-html="generateStaticHTML" />
+        <share-dialog :generate-html="generateStaticHTML" :get-urls="getShareableReportUrls" />
       </v-col>
     </v-row>
 
@@ -515,6 +515,17 @@ const formatSex = (sex: number) => {
     case 2: return 'Weiblich (2)';
     case 0: return 'Unbekannt (0)';
     default: return `Code ${sex}`;
+  }
+};
+
+const getShareableReportUrls = async (days: number) => {
+  try {
+    const htmlContent = generateStaticHTML();
+    console.log('Generated HTML content:', htmlContent?.substring(0, 100) + '...');  // Log first 100 chars
+    return await api.getShareableReportUrls(days, htmlContent);
+  } catch (error) {
+    console.error('Error generating shareable report:', error);
+    throw error;
   }
 };
 </script>

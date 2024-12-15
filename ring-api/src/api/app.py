@@ -255,14 +255,24 @@ def get_groups_from_ring(ring: str) -> FriendResponse:
 
 
 @app.post("/report/shareable")
-def post_shareable_report(days: Annotated[int, Query(description="Number of days until expiration")]):
-    logger.info(f"Post shareable report with expiration days: {days}")
-    days = int(app.current_event.query_string_parameters.get("days", "30"))
+def post_shareable_report():
+    body: Optional[str] = app.current_event.body
+    html_content = None
+    days = 30  # default value
+    if body:
+        try:
+            request_data = json.loads(body)
+            html_content = request_data.get("html")
+            days = int(request_data.get("days", 30))
+        except json.JSONDecodeError:
+            raise BadRequestError("Invalid JSON in request body")
+        except (TypeError, ValueError):
+            raise BadRequestError("Invalid days value")
 
     try:
         assert 0 < days <= 365, "Days must be between 1 and 365"
-        shareable_report = service.get_shareable_report(days)
-        return Response(status_code=200, body=json.dumps(shareable_report.model_dump()), headers=headers)
+        shareable_report = service.post_shareable_report(days, html_content)
+        return Response(status_code=200, body=json.dumps(shareable_report.model_dump(mode="json")), headers=headers)
     except AssertionError as e:
         raise BadRequestError(str(e))
     except Exception as e:
