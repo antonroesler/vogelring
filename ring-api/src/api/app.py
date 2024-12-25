@@ -247,7 +247,8 @@ def get_all_sightings_from_ring(ring: str) -> list[Sighting]:
 @app.get("/analytics/groups/<ring>")
 def get_groups_from_ring(ring: str) -> FriendResponse:
     logger.info(f"Get groups from ring: {ring}")
-    friends = service.get_friends_from_ring(ring)
+    min_shared_sightings = int(app.current_event.query_string_parameters.get("min_shared_sightings", "2"))
+    friends = service.get_friends_from_ring(ring, min_shared_sightings)
     return Response(status_code=200, body=json.dumps(friends.model_dump()), headers=headers)
 
 

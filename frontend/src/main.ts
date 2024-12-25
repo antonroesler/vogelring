@@ -64,6 +64,11 @@ const router = createRouter({
     {
       path: '/birds/:ring',
       component: BirdDetail
+    },
+    {
+      path: '/birds/:ring/environment-analysis',
+      name: 'environment-analysis',
+      component: () => import('./views/EnvironmentAnalysis.vue')
     }
   ]
 })

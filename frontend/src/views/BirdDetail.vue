@@ -102,6 +102,16 @@
             </v-card-text>
           </v-card>
         </v-col>
+
+        <v-col cols="12">
+          <v-btn
+            variant="outlined"
+            color="primary"
+            @click="navigateToEnvironmentAnalysis"
+          >
+            Umweltanalyse anzeigen
+          </v-btn>
+        </v-col>
       </v-row>
     </template>
   </div>
@@ -193,6 +203,14 @@ const formatDate = (date: string | null) => {
 
 const navigateToSighting = (id: string) => {
   router.push(`/entries/${id}`);
+};
+
+const navigateToEnvironmentAnalysis = () => {
+  if (bird.value?.ring) {
+    router.push(`/birds/${bird.value.ring}/environment-analysis`);
+  } else {
+    console.error('Ring number is not available');
+  }
 };
 
 // Timeline Chart

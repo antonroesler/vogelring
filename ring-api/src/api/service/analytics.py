@@ -9,7 +9,7 @@ def get_all_sightings_from_ring(ring: str) -> list[Sighting]:
     return sorted([sighting for sighting in loader.get_sightings() if sighting.ring == ring], key=lambda x: x.date)
 
 
-def get_friends_from_ring(ring: str) -> FriendResponse:
+def get_friends_from_ring(ring: str, min_shared_sightings: int = 2) -> FriendResponse:
     sightings = get_all_sightings_from_ring(ring)
     place_dates = [(sighting.place, sighting.date) for sighting in sightings]
     # Get all other sightings that were one the same date and same place for any place date in place_dates
@@ -19,8 +19,9 @@ def get_friends_from_ring(ring: str) -> FriendResponse:
         if (sighting.place, sighting.date) in place_dates and sighting.ring != ring:
             friends[sighting.ring].append(sighting.place)
 
-    # Filter the top 10 most common rings
-    top_friends = sorted(friends.items(), key=lambda x: len(x[1]), reverse=True)[:10]
+    # Filter friends with at least 2 shared sightings, then get top 10
+    filtered_friends = {k: v for k, v in friends.items() if len(v) >= min_shared_sightings}
+    top_friends = sorted(filtered_friends.items(), key=lambda x: len(x[1]), reverse=True)[:10]
 
     return FriendResponse(
         bird=get_bird_by_ring(ring),

@@ -19,6 +19,11 @@ const routes = [
         component: () => import('@/views/statistics/RadiusView.vue')
       }
     ]
+  },
+  {
+    path: '/birds/:ring/environment-analysis',
+    name: 'environment-analysis',
+    component: () => import('@/views/EnvironmentAnalysis.vue')
   }
   // ... other routes
 ]; 
