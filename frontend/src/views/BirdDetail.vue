@@ -18,9 +18,29 @@
     <template v-else>
       <!-- New Header Section -->
       <v-card class="mb-4">
-        <v-card-text class="bird-header">
-          <div class="text-h3 mb-2">{{ bird?.species || 'Unbekannte Art' }}</div>
-          <div class="text-h4 text-medium-emphasis">Ring: {{ bird?.ring || 'Unbekannt' }}</div>
+        <v-card-text>
+          <div class="d-flex align-center justify-space-between mb-2">
+            <div class="d-flex align-center">
+              <h2 class="text-h5 font-weight-bold mb-0">
+                {{ bird?.species || 'Loading...' }}
+              </h2>
+              <v-chip
+                class="ml-4 ring-chip"
+                color="primary"
+                size="large"
+              >
+                <span class="font-weight-regular">Ring:</span>
+                <span class="ring-number">{{ bird?.ring }}</span>
+              </v-chip>
+            </div>
+            <v-btn
+              color="primary"
+              :to="`/birds/${bird?.ring}/environment-analysis`"
+              :disabled="!bird?.ring"
+            >
+              Umfeld
+            </v-btn>
+          </div>
         </v-card-text>
       </v-card>
 
@@ -101,16 +121,6 @@
               </v-table>
             </v-card-text>
           </v-card>
-        </v-col>
-
-        <v-col cols="12">
-          <v-btn
-            variant="outlined"
-            color="primary"
-            @click="navigateToEnvironmentAnalysis"
-          >
-            Umweltanalyse anzeigen
-          </v-btn>
         </v-col>
       </v-row>
     </template>
@@ -414,5 +424,15 @@ const reporterChartOption = computed(() => {
 .bird-header {
   text-align: center;
   padding: 24px;
+}
+
+.ring-chip {
+  font-size: 1.1rem !important;
+}
+
+.ring-chip .ring-number {
+  font-weight: 700;
+  font-family: monospace;
+  margin-left: 4px;
 }
 </style> 

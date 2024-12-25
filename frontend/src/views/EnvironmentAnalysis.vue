@@ -1,9 +1,39 @@
 <template>
   <div>
+    <!-- Add header section -->
+    <v-card class="mb-4">
+      <v-card-text>
+        <div class="d-flex align-center mb-2">
+          <h2 class="text-h5 font-weight-bold mb-0">
+            {{ bird?.species || 'Vogel' }}
+          </h2>
+          <v-chip
+            class="ml-4 ring-chip"
+            color="primary"
+            size="large"
+          >
+            <span class="font-weight-regular">Ring:</span>
+            <span class="ring-number">{{ bird?.ring }}</span>
+          </v-chip>
+        </div>
+        <div class="text-body-1 text-medium-emphasis">
+          <div class="mb-1">
+            Erste Sichtung: {{ formatDate(bird?.first_seen) }}
+          </div>
+          <div class="mb-1">
+            Letzte Sichtung: {{ formatDate(bird?.last_seen) }}
+          </div>
+          <div>
+            Anzahl Sichtungen: {{ bird?.sighting_count || bird?.sightings?.length || 0 }}
+          </div>
+        </div>
+      </v-card-text>
+    </v-card>
+
     <v-row>
       <v-col cols="12" md="8">
         <v-card class="mb-4">
-          <v-card-title>Joined Map</v-card-title>
+          <v-card-title>Gemeinsame Sichtungen</v-card-title>
           <v-card-text>
             <div ref="mapContainer" style="height: 400px; width: 100%"></div>
           </v-card-text>
@@ -11,7 +41,7 @@
       </v-col>
       <v-col cols="12" md="4">
         <v-card class="mb-4">
-          <v-card-title>Legend</v-card-title>
+          <v-card-title>Befreundete Vögel</v-card-title>
           <v-card-text>
             <v-list>
               <v-list-item
@@ -85,12 +115,12 @@
     <v-row>
       <v-col cols="12">
         <v-card class="mb-4">
-          <v-card-title>Date Maps</v-card-title>
+          <v-card-title>Sichtungen nach Datum</v-card-title>
           <v-card-text>
             <v-select
               v-model="selectedDate"
               :items="availableDates"
-              label="Datum auswählen"
+              label="Datum und Ort auswählen"
               @update:model-value="handleDateSelection"
             ></v-select>
             <div ref="dateMapContainer" style="height: 400px; width: 100%"></div>
@@ -140,16 +170,19 @@ const createOffsetCoordinates = (sightings: Sighting[]) => {
     const count = offsetMap.get(key) || 0;
     offsetMap.set(key, count + 1);
 
+    // Create a unique key for each sighting using ring + date + place
+    const sightingKey = `${sighting.ring}-${sighting.date}-${sighting.place}`;
+
     if (count === 0) {
       // First sighting at this location - use original coordinates
-      result.set(sighting.ring, { lat: sighting.lat, lon: sighting.lon });
+      result.set(sightingKey, { lat: sighting.lat, lon: sighting.lon });
     } else {
       // Create offset in a circular pattern
       const angle = (2 * Math.PI * count) / 8; // Divide circle into 8 parts
       const offsetDistance = 0.00015; // About 15 meters
       const offsetLat = sighting.lat + Math.cos(angle) * offsetDistance;
       const offsetLon = sighting.lon + Math.sin(angle) * offsetDistance;
-      result.set(sighting.ring, { lat: offsetLat, lon: offsetLon });
+      result.set(sightingKey, { lat: offsetLat, lon: offsetLon });
     }
   });
 
@@ -310,7 +343,8 @@ const updateMarkers = (birdSightings: Sighting[], friends: AnalyticsBirdMeta[]) 
   // Add bird sightings (as squares)
   birdSightings.forEach(sighting => {
     if (sighting.lat && sighting.lon) {
-      const coords = offsetCoords.get(sighting.ring) || { lat: sighting.lat, lon: sighting.lon };
+      const sightingKey = `${sighting.ring}-${sighting.date}-${sighting.place}`;
+      const coords = offsetCoords.get(sightingKey) || { lat: sighting.lat, lon: sighting.lon };
       const marker = L.marker([coords.lat, coords.lon], {
         icon: L.divIcon({
           className: 'custom-div-icon',
@@ -325,18 +359,17 @@ const updateMarkers = (birdSightings: Sighting[], friends: AnalyticsBirdMeta[]) 
           iconSize: [16, 16],
           iconAnchor: [8, 8]
         }),
-        interactive: true // Make sure marker is interactive
+        interactive: true
       });
 
       const popupContent = `
         <a href="/birds/${sighting.ring}" target="_blank">${sighting.ring}</a>
         <div>${sighting.species}</div>
-        <div>${sighting.date}</div>
+        <div>${new Date(sighting.date).toLocaleDateString('de-DE')}</div>
+        <div>${sighting.place}</div>
       `;
 
-      // Add click event listener
       marker.on('click', function(e) {
-        console.log('Marker clicked'); // Debug log
         L.DomEvent.preventDefault(e);
         L.DomEvent.stopPropagation(e);
         
@@ -359,7 +392,8 @@ const updateMarkers = (birdSightings: Sighting[], friends: AnalyticsBirdMeta[]) 
 
     friend.sightings.forEach(sighting => {
       if (sighting.lat && sighting.lon) {
-        const coords = offsetCoords.get(friend.ring) || { lat: sighting.lat, lon: sighting.lon };
+        const sightingKey = `${sighting.ring}-${sighting.date}-${sighting.place}`;
+        const coords = offsetCoords.get(sightingKey) || { lat: sighting.lat, lon: sighting.lon };
         const isShared = birdSightings.some(b => b.date === sighting.date && b.place === sighting.place);
         const color = friendColors.value[friend.ring] || '#999999'; // Fallback color if not found
         const borderColor = isShared ? 'white' : '#666666';
@@ -519,7 +553,8 @@ const updateDateMap = async () => {
           borderColor = '#666666';
         }
 
-        const coords = offsetCoords.get(sighting.ring) || { lat: sighting.lat, lon: sighting.lon };
+        const sightingKey = `${sighting.ring}-${sighting.date}-${sighting.place}`;
+        const coords = offsetCoords.get(sightingKey) || { lat: sighting.lat, lon: sighting.lon };
         const marker = L.marker([coords.lat, coords.lon], {
           icon: L.divIcon({
             className: 'custom-div-icon',
@@ -562,7 +597,8 @@ const updateDateMap = async () => {
     // Add the inspected bird's sighting last
     const birdSighting = bird.value?.sightings?.find(s => s.date === originalDate);
     if (birdSighting?.lat && birdSighting?.lon) {
-      const coords = offsetCoords.get(birdSighting.ring) || { lat: birdSighting.lat, lon: birdSighting.lon };
+      const sightingKey = `${birdSighting.ring}-${birdSighting.date}-${birdSighting.place}`;
+      const coords = offsetCoords.get(sightingKey) || { lat: birdSighting.lat, lon: birdSighting.lon };
       const marker = L.marker([coords.lat, coords.lon], {
         icon: L.divIcon({
           className: 'custom-div-icon',
@@ -651,6 +687,12 @@ const updatePopupPosition = () => {
       }
     }
   }
+};
+
+// Add date formatting helper
+const formatDate = (dateString?: string) => {
+  if (!dateString) return '–';
+  return new Date(dateString).toLocaleDateString('de-DE');
 };
 
 onMounted(loadEnvironmentData);
@@ -804,5 +846,20 @@ onMounted(loadEnvironmentData);
 
 .popup-close:hover .close-icon {
   fill: rgba(0, 0, 0, 0.87);
+}
+
+/* Add styles for the header section */
+.v-chip {
+  font-family: monospace;
+}
+
+.ring-chip {
+  font-size: 1.1rem !important;
+}
+
+.ring-chip .ring-number {
+  font-weight: 700;
+  font-family: monospace;
+  margin-left: 4px;
 }
 </style> 

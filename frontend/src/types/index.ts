@@ -16,13 +16,13 @@ export interface Sighting {
 }
 
 export interface BirdMeta {
-  species: string | null;
-  ring: string | null;
-  sighting_count: number | null;
-  last_seen: string | null;
-  first_seen: string | null;
-  other_species_identifications: { [species: string]: number } | null;
-  sightings: Sighting[] | null;
+  species: string;
+  ring: string;
+  sighting_count: number;
+  first_seen: string;
+  last_seen: string;
+  other_species_identifications: Record<string, number>;
+  sightings: Sighting[];
 }
 
 export interface AnalyticsBirdMeta extends BirdMeta {
