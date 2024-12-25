@@ -129,6 +129,33 @@ const bird = ref<BirdMeta | null>(null);
 const friends = ref<AnalyticsBirdMeta[]>([]);
 const originalDates = ref<Record<string, string>>({});
 
+const createOffsetCoordinates = (sightings: Sighting[]) => {
+  const offsetMap = new Map<string, number>();
+  const result = new Map<string, { lat: number; lon: number }>();
+
+  sightings.forEach(sighting => {
+    if (!sighting.lat || !sighting.lon) return;
+    
+    const key = `${sighting.lat},${sighting.lon}`;
+    const count = offsetMap.get(key) || 0;
+    offsetMap.set(key, count + 1);
+
+    if (count === 0) {
+      // First sighting at this location - use original coordinates
+      result.set(sighting.ring, { lat: sighting.lat, lon: sighting.lon });
+    } else {
+      // Create offset in a circular pattern
+      const angle = (2 * Math.PI * count) / 8; // Divide circle into 8 parts
+      const offsetDistance = 0.00015; // About 15 meters
+      const offsetLat = sighting.lat + Math.cos(angle) * offsetDistance;
+      const offsetLon = sighting.lon + Math.sin(angle) * offsetDistance;
+      result.set(sighting.ring, { lat: offsetLat, lon: offsetLon });
+    }
+  });
+
+  return result;
+};
+
 const loadEnvironmentData = async () => {
   const ring = route.params.ring as string;
   const friendsData = await api.getBirdFriends(ring);
@@ -210,7 +237,11 @@ const createCustomPopup = (content: string, marker: L.Marker, targetMap: L.Map, 
   popupElement.className = 'custom-popup';
   popupElement.innerHTML = `
     <div class="popup-header">
-      <div class="popup-close">×</div>
+      <div class="popup-close" title="Close">
+        <svg viewBox="0 0 24 24" class="close-icon">
+          <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+        </svg>
+      </div>
     </div>
     <div class="popup-content">
       ${content}
@@ -269,10 +300,18 @@ const updateMarkers = (birdSightings: Sighting[], friends: AnalyticsBirdMeta[]) 
   markers.value.forEach(marker => marker.remove());
   markers.value = [];
 
+  // Collect all sightings to calculate offsets
+  const allSightings = [
+    ...birdSightings,
+    ...friends.flatMap(f => f.sightings)
+  ];
+  const offsetCoords = createOffsetCoordinates(allSightings);
+
   // Add bird sightings (as squares)
   birdSightings.forEach(sighting => {
     if (sighting.lat && sighting.lon) {
-      const marker = L.marker([sighting.lat, sighting.lon], {
+      const coords = offsetCoords.get(sighting.ring) || { lat: sighting.lat, lon: sighting.lon };
+      const marker = L.marker([coords.lat, coords.lon], {
         icon: L.divIcon({
           className: 'custom-div-icon',
           html: `<div class="marker-square" style="
@@ -320,11 +359,12 @@ const updateMarkers = (birdSightings: Sighting[], friends: AnalyticsBirdMeta[]) 
 
     friend.sightings.forEach(sighting => {
       if (sighting.lat && sighting.lon) {
+        const coords = offsetCoords.get(friend.ring) || { lat: sighting.lat, lon: sighting.lon };
         const isShared = birdSightings.some(b => b.date === sighting.date && b.place === sighting.place);
         const color = friendColors.value[friend.ring] || '#999999'; // Fallback color if not found
         const borderColor = isShared ? 'white' : '#666666';
         
-        const marker = L.marker([sighting.lat, sighting.lon], {
+        const marker = L.marker([coords.lat, coords.lon], {
           icon: L.divIcon({
             className: 'custom-div-icon',
             html: `<div class="marker-circle" style="
@@ -449,6 +489,9 @@ const updateDateMap = async () => {
       return;
     }
 
+    // Calculate offsets for all sightings
+    const offsetCoords = createOffsetCoordinates(allSightings);
+
     // Create sets for quick lookup of friend rings and the inspected bird's ring
     const friendRings = new Set(friends.value.map(f => f.ring));
     const inspectedBirdRing = bird.value?.ring;
@@ -476,7 +519,8 @@ const updateDateMap = async () => {
           borderColor = '#666666';
         }
 
-        const marker = L.marker([sighting.lat, sighting.lon], {
+        const coords = offsetCoords.get(sighting.ring) || { lat: sighting.lat, lon: sighting.lon };
+        const marker = L.marker([coords.lat, coords.lon], {
           icon: L.divIcon({
             className: 'custom-div-icon',
             html: `<div class="${isSquare ? 'marker-square' : 'marker-circle'}" style="
@@ -518,7 +562,8 @@ const updateDateMap = async () => {
     // Add the inspected bird's sighting last
     const birdSighting = bird.value?.sightings?.find(s => s.date === originalDate);
     if (birdSighting?.lat && birdSighting?.lon) {
-      const marker = L.marker([birdSighting.lat, birdSighting.lon], {
+      const coords = offsetCoords.get(birdSighting.ring) || { lat: birdSighting.lat, lon: birdSighting.lon };
+      const marker = L.marker([coords.lat, coords.lon], {
         icon: L.divIcon({
           className: 'custom-div-icon',
           html: `<div class="marker-square" style="
@@ -626,7 +671,7 @@ onMounted(loadEnvironmentData);
   position: absolute !important;
   background: white !important;
   border-radius: 4px !important;
-  padding: 8px 12px !important;
+  padding: 0 !important;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
   pointer-events: auto !important;
   white-space: nowrap !important;
@@ -634,6 +679,7 @@ onMounted(loadEnvironmentData);
 }
 
 .popup-content {
+  padding: 8px 12px;
   min-width: 150px;
 }
 
@@ -725,5 +771,38 @@ onMounted(loadEnvironmentData);
 
 .border-legend .text-body-2 {
   color: rgba(0, 0, 0, 0.87);
+}
+
+.popup-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 4px;
+}
+
+.popup-close {
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  padding: 2px;
+  transition: background-color 0.2s;
+}
+
+.popup-close:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.close-icon {
+  width: 12px;
+  height: 12px;
+  fill: rgba(0, 0, 0, 0.54);
+  transition: fill 0.2s;
+}
+
+.popup-close:hover .close-icon {
+  fill: rgba(0, 0, 0, 0.87);
 }
 </style> 
