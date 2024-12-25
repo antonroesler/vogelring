@@ -16,7 +16,7 @@ def get_friends_from_ring(ring: str, min_shared_sightings: int = 2) -> FriendRes
     friends = defaultdict(list)
 
     for sighting in loader.get_sightings():
-        if (sighting.place, sighting.date) in place_dates and sighting.ring != ring:
+        if (sighting.place, sighting.date) in place_dates and sighting.ring != ring and sighting.ring is not None:
             friends[sighting.ring].append(sighting.place)
 
     # Filter friends with at least 2 shared sightings, then get top 10
