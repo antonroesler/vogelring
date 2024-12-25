@@ -237,17 +237,26 @@ const loadEnvironmentData = async () => {
   const uniqueDates = new Set<string>();
   birdSightings.forEach(s => {
     if (s.date && s.place) {
-      const formattedDate = new Date(s.date).toLocaleDateString('de-DE');
+      const date = new Date(s.date);
+      const formattedDate = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
       uniqueDates.add(`${formattedDate} ${s.place}`);
     }
   });
-  availableDates.value = Array.from(uniqueDates).sort();
+  
+  // Sort dates in ascending order (oldest first)
+  availableDates.value = Array.from(uniqueDates)
+    .sort((a, b) => {
+      const dateA = new Date(a.split(' ')[0].split('.').reverse().join('-'));
+      const dateB = new Date(b.split(' ')[0].split('.').reverse().join('-'));
+      return dateA.getTime() - dateB.getTime();
+    });
   console.log('Available dates:', availableDates.value);
 
   // Store original date mapping for later use
   const dateMapping = birdSightings.reduce((acc, s) => {
     if (s.date && s.place) {
-      const formattedDate = new Date(s.date).toLocaleDateString('de-DE');
+      const date = new Date(s.date);
+      const formattedDate = `${date.getDate().toString().padStart(2, '0')}.${(date.getMonth() + 1).toString().padStart(2, '0')}.${date.getFullYear()}`;
       const key = `${formattedDate} ${s.place}`;
       acc[key] = s.date;
       console.log('Date mapping:', { display: key, original: s.date });
@@ -692,7 +701,11 @@ const updatePopupPosition = () => {
 // Add date formatting helper
 const formatDate = (dateString?: string) => {
   if (!dateString) return '–';
-  return new Date(dateString).toLocaleDateString('de-DE');
+  const date = new Date(dateString);
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}.${month}.${year}`;
 };
 
 onMounted(loadEnvironmentData);
