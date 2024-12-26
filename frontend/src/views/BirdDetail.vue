@@ -56,7 +56,7 @@
         <!-- Analytics Cards -->
         <v-col cols="12" md="8">
           <v-card class="mb-4">
-            <v-card-title>Zeitleiste</v-card-title>
+            <v-card-title>Aufenthaltsmuster</v-card-title>
             <v-card-text>
               <v-chart class="chart" :option="timelineChartOption" autoresize></v-chart>
             </v-card-text>
@@ -138,12 +138,13 @@ import SightingsMap from '@/components/map/SightingsMap.vue';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
-import { BarChart, ScatterChart, LineChart } from 'echarts/charts';
+import { BarChart, ScatterChart, LineChart, HeatmapChart } from 'echarts/charts';
 import { 
   GridComponent, 
   TooltipComponent, 
   LegendComponent,
-  DataZoomComponent 
+  DataZoomComponent,
+  VisualMapComponent
 } from 'echarts/components';
 import axios from 'axios';
 
@@ -152,10 +153,12 @@ use([
   BarChart,
   ScatterChart,
   LineChart,
+  HeatmapChart,
   GridComponent,
   TooltipComponent,
   LegendComponent,
-  DataZoomComponent
+  DataZoomComponent,
+  VisualMapComponent
 ]);
 
 const route = useRoute();
@@ -227,141 +230,124 @@ const navigateToEnvironmentAnalysis = () => {
 const timelineChartOption = computed(() => {
   if (!bird.value?.sightings?.length) return {};
 
-  const sightings = [...bird.value.sightings].sort((a, b) => {
-    if (!a.date || !b.date) return 0;
-    return new Date(a.date).getTime() - new Date(b.date).getTime();
+  const sightings = bird.value.sightings;
+
+  // Get all unique places
+  const places = Array.from(new Set(sightings.map(s => s.place || 'Unbekannt')));
+
+  // Create a map to store sighting counts for each place and month
+  const sightingCounts: Record<string, Record<number, number>> = {};
+  places.forEach(place => {
+    sightingCounts[place] = {};
+    // Initialize all months with 0
+    for (let month = 0; month < 12; month++) {
+      sightingCounts[place][month] = 0;
+    }
   });
 
-  // Get unique years from sightings
-  const years = Array.from(new Set(sightings.map(s => 
-    new Date(s.date || '').getFullYear()
-  ))).sort();
-
-  // Create splitLines data for January 1st of each year
-  const splitLines = years.map(year => ({
-    value: `${year}-01-01`,
-    lineStyle: {
-      color: '#ddd',
-      type: 'solid',
-      width: 1
-    }
-  }));
-
-  // Group sightings by place
-  const placeGroups = sightings.reduce((acc, sighting) => {
+  // Count sightings for each place and month
+  sightings.forEach(sighting => {
+    if (!sighting.date) return;
+    const date = new Date(sighting.date);
+    const month = date.getMonth();
     const place = sighting.place || 'Unbekannt';
-    if (!acc[place]) {
-      acc[place] = [];
-    }
-    acc[place].push(sighting);
-    return acc;
-  }, {} as Record<string, typeof sightings>);
+    sightingCounts[place][month]++;
+  });
 
-  // Sort places by first sighting date
-  const sortedPlaces = Object.entries(placeGroups)
-    .sort(([, a], [, b]) => {
-      const aDate = new Date(a[0].date || '');
-      const bDate = new Date(b[0].date || '');
-      return aDate.getTime() - bDate.getTime();
-    })
-    .map(([place]) => place);
+  // Find the maximum count for color scaling
+  const maxCount = Math.max(
+    ...Object.values(sightingCounts).flatMap(monthCounts => 
+      Object.values(monthCounts)
+    )
+  );
 
-  // Create series data for each place
-  const series = sortedPlaces.map((place, index) => ({
-    name: place,
-    type: 'line',
-    symbol: 'circle',
-    symbolSize: 8,
-    data: placeGroups[place].map(s => [s.date, index]),
-    step: 'middle',
-    lineStyle: {
-      width: 2
-    }
-  }));
+  // Create the data array for the heatmap
+  const data = places.flatMap((place, placeIndex) => 
+    Array.from({ length: 12 }, (_, month) => [
+      month,
+      placeIndex,
+      sightingCounts[place][month]
+    ])
+  );
 
   return {
     tooltip: {
-      trigger: 'item',
+      position: 'top',
       formatter: (params: any) => {
-        const sighting = sightings.find(s => s.date === params.value[0]);
-        if (!sighting) return '';
-        return `
-          <strong>${formatDate(sighting.date)}</strong><br/>
-          Ort: ${sighting.place || 'Unbekannt'}<br/>
-          Melder: ${sighting.melder || 'Unbekannt'}<br/>
-          ${sighting.comment ? `Kommentar: ${sighting.comment}` : ''}
-        `;
+        const month = new Date(2000, params.data[0], 1).toLocaleString('de-DE', { month: 'long' });
+        const place = places[params.data[1]];
+        const count = params.data[2];
+        return `${place}<br/>${month}: ${count} Sichtung${count !== 1 ? 'en' : ''}`;
       }
     },
     grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '15%',
-      top: '3%',
-      containLabel: true
+      left: '15%',
+      right: '15%',
+      top: '10%',
+      bottom: '10%'
     },
     xAxis: {
-      type: 'time',
-      axisLabel: {
-        formatter: (value: string) => {
-          const date = new Date(value);
-          // If zoomed in (determined by the data zoom's current range)
-          if (date.getDate() === 1) {  // Only show labels for first of month
-            const month = date.getMonth();
-            if (month === 0) {
-              return date.getFullYear().toString();  // Just year for January
-            } else {
-              return format(date, 'MM.yyyy');  // Month and year for other months
-            }
-          }
-          return '';  // Hide other labels
-        },
-        interval: 0
+      type: 'category',
+      data: Array.from({ length: 12 }, (_, i) => 
+        new Date(2000, i, 1).toLocaleString('de-DE', { month: 'long' }).charAt(0)
+      ),
+      splitArea: {
+        show: true
       },
-      splitLine: {
-        show: true,
-        lineStyle: {
-          color: '#ddd',
-          type: 'solid',
-          width: 1
-        },
-        interval: (index: number, value: string) => {
-          // Only show lines for January 1st of each year
-          const date = new Date(value);
-          return date.getMonth() === 0 && date.getDate() === 1;
-        }
+      axisLabel: {
+        interval: 0,
+        align: 'center',
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#333',
+        margin: 16
       },
       axisTick: {
         show: false
       },
-      splitArea: {
-        show: false
-      },
-      minorSplitLine: {
-        show: false
-      },
-      min: sightings[0]?.date,  // Start from first sighting
-      max: sightings[sightings.length - 1]?.date  // End at last sighting
+      position: 'top'
     },
     yAxis: {
       type: 'category',
-      data: sortedPlaces,
-      inverse: true,  // Put first place at top
-      axisLine: { show: false },
-      axisTick: { show: false }
-    },
-    dataZoom: [
-      {
-        type: 'slider',
-        xAxisIndex: 0,
-        filterMode: 'none',
-        height: 20,
-        bottom: 50,
-        start: 0,
-        end: 100
+      data: places,
+      splitArea: {
+        show: true
       }
-    ],
-    series
+    },
+    visualMap: {
+      min: 0,
+      max: maxCount,
+      calculable: true,
+      orient: 'vertical',
+      right: '0%',
+      top: 'center',
+      text: ['Häufig', 'Selten'],
+      color: ['#d73027', '#fc8d59', '#fee090'],
+      inRange: {
+        color: ['#f0f0f0', '#fee090', '#fc8d59', '#d73027']
+      }
+    },
+    series: [{
+      name: 'Sichtungen',
+      type: 'heatmap',
+      data: data,
+      label: {
+        show: true,
+        formatter: (params: any) => params.data[2] || ''
+      },
+      emphasis: {
+        itemStyle: {
+          shadowBlur: 10,
+          shadowColor: 'rgba(0, 0, 0, 0.5)'
+        }
+      },
+      itemStyle: {
+        emphasis: {
+          shadowBlur: 10,
+          shadowColor: 'rgba(0, 0, 0, 0.5)'
+        }
+      }
+    }]
   };
 });
 
