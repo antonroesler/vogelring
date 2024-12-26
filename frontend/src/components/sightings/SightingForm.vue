@@ -52,7 +52,14 @@
           :hint="showBirdSuggestions ? 'Nutze ... oder * als Platzhalter' : undefined"
           :persistent-hint="showBirdSuggestions"
           density="comfortable"
-        ></v-text-field>
+        >
+          <template v-if="showBirdSuggestions" v-slot:append-inner>
+            <bird-suggestions
+              :reading="localSighting.reading || ''"
+              @select="handleSuggestionSelect"
+            ></bird-suggestions>
+          </template>
+        </v-text-field>
       </v-col>
       <v-col cols="12" sm="4" md="4">
         <v-text-field
@@ -67,14 +74,6 @@
           label="Spezies"
           density="comfortable"
         ></v-text-field>
-      </v-col>
-    </v-row>
-    <v-row v-if="showBirdSuggestions">
-      <v-col cols="12" class="pt-0">
-        <bird-suggestions
-          :reading="localSighting.reading || ''"
-          @select="handleSuggestionSelect"
-        ></bird-suggestions>
       </v-col>
     </v-row>
 

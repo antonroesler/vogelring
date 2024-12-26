@@ -2,11 +2,14 @@
   <v-dialog v-model="dialog" max-width="500px">
     <template v-slot:activator="{ props }">
       <v-btn
+        variant="text"
         color="primary"
         v-bind="props"
         :disabled="!reading || reading.length < 3"
+        icon
+        size="small"
       >
-        Vorschläge
+        <v-icon>mdi-magnify</v-icon>
       </v-btn>
     </template>
     <v-card>
