@@ -13,6 +13,7 @@ export interface Sighting {
   melded?: boolean;
   lat?: number;
   lon?: number;
+  partner?: string | null;
 }
 
 export interface BirdMeta {

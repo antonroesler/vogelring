@@ -75,6 +75,20 @@
           density="comfortable"
         ></v-text-field>
       </v-col>
+      <v-col cols="12" sm="4" md="4">
+        <v-text-field
+          v-model="localSighting.partner"
+          label="Partner"
+          density="comfortable"
+        >
+          <template v-if="showBirdSuggestions" v-slot:append-inner>
+            <bird-suggestions
+              :reading="localSighting.partner || ''"
+              @select="handlePartnerSelect"
+            ></bird-suggestions>
+          </template>
+        </v-text-field>
+      </v-col>
     </v-row>
 
     <!-- Group 3: Additional Information -->
@@ -224,6 +238,10 @@ const filterPlaces = (input: string) => {
 const handleSuggestionSelect = (suggestion: BirdMeta) => {
   localSighting.value.ring = suggestion.ring;
   localSighting.value.species = suggestion.species;
+};
+
+const handlePartnerSelect = (suggestion: BirdMeta) => {
+  localSighting.value.partner = suggestion.ring;
 };
 
 const saveSighting = () => {

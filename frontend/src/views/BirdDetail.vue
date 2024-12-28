@@ -100,6 +100,7 @@
                     <th>Ort</th>
                     <th>Melder</th>
                     <th>Ablesung</th>
+                    <th>Partner</th>
                     <th>Kommentar</th>
                   </tr>
                 </thead>
@@ -115,6 +116,7 @@
                     <td>{{ sighting.place }}</td>
                     <td>{{ sighting.melder }}</td>
                     <td>{{ sighting.reading }}</td>
+                    <td>{{ sighting.partner || '-' }}</td>
                     <td>{{ sighting.comment }}</td>
                   </tr>
                 </tbody>
