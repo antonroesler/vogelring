@@ -325,3 +325,9 @@ def lambda_handler(event: dict, context: LambdaContext) -> dict:
     except Exception as e:
         logger.exception("Error processing request")
         return {"statusCode": 500, "headers": headers, "body": json.dumps({"message": str(e)})}
+
+
+@app.get("/suggestions")
+def get_suggestions() -> dict:
+    """Get all suggestion lists for autocomplete fields"""
+    return Response(status_code=200, body=json.dumps(service.get_suggestion_lists()), headers=headers)

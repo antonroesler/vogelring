@@ -28,6 +28,7 @@ from api.service.report import post_shareable_report
 from api.service.places import get_place_name_list
 from api.service.species import get_species_name_list
 from api.service.get_ringing import get_ringing_by_ring
+from api.service.suggestions import get_suggestion_lists
 
 __all__ = [
     "add_sighting",
@@ -51,4 +52,5 @@ __all__ = [
     "get_place_name_list",
     "get_ringing_by_ring",
     "get_species_name_list",
+    "get_suggestion_lists",
 ]

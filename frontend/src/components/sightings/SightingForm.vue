@@ -18,7 +18,7 @@
           :items="filteredPlaces"
           label="Ort"
           @update:search="filterPlaces"
-          :loading="!places.length"
+          :loading="!suggestions.places.length"
           hide-no-data
           autocomplete="off"
           clearable
@@ -34,11 +34,19 @@
         ></v-text-field>
       </v-col>
       <v-col cols="12" sm="4" md="4">
-        <v-text-field
+        <v-autocomplete
           v-model="localSighting.habitat"
+          :items="filteredHabitats"
           label="Habitat"
+          @update:search="filterHabitats"
+          :loading="!suggestions.habitats.length"
+          hide-no-data
+          autocomplete="off"
+          clearable
+          :filter="() => true"
+          :return-object="false"
           density="comfortable"
-        ></v-text-field>
+        ></v-autocomplete>
       </v-col>
     </v-row>
 
@@ -74,7 +82,7 @@
           :items="filteredSpecies"
           label="Spezies"
           @update:search="filterSpecies"
-          :loading="!species.length"
+          :loading="!suggestions.species.length"
           hide-no-data
           autocomplete="off"
           clearable
@@ -82,20 +90,6 @@
           :return-object="false"
           density="comfortable"
         ></v-autocomplete>
-      </v-col>
-      <v-col cols="12" sm="4" md="4">
-        <v-text-field
-          v-model="localSighting.partner"
-          label="Partner"
-          density="comfortable"
-        >
-          <template v-if="showBirdSuggestions" v-slot:append-inner>
-            <bird-suggestions
-              :reading="localSighting.partner || ''"
-              @select="handlePartnerSelect"
-            ></bird-suggestions>
-          </template>
-        </v-text-field>
       </v-col>
     </v-row>
 
@@ -111,11 +105,19 @@
         ></v-text-field>
       </v-col>
       <v-col cols="12" sm="4" md="4">
-        <v-text-field
+        <v-autocomplete
           v-model="localSighting.melder"
+          :items="filteredMelders"
           label="Melder"
+          @update:search="filterMelders"
+          :loading="!suggestions.melders.length"
+          hide-no-data
+          autocomplete="off"
+          clearable
+          :filter="() => true"
+          :return-object="false"
           density="comfortable"
-        ></v-text-field>
+        ></v-autocomplete>
       </v-col>
       <v-col cols="12" sm="4" md="4">
         <v-checkbox
@@ -123,6 +125,20 @@
           label="Gemeldet"
           density="comfortable"
         ></v-checkbox>
+      </v-col>
+      <v-col cols="12" sm="4" md="4">
+        <v-text-field
+          v-model="localSighting.partner"
+          label="Partner"
+          density="comfortable"
+        >
+          <template v-if="showBirdSuggestions" v-slot:append-inner>
+            <bird-suggestions
+              :reading="localSighting.partner || ''"
+              @select="handlePartnerSelect"
+            ></bird-suggestions>
+          </template>
+        </v-text-field>
       </v-col>
     </v-row>
 
@@ -205,25 +221,33 @@ const emit = defineEmits<{
 }>();
 
 const localSighting = ref<Partial<Sighting>>({ ...props.sighting });
-const places = ref<string[]>([]);
-const filteredPlaces = ref<string[]>([]);
-const species = ref<string[]>([]);
-const filteredSpecies = ref<string[]>([]);
+const suggestions = ref<{
+  places: string[];
+  species: string[];
+  habitats: string[];
+  melders: string[];
+}>({
+  places: [],
+  species: [],
+  habitats: [],
+  melders: []
+});
 
-// Load places if needed
+const filteredPlaces = ref<string[]>([]);
+const filteredSpecies = ref<string[]>([]);
+const filteredHabitats = ref<string[]>([]);
+const filteredMelders = ref<string[]>([]);
+
 onMounted(async () => {
   try {
-    if (props.showPlaceSuggestions) {
-      const placesResponse = await api.get('/places');
-      places.value = placesResponse.data;
-    }
-    // Fetch species list
-    const speciesResponse = await api.get('/species');
-    species.value = speciesResponse.data;
+    const response = await api.get('/suggestions');
+    suggestions.value = response.data;
+    filteredPlaces.value = suggestions.value.places;
+    filteredSpecies.value = suggestions.value.species;
+    filteredHabitats.value = suggestions.value.habitats;
+    filteredMelders.value = suggestions.value.melders;
   } catch (error) {
-    console.error('Error fetching data:', error);
-    places.value = [];
-    species.value = [];
+    console.error('Error fetching suggestions:', error);
   }
 });
 
@@ -231,23 +255,39 @@ watch(() => props.sighting, (newSighting) => {
   localSighting.value = { ...newSighting };
 }, { deep: true });
 
-const filterPlaces = (input: string) => {
-  if (!input) {
-    filteredPlaces.value = places.value || [];
-    return;
-  }
-  const searchTerm = input.toLowerCase();
-  const filtered = places.value
-    .filter(place => place.toLowerCase().includes(searchTerm))
-    .slice(0, 5); // Only show top 5 suggestions
-  
-  // Add the current input as an option if it's not in the filtered list
-  if (!filtered.includes(input)) {
-    filtered.unshift(input);
-  }
-  
-  filteredPlaces.value = filtered;
+const createFilter = (field: keyof typeof suggestions.value) => {
+  return (input: string) => {
+    const targetRef = computed(() => {
+      switch(field) {
+        case 'places': return filteredPlaces;
+        case 'species': return filteredSpecies;
+        case 'habitats': return filteredHabitats;
+        case 'melders': return filteredMelders;
+      }
+    });
+
+    if (!input) {
+      targetRef.value.value = suggestions.value[field] || [];
+      return;
+    }
+    
+    const searchTerm = input.toLowerCase();
+    const filtered = (suggestions.value[field] || [])
+      .filter(item => item.toLowerCase().includes(searchTerm))
+      .slice(0, 5);
+    
+    if (input && !filtered.includes(input)) {
+      filtered.unshift(input);
+    }
+    
+    targetRef.value.value = filtered;
+  };
 };
+
+const filterPlaces = createFilter('places');
+const filterSpecies = createFilter('species');
+const filterHabitats = createFilter('habitats');
+const filterMelders = createFilter('melders');
 
 const handleSuggestionSelect = (suggestion: BirdMeta) => {
   localSighting.value.ring = suggestion.ring;
@@ -271,22 +311,4 @@ const longitude = computed({
   get: () => localSighting.value.lon ?? 8.6821,
   set: (val) => localSighting.value.lon = val
 });
-
-const filterSpecies = (input: string) => {
-  if (!input) {
-    filteredSpecies.value = species.value || [];
-    return;
-  }
-  const searchTerm = input.toLowerCase();
-  const filtered = species.value
-    .filter(species => species.toLowerCase().includes(searchTerm))
-    .slice(0, 5); // Only show top 5 suggestions
-  
-  // Add the current input as an option if it's not in the filtered list
-  if (!filtered.includes(input)) {
-    filtered.unshift(input);
-  }
-  
-  filteredSpecies.value = filtered;
-};
 </script>
