@@ -26,7 +26,7 @@ from api.service.dashboard import get_dashboard
 from api.service.report import post_shareable_report
 
 from api.service.places import get_place_name_list
-
+from api.service.species import get_species_name_list
 from api.service.get_ringing import get_ringing_by_ring
 
 __all__ = [
@@ -50,4 +50,5 @@ __all__ = [
     "post_shareable_report",
     "get_place_name_list",
     "get_ringing_by_ring",
+    "get_species_name_list",
 ]

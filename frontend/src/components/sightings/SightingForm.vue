@@ -69,11 +69,19 @@
         ></v-text-field>
       </v-col>
       <v-col cols="12" sm="4" md="4">
-        <v-text-field
+        <v-autocomplete
           v-model="localSighting.species"
+          :items="filteredSpecies"
           label="Spezies"
+          @update:search="filterSpecies"
+          :loading="!species.length"
+          hide-no-data
+          autocomplete="off"
+          clearable
+          :filter="() => true"
+          :return-object="false"
           density="comfortable"
-        ></v-text-field>
+        ></v-autocomplete>
       </v-col>
       <v-col cols="12" sm="4" md="4">
         <v-text-field
@@ -199,17 +207,23 @@ const emit = defineEmits<{
 const localSighting = ref<Partial<Sighting>>({ ...props.sighting });
 const places = ref<string[]>([]);
 const filteredPlaces = ref<string[]>([]);
+const species = ref<string[]>([]);
+const filteredSpecies = ref<string[]>([]);
 
 // Load places if needed
 onMounted(async () => {
-  if (props.showPlaceSuggestions) {
-    try {
-      const response = await api.get('/places');
-      places.value = response.data;
-    } catch (error) {
-      console.error('Error fetching places:', error);
-      places.value = [];
+  try {
+    if (props.showPlaceSuggestions) {
+      const placesResponse = await api.get('/places');
+      places.value = placesResponse.data;
     }
+    // Fetch species list
+    const speciesResponse = await api.get('/species');
+    species.value = speciesResponse.data;
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    places.value = [];
+    species.value = [];
   }
 });
 
@@ -257,4 +271,22 @@ const longitude = computed({
   get: () => localSighting.value.lon ?? 8.6821,
   set: (val) => localSighting.value.lon = val
 });
+
+const filterSpecies = (input: string) => {
+  if (!input) {
+    filteredSpecies.value = species.value || [];
+    return;
+  }
+  const searchTerm = input.toLowerCase();
+  const filtered = species.value
+    .filter(species => species.toLowerCase().includes(searchTerm))
+    .slice(0, 5); // Only show top 5 suggestions
+  
+  // Add the current input as an option if it's not in the filtered list
+  if (!filtered.includes(input)) {
+    filtered.unshift(input);
+  }
+  
+  filteredSpecies.value = filtered;
+};
 </script>

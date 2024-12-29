@@ -226,6 +226,14 @@ def get_place_name_list() -> list[str]:
     return Response(status_code=200, body=json.dumps(service.get_place_name_list()), headers=headers)
 
 
+# Species
+
+
+@app.get("/species")
+def get_species_name_list() -> list[str]:
+    return Response(status_code=200, body=json.dumps(service.get_species_name_list()), headers=headers)
+
+
 # Dashboard
 
 
