@@ -1,7 +1,10 @@
 <template>
   <v-app>
     <v-app-bar flat color="primary">
-      <v-app-bar-title class="text-white">Vogelring</v-app-bar-title>
+      <v-app-bar-title class="text-white">
+        Vogelring 
+        <span class="text-caption ms-2" v-if="version">v{{ version }}</span>
+      </v-app-bar-title>
       <v-spacer></v-spacer>
       <v-btn 
         to="/new-entry" 
@@ -29,6 +32,19 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from 'vue';
+import { api } from './api';
+
+const version = ref<string>();
+
+onMounted(async () => {
+  try {
+    const response = await api.get('/health');
+    version.value = response.data.version;
+  } catch (error) {
+    console.error('Failed to fetch version:', error);
+  }
+});
 </script>
 
 <style>
