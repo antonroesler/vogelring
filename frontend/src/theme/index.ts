@@ -4,15 +4,16 @@ export const theme = {
     light: {
       dark: false,
       colors: {
-        primary: '#FFB300',    // Sun-fire yellow
-        secondary: '#FF6F00',  // Deep orange - complementary warm tone
-        accent: '#F57C00',     // Darker orange for accents
-        error: '#D32F2F',      // Warm red to match theme
-        info: '#0288D1',       // Cool blue for contrast
-        success: '#689F38',    // Olive green - natural complement
-        warning: '#FFA000',    // Amber - similar to primary but distinct
-        background: '#FFFFFF', // White background
+        primary: '#00436C',    // Deep blue - main brand color
+        secondary: '#228096',  // Bold teal - complementary color
+        accent: '#37906D',     // Balanced green - for accents
+        error: '#D07B4D',      // Natural tan - for errors (warmer than traditional red)
+        info: '#228096',       // Bold teal - for information
+        success: '#37906D',    // Balanced green - for success states
+        warning: '#EAD054',    // Positive yellow - for warnings
+        background: '#F7F4F1', // Soft cream 25% - main background
         surface: '#FFFFFF',    // White
+        'on-surface': '#00436C', // Deep blue - for text on surface
       }
     }
   }

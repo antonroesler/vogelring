@@ -200,22 +200,23 @@ onMounted(async () => {
 }
 
 .v-card {
-  border: 1px solid #E0E0E0 !important;
+  border: 1px solid #DED5CA !important;
+  background-color: #FFFFFF !important;
   box-shadow: none !important;
 }
 
 .v-text-field .v-field {
   box-shadow: none !important;
-  border: 1px solid #E0E0E0 !important;
+  border: 1px solid #DED5CA !important;
   border-radius: 8px !important;
 }
 
 .v-text-field .v-field:hover {
-  border-color: #BDBDBD !important;
+  border-color: #228096 !important;
 }
 
 .v-text-field .v-field--focused {
-  border-color: var(--v-primary-base) !important;
+  border-color: #00436C !important;
 }
 
 /* Remove underline from input fields */
@@ -240,17 +241,17 @@ onMounted(async () => {
 }
 
 .bird-search .v-field {
-  background-color: rgba(255, 255, 255, 0.9) !important;
+  background-color: #FFFFFF !important;
+  border: 1px solid rgba(0, 67, 108, 0.1) !important;
   border-radius: 4px !important;
   min-height: 34px !important;
   height: 34px !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
 .bird-search .v-field input {
-  color: rgba(0, 0, 0, 0.75) !important;
+  color: #00436C !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
   min-height: 34px !important;
@@ -261,7 +262,7 @@ onMounted(async () => {
 }
 
 .bird-search .v-field input::placeholder {
-  color: rgba(0, 0, 0, 0.5) !important;
+  color: rgba(0, 67, 108, 0.5) !important;
 }
 
 .bird-search .v-field__append-inner .v-icon {
@@ -270,8 +271,13 @@ onMounted(async () => {
 
 /* Optional: Style the dropdown menu */
 .bird-search .v-list {
-  background-color: white;
+  background-color: #FFFFFF;
+  border: 1px solid #DED5CA;
   color: rgba(0, 0, 0, 0.87);
+}
+
+.bird-search .v-list-item:hover {
+  background-color: #F7F4F1;
 }
 
 /* Navigation buttons container */
@@ -281,11 +287,11 @@ onMounted(async () => {
 }
 
 .bird-search .v-list-item__title strong {
-  color: rgba(0, 0, 0, 0.87);
+  color: #00436C;
 }
 
 .bird-search .v-list-item__subtitle {
-  color: rgba(0, 0, 0, 0.6);
+  color: #228096;
 }
 
 /* Add styles for the "more results" message */
@@ -309,5 +315,20 @@ onMounted(async () => {
 .bird-search .v-field:hover {
   background-color: rgba(255, 255, 255, 0.95) !important;
   border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Add new styles for better contrast and readability */
+.v-app-bar.v-app-bar--flat {
+  background-color: #00436C !important;
+}
+
+.navigation-buttons .v-btn {
+  color: #FFFFFF !important;
+  opacity: 0.9;
+}
+
+.navigation-buttons .v-btn:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.1) !important;
 }
 </style>
