@@ -51,6 +51,32 @@
             :bird="bird"
             :ringingData="ringingData"
           ></bird-details>
+
+          <!-- Partners Card - Now shows even when no partners -->
+          <v-card class="mt-4">
+            <v-card-title>Partner</v-card-title>
+            <v-card-text>
+              <v-list v-if="bird?.partners?.length" density="compact">
+                <v-list-item
+                  v-for="partner in bird.partners"
+                  :key="`${partner.ring}-${partner.year}`"
+                  :href="partner.ring !== 'ub' ? `/birds/${partner.ring}` : undefined"
+                  :target="partner.ring !== 'ub' ? '_blank' : undefined"
+                  :class="partner.ring !== 'ub' ? 'clickable-partner' : ''"
+                >
+                  <v-list-item-title>
+                    {{ partner.ring === 'ub' ? 'Unberingt' : partner.ring }}
+                  </v-list-item-title>
+                  <v-list-item-subtitle>
+                    {{ partner.year }}
+                  </v-list-item-subtitle>
+                </v-list-item>
+              </v-list>
+              <p v-else class="text-body-1 text-medium-emphasis">
+                Keine Partner aufgezeichnet.
+              </p>
+            </v-card-text>
+          </v-card>
         </v-col>
 
         <!-- Analytics Cards -->
@@ -422,5 +448,14 @@ const reporterChartOption = computed(() => {
   font-weight: 700;
   font-family: monospace;
   margin-left: 4px;
+}
+
+.clickable-partner {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.clickable-partner:hover {
+  background-color: rgba(0, 0, 0, 0.04);
 }
 </style> 

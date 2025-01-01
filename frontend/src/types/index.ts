@@ -24,6 +24,7 @@ export interface BirdMeta {
   last_seen: string;
   other_species_identifications: Record<string, number>;
   sightings: Sighting[];
+  partners?: Partner[];
 }
 
 export interface AnalyticsBirdMeta extends BirdMeta {
@@ -84,4 +85,9 @@ export interface Ringing {
 
 export interface ShareableReport {
   view_url: string;
+}
+
+export interface Partner {
+  ring: string;
+  year: number;
 }

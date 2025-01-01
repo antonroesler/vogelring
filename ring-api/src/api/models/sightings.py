@@ -25,6 +25,17 @@ class Sighting(BaseModel):
         return v.isoformat() if v else None
 
 
+class Partner(BaseModel):
+    ring: str
+    year: int
+
+    def __hash__(self):
+        return hash((self.ring, self.year))
+
+    def __eq__(self, other):
+        return self.ring == other.ring and self.year == other.year
+
+
 class BirdMeta(BaseModel):
     species: str | None = None
     ring: str | None = None
@@ -33,6 +44,7 @@ class BirdMeta(BaseModel):
     first_seen: _date | None = None
     other_species_identifications: dict[str, int] | None = None
     sightings: list[Sighting] | None = None
+    partners: list[Partner] | None = None
 
     def __hash__(self):
         return hash(self.ring)

@@ -1,6 +1,6 @@
 from typing import Counter
 from api.service.get_sightings import get_sightings_by_ring, get_sightings
-from api.models.sightings import BirdMeta
+from api.models.sightings import BirdMeta, Partner
 
 
 def get_bird_by_ring(ring: str) -> BirdMeta | None:
@@ -16,6 +16,8 @@ def get_bird_by_ring(ring: str) -> BirdMeta | None:
         for species, count in species_counts.items()
         if species != most_likely_species and species is not None
     }
+    partners = [Partner(ring=sighting.ring, year=sighting.date.year) for sighting in sightings]
+    partners = list(set(partners))
 
     last_seen = max(sightings, key=lambda sighting: sighting.date).date
     first_seen = min(sightings, key=lambda sighting: sighting.date).date
@@ -28,6 +30,7 @@ def get_bird_by_ring(ring: str) -> BirdMeta | None:
         first_seen=first_seen,
         other_species_identifications=other_species_identifications,
         sightings=sightings,
+        partners=partners,
     )
 
 
