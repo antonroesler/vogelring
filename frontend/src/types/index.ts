@@ -19,6 +19,7 @@ export interface Sighting {
   lon?: number;
   partner?: string | null;
   status?: 'BV' | 'MG' | 'NB' | null;
+  age?: BirdAge | null;
 }
 
 export enum BirdStatus {
@@ -109,4 +110,11 @@ export interface SuggestionLists {
   habitats: string[];
   melders: string[];
   field_fruits: string[];
+}
+
+export enum BirdAge {
+  AD = "ad",  // Adult
+  DJ = "dj",  // Juvenile
+  VJ = "vj",  // Vorjährig
+  JUV = "juv" // Juvenile
 }

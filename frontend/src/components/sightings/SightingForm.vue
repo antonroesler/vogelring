@@ -183,6 +183,15 @@
         ></v-select>
       </v-col>
       <v-col cols="12" sm="4" md="4">
+        <v-select
+          v-model="localSighting.age"
+          :items="ageItems"
+          label="Alter"
+          density="comfortable"
+          clearable
+        ></v-select>
+      </v-col>
+      <v-col cols="12" sm="4" md="4">
         <v-autocomplete
           v-model="localSighting.melder"
           :items="filteredMelders"
@@ -197,6 +206,8 @@
           density="comfortable"
         ></v-autocomplete>
       </v-col>
+
+      <!-- Third row -->
       <v-col cols="12" sm="4" md="4">
         <v-checkbox
           v-model="localSighting.melded"
@@ -267,7 +278,7 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue';
 import type { Sighting, BirdMeta, SuggestionLists } from '@/types';
-import { BirdStatus } from '@/types';
+import { BirdStatus, BirdAge } from '@/types';
 import LeafletMap from '@/components/map/LeafletMap.vue';
 import BirdSuggestions from '@/components/birds/BirdSuggestions.vue';
 import { api } from '@/api';
@@ -304,6 +315,13 @@ const statusItems = [
   { title: 'Brutvogel', value: BirdStatus.BV },
   { title: 'Mausergast', value: BirdStatus.MG },
   { title: 'Nichtbrüter', value: BirdStatus.NB }
+];
+
+const ageItems = [
+  { title: 'Adult', value: BirdAge.AD },
+  { title: 'Diesjährig', value: BirdAge.DJ },
+  { title: 'Vorjährig', value: BirdAge.VJ },
+  { title: 'Juvenil', value: BirdAge.JUV }
 ];
 
 const showAdditionalFields = ref(false);

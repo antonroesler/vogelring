@@ -13,6 +13,7 @@ class BirdStatus(str, Enum):
 class BirdAge(str, Enum):
     AD = "ad"  # Adult
     DJ = "dj"  # Juvenile
+    VJ = "vj"  # Vorjährig
     JUV = "juv"  # Juvenile
 
 

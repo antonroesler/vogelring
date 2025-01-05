@@ -78,6 +78,8 @@ def parse_age(age: str) -> BirdAge | None:
             return BirdAge.DJ
         case "juv":
             return BirdAge.JUV
+        case "vj":
+            return BirdAge.VJ
         case _:
             return None
 
