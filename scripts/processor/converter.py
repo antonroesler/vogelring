@@ -2,15 +2,15 @@ from pathlib import Path
 from enum import Enum
 import pickle
 from datetime import datetime
-from api.models.sightings import Sighting
+from api.models.sightings import Sighting, BirdStatus, BirdAge
 import csv
 import random
 import math
 
 
-outfile = Path("data/pkl/sightings-latest.pkl")
-infile = Path("data/main-02.csv")
-orte_file = Path("data/out/orte.csv")
+outfile = Path("data/pkl/sightings-jan-5.pkl")
+infile = Path("/Users/anton/Documents/export-jan-5/main.csv")
+orte_file = Path("/Users/anton/Documents/export-jan-5/places.csv")
 
 
 class SightingCols(Enum):
@@ -19,11 +19,17 @@ class SightingCols(Enum):
     reading = 4
     date = 7
     place = 8
+    area = 11
+    age = 13
+    small_group_size = 17
+    large_group_size = 18
+    partner = 19
+    status = 20
     habitat = 21
-    comment = 22
-    melder = 23
-    melded = 24
-    group_size = 17
+    fruit = 22
+    comment = 23
+    melder = 24
+    melded = 25
 
 
 def remove_all_non_letter_chars(s: str) -> str:
@@ -40,6 +46,31 @@ places = {remove_all_non_letter_chars(p[1]): p for p in place_data}
 
 
 s = []
+
+
+def parse_status(status: str) -> BirdStatus | None:
+    match status:
+        case "BV":
+            return BirdStatus.BV
+        case "MG":
+            return BirdStatus.MG
+        case "NB":
+            return BirdStatus.NB
+        case _:
+            return None
+
+
+def parse_age(age: str) -> BirdAge | None:
+    age = age.lower().replace(" ", "").replace(".", "")
+    match age:
+        case "ad":
+            return BirdAge.AD
+        case "dj":
+            return BirdAge.DJ
+        case "juv":
+            return BirdAge.JUV
+        case _:
+            return None
 
 
 def parse_date(date_str: str) -> datetime:
@@ -65,19 +96,34 @@ def extract_group_size(group_size_str: str) -> int | None:
         return None
 
 
+def fmt_str(s: str) -> str:
+    return s.replace('"', "").replace("'", "")
+
+
 def extract_sighting_data(entry: list[str]) -> dict:
+    # Convert row to json
     json_data = {c.name: entry[c.value] for c in SightingCols if entry[c.value] != "" and c.value != "id"}
 
+    # Date
     json_data["date"] = parse_date(entry[SightingCols.date.value])
-    json_data["group_size"] = extract_group_size(entry[SightingCols.group_size.value])
+
+    # Group
+    json_data["small_group_size"] = extract_group_size(entry[SightingCols.small_group_size.value])
+    json_data["large_group_size"] = extract_group_size(entry[SightingCols.large_group_size.value])
+
     # Clean up comment, melder and place fields by removing quotes
     if "comment" in json_data:
-        json_data["comment"] = json_data["comment"].replace('"', "").replace("'", "")
+        json_data["comment"] = fmt_str(json_data["comment"])
     if "melder" in json_data:
-        json_data["melder"] = json_data["melder"].replace('"', "").replace("'", "")
+        json_data["melder"] = fmt_str(json_data["melder"])
     if "place" in json_data:
-        json_data["place"] = json_data["place"].replace('"', "").replace("'", "")
-    json_data["melded"] = json_data.get("melded", "") == "x"
+        json_data["place"] = fmt_str(json_data["place"])
+
+    json_data["melded"] = not (json_data.get("melded", "") == "x")
+
+    json_data["age"] = parse_age(entry[SightingCols.age.value])
+    json_data["status"] = parse_status(entry[SightingCols.status.value])
+
     return json_data
 
 
