@@ -4,7 +4,47 @@
       <v-col cols="12" class="d-flex align-center">
         <h1 class="text-h4">Eintrag Details</h1>
         <v-spacer></v-spacer>
+        <v-dialog v-model="showDeleteDialog" max-width="400">
+          <v-card>
+            <v-card-title class="text-h5">
+              Eintrag löschen
+            </v-card-title>
+            <v-card-text>
+              Möchten Sie diesen Eintrag wirklich löschen?
+            </v-card-text>
+            <v-card-actions>
+              <v-spacer></v-spacer>
+              <v-btn
+                color="grey-darken-1"
+                variant="text"
+                @click="showDeleteDialog = false"
+              >
+                Abbrechen
+              </v-btn>
+              <v-btn
+                color="error"
+                variant="text"
+                @click="confirmDelete"
+                :loading="isDeleting"
+              >
+                Löschen
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+
         <share-dialog :generate-html="generateStaticHTML" :get-urls="getShareableReportUrls" />
+        <v-btn
+          color="error"
+          variant="text"
+          class="ml-2"
+          @click="showDeleteDialog = true"
+        >
+          <v-icon icon="mdi-delete" color="error"></v-icon>
+          <v-tooltip activator="parent" location="bottom">
+            Eintrag löschen
+          </v-tooltip>
+        </v-btn>
       </v-col>
     </v-row>
 
@@ -89,7 +129,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import type { Sighting, BirdMeta, Ringing } from '@/types';
 import * as api from '@/api';
 import SightingForm from '@/components/sightings/SightingForm.vue';
@@ -101,6 +141,7 @@ import { useTheme } from 'vuetify';
 import ShareDialog from '@/components/dialogs/ShareDialog.vue';
 
 const route = useRoute();
+const router = useRouter();
 const sighting = ref<Sighting | null>(null);
 const birdDetails = ref<BirdMeta | null>(null);
 const loading = ref(false);
@@ -109,6 +150,8 @@ const store = useSightingsStore();
 const theme = useTheme();
 const ringingData = ref<Ringing | null>(null);
 const isLoadingRinging = ref(false);
+const showDeleteDialog = ref(false);
+const isDeleting = ref(false);
 
 const loadSighting = async () => {
   const id = route.params.id as string;
@@ -534,6 +577,22 @@ const getShareableReportUrls = async (days: number) => {
   } catch (error) {
     console.error('Error generating shareable report:', error);
     throw error;
+  }
+};
+
+const confirmDelete = async () => {
+  if (!sighting.value?.id) return;
+  
+  isDeleting.value = true;
+  try {
+    await store.deleteSighting(sighting.value.id);
+    showDeleteDialog.value = false;
+    // Navigate back to the entries list
+    router.push('/entries');
+  } catch (error) {
+    console.error('Error deleting sighting:', error);
+  } finally {
+    isDeleting.value = false;
   }
 };
 </script>
