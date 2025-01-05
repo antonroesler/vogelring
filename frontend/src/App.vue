@@ -54,7 +54,7 @@
       <v-spacer></v-spacer>
 
       <!-- Right section -->
-      <div class="navigation-buttons">
+      <div class="navigation-buttons pe-4">
         <v-btn 
           to="/new-entry" 
           variant="text"

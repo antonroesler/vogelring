@@ -1,8 +1,25 @@
 <template>
   <v-form @submit.prevent="saveSighting">
     <!-- Group 1: Date and Place -->
-    <v-card-subtitle class="px-0">Datum und Ort</v-card-subtitle>
+    <v-row dense align="center" class="header-row">
+      <v-col>
+        <v-card-subtitle class="px-0">Datum und Ort</v-card-subtitle>
+      </v-col>
+      <v-col cols="auto">
+        <v-btn
+          variant="text"
+          color="secondary"
+          density="comfortable"
+          class="extra-fields-btn"
+          @click="showAdditionalFields = !showAdditionalFields"
+        >
+          Extra Felder
+          <v-icon :icon="showAdditionalFields ? 'mdi-chevron-up' : 'mdi-chevron-down'" class="ml-1"></v-icon>
+        </v-btn>
+      </v-col>
+    </v-row>
     <v-row dense>
+      <!-- First row -->
       <v-col cols="12" sm="4" md="4">
         <v-text-field
           v-model="localSighting.date"
@@ -19,7 +36,7 @@
           label="Ort"
           @update:search="filterPlaces"
           :loading="!suggestions.places.length"
-          hide-no-data
+          :no-data-text="'Keine Orte verfügbar'"
           autocomplete="off"
           clearable
           :filter="() => true"
@@ -40,7 +57,36 @@
           label="Habitat"
           @update:search="filterHabitats"
           :loading="!suggestions.habitats.length"
-          hide-no-data
+          :no-data-text="'Keine Habitate verfügbar'"
+          autocomplete="off"
+          clearable
+          :filter="() => true"
+          :return-object="false"
+          density="comfortable"
+        ></v-autocomplete>
+      </v-col>
+    </v-row>
+
+    <!-- Additional fields -->
+    <v-row dense v-if="showAdditionalFields">
+      <v-col cols="12" sm="4" md="4">
+        <!-- Empty column -->
+      </v-col>
+      <v-col cols="12" sm="4" md="4">
+        <v-text-field
+          v-model="localSighting.area"
+          label="Kleinfläche"
+          density="comfortable"
+        ></v-text-field>
+      </v-col>
+      <v-col cols="12" sm="4" md="4">
+        <v-autocomplete
+          v-model="localSighting.field_fruit"
+          :items="filteredFieldFruits"
+          label="Feldfrucht"
+          @update:search="filterFieldFruits"
+          :loading="!suggestions.field_fruits.length"
+          :no-data-text="'Keine Feldfrüchte verfügbar'"
           autocomplete="off"
           clearable
           :filter="() => true"
@@ -57,8 +103,6 @@
         <v-text-field
           v-model="localSighting.reading"
           label="Ablesung"
-          :hint="showBirdSuggestions ? 'Nutze ... oder * als Platzhalter' : undefined"
-          :persistent-hint="showBirdSuggestions"
           density="comfortable"
         >
           <template v-if="showBirdSuggestions" v-slot:append-inner>
@@ -96,36 +140,7 @@
     <!-- Group 3: Additional Information -->
     <v-card-subtitle class="px-0 mt-4">Zusätzliche Informationen</v-card-subtitle>
     <v-row dense>
-      <v-col cols="12" sm="4" md="4">
-        <v-text-field
-          v-model="localSighting.group_size"
-          label="Gruppengröße"
-          type="number"
-          density="comfortable"
-        ></v-text-field>
-      </v-col>
-      <v-col cols="12" sm="4" md="4">
-        <v-autocomplete
-          v-model="localSighting.melder"
-          :items="filteredMelders"
-          label="Melder"
-          @update:search="filterMelders"
-          :loading="!suggestions.melders.length"
-          hide-no-data
-          autocomplete="off"
-          clearable
-          :filter="() => true"
-          :return-object="false"
-          density="comfortable"
-        ></v-autocomplete>
-      </v-col>
-      <v-col cols="12" sm="4" md="4">
-        <v-checkbox
-          v-model="localSighting.melded"
-          label="Gemeldet"
-          density="comfortable"
-        ></v-checkbox>
-      </v-col>
+      <!-- First row -->
       <v-col cols="12" sm="4" md="4">
         <v-text-field
           v-model="localSighting.partner"
@@ -139,6 +154,55 @@
             ></bird-suggestions>
           </template>
         </v-text-field>
+      </v-col>
+      <v-col cols="12" sm="4" md="4">
+        <v-text-field
+          v-model="localSighting.small_group_size"
+          label="Kleingruppe"
+          type="number"
+          density="comfortable"
+        ></v-text-field>
+      </v-col>
+      <v-col cols="12" sm="4" md="4">
+        <v-text-field
+          v-model="localSighting.large_group_size"
+          label="Großgruppe"
+          type="number"
+          density="comfortable"
+        ></v-text-field>
+      </v-col>
+
+      <!-- Second row -->
+      <v-col cols="12" sm="4" md="4">
+        <v-select
+          v-model="localSighting.status"
+          :items="statusItems"
+          label="Status"
+          density="comfortable"
+          clearable
+        ></v-select>
+      </v-col>
+      <v-col cols="12" sm="4" md="4">
+        <v-autocomplete
+          v-model="localSighting.melder"
+          :items="filteredMelders"
+          label="Melder"
+          @update:search="filterMelders"
+          :loading="!suggestions.melders.length"
+          :no-data-text="'Keine Melder verfügbar'"
+          autocomplete="off"
+          clearable
+          :filter="() => true"
+          :return-object="false"
+          density="comfortable"
+        ></v-autocomplete>
+      </v-col>
+      <v-col cols="12" sm="4" md="4">
+        <v-checkbox
+          v-model="localSighting.melded"
+          label="Gemeldet"
+          density="comfortable"
+        ></v-checkbox>
       </v-col>
     </v-row>
 
@@ -202,7 +266,8 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue';
-import type { Sighting, BirdMeta } from '@/types';
+import type { Sighting, BirdMeta, SuggestionLists } from '@/types';
+import { BirdStatus } from '@/types';
 import LeafletMap from '@/components/map/LeafletMap.vue';
 import BirdSuggestions from '@/components/birds/BirdSuggestions.vue';
 import { api } from '@/api';
@@ -221,33 +286,58 @@ const emit = defineEmits<{
 }>();
 
 const localSighting = ref<Partial<Sighting>>({ ...props.sighting });
-const suggestions = ref<{
-  places: string[];
-  species: string[];
-  habitats: string[];
-  melders: string[];
-}>({
+const suggestions = ref<SuggestionLists>({
   places: [],
   species: [],
   habitats: [],
-  melders: []
+  melders: [],
+  field_fruits: []
 });
 
 const filteredPlaces = ref<string[]>([]);
 const filteredSpecies = ref<string[]>([]);
 const filteredHabitats = ref<string[]>([]);
 const filteredMelders = ref<string[]>([]);
+const filteredFieldFruits = ref<string[]>([]);
+
+const statusItems = [
+  { title: 'Brutvogel', value: BirdStatus.BV },
+  { title: 'Mausergast', value: BirdStatus.MG },
+  { title: 'Nichtbrüter', value: BirdStatus.NB }
+];
+
+const showAdditionalFields = ref(false);
 
 onMounted(async () => {
   try {
     const response = await api.get('/suggestions');
-    suggestions.value = response.data;
+    suggestions.value = {
+      places: Array.isArray(response.data.places) ? response.data.places : [],
+      species: Array.isArray(response.data.species) ? response.data.species : [],
+      habitats: Array.isArray(response.data.habitats) ? response.data.habitats : [],
+      melders: Array.isArray(response.data.melders) ? response.data.melders : [],
+      field_fruits: Array.isArray(response.data.field_fruits) ? response.data.field_fruits : []
+    };
+
     filteredPlaces.value = suggestions.value.places;
     filteredSpecies.value = suggestions.value.species;
     filteredHabitats.value = suggestions.value.habitats;
     filteredMelders.value = suggestions.value.melders;
+    filteredFieldFruits.value = suggestions.value.field_fruits;
   } catch (error) {
     console.error('Error fetching suggestions:', error);
+    suggestions.value = {
+      places: [],
+      species: [],
+      habitats: [],
+      melders: [],
+      field_fruits: []
+    };
+    filteredPlaces.value = [];
+    filteredSpecies.value = [];
+    filteredHabitats.value = [];
+    filteredMelders.value = [];
+    filteredFieldFruits.value = [];
   }
 });
 
@@ -263,20 +353,24 @@ const createFilter = (field: keyof typeof suggestions.value) => {
         case 'species': return filteredSpecies;
         case 'habitats': return filteredHabitats;
         case 'melders': return filteredMelders;
+        case 'field_fruits': return filteredFieldFruits;
+        default: return { value: [] };
       }
     });
 
+    const sourceArray = suggestions.value[field] || [];
+
     if (!input) {
-      targetRef.value.value = suggestions.value[field] || [];
+      targetRef.value.value = sourceArray;
       return;
     }
     
-    const searchTerm = input.toLowerCase();
-    const filtered = (suggestions.value[field] || [])
-      .filter(item => item.toLowerCase().includes(searchTerm))
+    const searchTerm = input.toLowerCase().trim();
+    const filtered = sourceArray
+      .filter(item => item && item.toLowerCase().includes(searchTerm))
       .slice(0, 5);
     
-    if (input && !filtered.includes(input)) {
+    if (searchTerm && !filtered.includes(input)) {
       filtered.unshift(input);
     }
     
@@ -288,6 +382,7 @@ const filterPlaces = createFilter('places');
 const filterSpecies = createFilter('species');
 const filterHabitats = createFilter('habitats');
 const filterMelders = createFilter('melders');
+const filterFieldFruits = createFilter('field_fruits');
 
 const handleSuggestionSelect = (suggestion: BirdMeta) => {
   localSighting.value.ring = suggestion.ring;
@@ -312,3 +407,77 @@ const longitude = computed({
   set: (val) => localSighting.value.lon = val
 });
 </script>
+
+<style scoped>
+.v-expansion-panels {
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.v-expansion-panel {
+  background: transparent !important;
+  margin: 0 !important;
+  border: none !important;
+}
+
+.minimal-panel-title {
+  padding: 0 !important;
+  min-height: 24px !important;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+}
+
+.v-expansion-panel-text__wrapper {
+  padding: 0 !important;
+}
+
+/* Hide the v-input__details div for all input fields */
+.v-input__details {
+  display: none !important;
+}
+
+/* Updated styles to remove all spacing from input details */
+:deep(.v-input__details),
+:deep(.v-messages),
+:deep(.v-field__outline) {
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+  height: 0 !important;
+}
+
+/* Adjust input field spacing */
+:deep(.v-field) {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+:deep(.v-input) {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.header-row {
+  margin: 0;
+}
+
+.extra-fields-btn {
+  font-size: 0.875rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* Remove default button styles */
+:deep(.extra-fields-btn.v-btn--variant-text) {
+  opacity: 0.7;
+}
+
+:deep(.extra-fields-btn.v-btn--variant-text:hover) {
+  opacity: 1;
+  background: transparent;
+}
+</style>

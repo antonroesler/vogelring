@@ -6,14 +6,25 @@ export interface Sighting {
   reading?: string;
   date?: string;
   place?: string;
+  area?: string;
   habitat?: string;
+  field_fruit?: string;
   group_size?: number;
+  small_group_size?: number;
+  large_group_size?: number;
   comment?: string;
   melder?: string;
   melded?: boolean;
   lat?: number;
   lon?: number;
   partner?: string | null;
+  status?: 'BV' | 'MG' | 'NB' | null;
+}
+
+export enum BirdStatus {
+  BV = "BV",
+  MG = "MG",
+  NB = "NB"
 }
 
 export interface BirdMeta {
@@ -90,4 +101,12 @@ export interface ShareableReport {
 export interface Partner {
   ring: string;
   year: number;
+}
+
+export interface SuggestionLists {
+  places: string[];
+  species: string[];
+  habitats: string[];
+  melders: string[];
+  field_fruits: string[];
 }

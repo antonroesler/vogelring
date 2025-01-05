@@ -17,4 +17,5 @@ def get_suggestion_lists() -> dict:
         "species": get_sorted_values(lambda s: s.species),
         "habitats": get_sorted_values(lambda s: s.habitat),
         "melders": get_sorted_values(lambda s: s.melder),
+        "field_fruits": get_sorted_values(lambda s: s.field_fruit),
     }

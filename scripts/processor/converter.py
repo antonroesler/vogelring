@@ -26,7 +26,7 @@ class SightingCols(Enum):
     partner = 19
     status = 20
     habitat = 21
-    fruit = 22
+    field_fruit = 22
     comment = 23
     melder = 24
     melded = 25
@@ -42,7 +42,16 @@ with open(infile) as f:
 with open(orte_file) as f:
     place_data = list(csv.reader(f, delimiter=";"))
 
-places = {remove_all_non_letter_chars(p[1]): p for p in place_data}
+print(place_data)
+# Turn "50,234" formated numbers into float (50.234) values
+for p in place_data[1:]:
+    if p[1] != "":
+        p[1] = float(p[1].replace(" ", "").replace(",", "."))
+    if p[2] != "":
+        p[2] = float(p[2].replace(" ", "").replace(",", "."))
+
+
+places = {remove_all_non_letter_chars(p[0]): p for p in place_data}
 
 
 s = []
@@ -100,6 +109,15 @@ def fmt_str(s: str) -> str:
     return s.replace('"', "").replace("'", "")
 
 
+def capitalize_first_letter(s: str) -> str:
+    return s[0].upper() + s[1:]
+
+
+def extract_field_fruit(field_fruit: str) -> str:
+    f = remove_all_non_letter_chars(field_fruit)
+    return capitalize_first_letter(f) if f else None
+
+
 def extract_sighting_data(entry: list[str]) -> dict:
     # Convert row to json
     json_data = {c.name: entry[c.value] for c in SightingCols if entry[c.value] != "" and c.value != "id"}
@@ -123,6 +141,8 @@ def extract_sighting_data(entry: list[str]) -> dict:
 
     json_data["age"] = parse_age(entry[SightingCols.age.value])
     json_data["status"] = parse_status(entry[SightingCols.status.value])
+    json_data["habitat"] = None if entry[SightingCols.habitat.value] in ["0", ""] else entry[SightingCols.habitat.value]
+    json_data["field_fruit"] = extract_field_fruit(entry[SightingCols.field_fruit.value])
 
     return json_data
 
@@ -134,8 +154,8 @@ def add_coordinates(json_data: dict, places: dict) -> dict:
         radius = random.uniform(0, 0.0009)  # Max radius same as previous square diagonal
 
         # Convert polar coordinates to lat/lon offsets
-        json_data["lat"] = float(p[2]) + radius * math.cos(angle) if p[2] else None
-        json_data["lon"] = float(p[3]) + radius * math.sin(angle) if p[3] else None
+        json_data["lat"] = float(p[1]) + radius * math.cos(angle) if p[1] else None
+        json_data["lon"] = float(p[2]) + radius * math.sin(angle) if p[2] else None
     return json_data
 
 
