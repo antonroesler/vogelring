@@ -139,9 +139,18 @@ const speciesTimelineOption = computed(() => {
   // Prepare series data
   const series = Object.entries(data).map(([species, counts]) => {
     const monthData = new Array(12).fill(0);
-    counts.forEach(count => {
-      const monthIndex = count.month - 1;
-      monthData[monthIndex] = count.count;
+    
+    // Create a map of year-month to count for easier lookup
+    const countMap = new Map(
+      counts.map(count => [`${count.year}-${count.month}`, count.count])
+    );
+
+    // Fill the data array by matching the actual months
+    xAxisData.forEach((label, index) => {
+      const [month, year] = label.split(' ');
+      const monthIndex = monthNames.indexOf(month) + 1;
+      const key = `${year}-${monthIndex}`;
+      monthData[index] = countMap.get(key) || 0;
     });
 
     return {
