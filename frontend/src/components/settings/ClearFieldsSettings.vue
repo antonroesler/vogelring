@@ -16,19 +16,42 @@
     <v-card>
       <v-card-title>Einstellungen: Felder zurücksetzen</v-card-title>
       <v-card-text>
-        <p class="text-body-2 mb-4">
-          Felder zum Zurücksetzen auswählen:
-        </p>
+        <div class="legend mb-4">
+          <div class="d-flex align-center mb-2">
+            <v-icon icon="mdi-refresh" color="error" class="mr-2"></v-icon>
+            <span>Feld wird zurückgesetzt</span>
+          </div>
+          <div class="d-flex align-center">
+            <v-icon icon="mdi-content-save" color="success" class="mr-2"></v-icon>
+            <span>Feld wird beibehalten</span>
+          </div>
+        </div>
+        <v-divider class="mb-4"></v-divider>
         <div class="scrollable-content">
           <v-row dense>
-            <v-col cols="12" sm="6" v-for="field in fields" :key="field.key">
-              <v-checkbox
-                v-model="localSettings[field.key]"
-                :label="field.label"
-                density="comfortable"
-                hide-details
-                class="mb-2"
-              ></v-checkbox>
+            <v-col 
+              cols="12" 
+              v-for="field in fields" 
+              :key="field.key"
+              class="field-col"
+            >
+              <div class="d-flex align-center justify-space-between field-row">
+                <span>{{ field.label }}</span>
+                <v-btn
+                  icon
+                  size="small"
+                  :color="localSettings[field.key] ? 'error' : 'success'"
+                  variant="text"
+                  @click="toggleField(field.key)"
+                  density="comfortable"
+                  class="field-btn"
+                >
+                  <v-icon :icon="localSettings[field.key] ? 'mdi-refresh' : 'mdi-content-save'"></v-icon>
+                  <v-tooltip activator="parent" location="left">
+                    {{ localSettings[field.key] ? 'Feld wird zurückgesetzt' : 'Feld wird beibehalten' }}
+                  </v-tooltip>
+                </v-btn>
+              </div>
             </v-col>
           </v-row>
         </div>
@@ -88,6 +111,10 @@ const emit = defineEmits<{
   'update:settings': [settings: Record<string, boolean>]
 }>();
 
+const toggleField = (key: string) => {
+  localSettings.value[key] = !localSettings.value[key];
+};
+
 onMounted(() => {
   // Load settings from localStorage
   const savedSettings = localStorage.getItem('clearFieldsSettings');
@@ -117,6 +144,27 @@ const saveSettings = () => {
   padding-right: 8px;
 }
 
+.field-col {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.field-row {
+  padding: 2px 0;
+  min-height: 32px;
+}
+
+.field-btn {
+  margin: 0;
+  height: 28px;
+  width: 28px;
+}
+
+.field-row:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  border-radius: 4px;
+}
+
 /* Custom scrollbar styles */
 .scrollable-content::-webkit-scrollbar {
   width: 8px;
@@ -134,5 +182,10 @@ const saveSettings = () => {
 
 .scrollable-content::-webkit-scrollbar-thumb:hover {
   background: #666;
+}
+
+.legend {
+  color: rgba(0, 0, 0, 0.6);
+  font-size: 0.875rem;
 }
 </style> 
