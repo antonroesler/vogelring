@@ -79,7 +79,7 @@ watch(() => props.reading, (newReading) => {
   // Set new timeout
   debounceTimeout = window.setTimeout(() => {
     fetchSuggestions(newReading);
-  }, 1000); // 1 second delay
+  }, 900); // Changed from 1000 to 900ms
 }, { immediate: true });
 
 // Clean up the timeout when component is unmounted

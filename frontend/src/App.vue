@@ -163,7 +163,7 @@ const debouncedSearch = debounce(async (query: string) => {
   } finally {
     isLoading.value = false;
   }
-}, 300);
+}, 900);
 
 // Handle bird selection
 const onBirdSelected = (bird: BirdSuggestion | null) => {
