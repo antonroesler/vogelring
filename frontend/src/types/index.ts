@@ -20,6 +20,9 @@ export interface Sighting {
   partner?: string | null;
   status?: 'BV' | 'MG' | 'NB' | null;
   age?: BirdAge | null;
+  breed_size?: number | null;
+  family_size?: number | null;
+  pair?: PairType | null;
 }
 
 export enum BirdStatus {
@@ -117,4 +120,10 @@ export enum BirdAge {
   DJ = "dj",  // Juvenile
   VJ = "vj",  // Vorjährig
   JUV = "juv" // Juvenile
+}
+
+export enum PairType {
+  PAIRED = "x",
+  FAMILY = "F",
+  SCHOOL = "S"
 }

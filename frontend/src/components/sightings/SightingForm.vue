@@ -172,6 +172,33 @@
         ></v-text-field>
       </v-col>
 
+      <!-- Add new row for breed_size and family_size -->
+      <v-col cols="12" sm="4" md="4">
+        <v-text-field
+          v-model="localSighting.breed_size"
+          label="Nicht flügge Junge"
+          type="number"
+          density="comfortable"
+        ></v-text-field>
+      </v-col>
+      <v-col cols="12" sm="4" md="4">
+        <v-text-field
+          v-model="localSighting.family_size"
+          label="Flügge Junge"
+          type="number"
+          density="comfortable"
+        ></v-text-field>
+      </v-col>
+      <v-col cols="12" sm="4" md="4">
+        <v-select
+          v-model="localSighting.pair"
+          :items="pairItems"
+          label="Paarung"
+          density="comfortable"
+          clearable
+        ></v-select>
+      </v-col>
+
       <!-- Second row -->
       <v-col cols="12" sm="4" md="4">
         <v-select
@@ -278,7 +305,7 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue';
 import type { Sighting, BirdMeta, SuggestionLists } from '@/types';
-import { BirdStatus, BirdAge } from '@/types';
+import { BirdStatus, BirdAge, PairType } from '@/types';
 import LeafletMap from '@/components/map/LeafletMap.vue';
 import BirdSuggestions from '@/components/birds/BirdSuggestions.vue';
 import { api } from '@/api';
@@ -322,6 +349,12 @@ const ageItems = [
   { title: 'Diesjährig', value: BirdAge.DJ },
   { title: 'Vorjährig', value: BirdAge.VJ },
   { title: 'Juvenil', value: BirdAge.JUV }
+];
+
+const pairItems = [
+  { title: 'Verpaart', value: PairType.PAIRED },
+  { title: 'Familie', value: PairType.FAMILY },
+  { title: 'Schule', value: PairType.SCHOOL }
 ];
 
 const showAdditionalFields = ref(false);

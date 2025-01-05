@@ -2,7 +2,7 @@ from pathlib import Path
 from enum import Enum
 import pickle
 from datetime import datetime
-from api.models.sightings import Sighting, BirdStatus, BirdAge
+from api.models.sightings import Sighting, BirdStatus, BirdAge, PairType
 import csv
 import random
 import math
@@ -21,6 +21,9 @@ class SightingCols(Enum):
     place = 8
     area = 11
     age = 13
+    breed_size = 14
+    family_size = 15
+    pair = 16
     small_group_size = 17
     large_group_size = 18
     partner = 19
@@ -42,7 +45,6 @@ with open(infile) as f:
 with open(orte_file) as f:
     place_data = list(csv.reader(f, delimiter=";"))
 
-print(place_data)
 # Turn "50,234" formated numbers into float (50.234) values
 for p in place_data[1:]:
     if p[1] != "":
@@ -71,6 +73,7 @@ def parse_status(status: str) -> BirdStatus | None:
 
 def parse_age(age: str) -> BirdAge | None:
     age = age.lower().replace(" ", "").replace(".", "")
+
     match age:
         case "ad":
             return BirdAge.AD
@@ -98,13 +101,20 @@ def parse_date(date_str: str) -> datetime:
             return None
 
 
+def remove_all_non_numeric(s: str) -> str:
+    return "".join(e for e in s if e.isdigit())
+
+
 def extract_group_size(group_size_str: str) -> int | None:
     if group_size_str == "":
         return None
     try:
         return int(group_size_str)
     except:
-        return None
+        try:
+            return int(remove_all_non_numeric(group_size_str))
+        except:
+            return None
 
 
 def fmt_str(s: str) -> str:
@@ -145,6 +155,11 @@ def extract_sighting_data(entry: list[str]) -> dict:
     json_data["status"] = parse_status(entry[SightingCols.status.value])
     json_data["habitat"] = None if entry[SightingCols.habitat.value] in ["0", ""] else entry[SightingCols.habitat.value]
     json_data["field_fruit"] = extract_field_fruit(entry[SightingCols.field_fruit.value])
+    json_data["breed_size"] = extract_group_size(entry[SightingCols.breed_size.value])
+    json_data["family_size"] = extract_group_size(entry[SightingCols.family_size.value])
+    json_data["pair"] = (
+        entry[SightingCols.pair.value].strip() if entry[SightingCols.pair.value].strip() in ["x", "F", "S"] else None
+    )
 
     return json_data
 

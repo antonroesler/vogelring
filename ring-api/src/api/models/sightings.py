@@ -17,6 +17,12 @@ class BirdAge(str, Enum):
     JUV = "juv"  # Juvenile
 
 
+class PairType(str, Enum):
+    PAIRED = "x"  # verpaart
+    FAMILY = "F"  # Familie
+    SCHOOL = "S"  # Schule
+
+
 class Sighting(BaseModel):
     # General
     id: str = Field(default_factory=lambda: str(uuid4()))
@@ -36,6 +42,9 @@ class Sighting(BaseModel):
     large_group_size: int | None = None
     small_group_size: int | None = None
     partner: str | None = None  # Partner Ring
+    breed_size: int | None = None
+    family_size: int | None = None
+    pair: PairType | None = None
 
     # Status
     status: BirdStatus | None = None
