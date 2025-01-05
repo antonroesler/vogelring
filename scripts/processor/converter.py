@@ -176,7 +176,7 @@ def add_coordinates(json_data: dict, places: dict) -> dict:
     return json_data
 
 
-eid = 0
+eid = 1
 for entry in data[1:]:
     eid += 1
     json_data = extract_sighting_data(entry)

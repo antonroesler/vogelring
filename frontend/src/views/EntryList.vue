@@ -36,7 +36,16 @@
       :sightings="filteredSightings"
       :loading="store.loading"
       @deleted="handleSightingDeleted"
+      @melded-updated="handleMeldedUpdated"
     ></sightings-table>
+
+    <v-snackbar
+      v-model="showMeldedSnackbar"
+      color="success"
+      :timeout="3000"
+    >
+      {{ meldedSnackbarText }}
+    </v-snackbar>
 
     <v-snackbar
       v-model="showDeleteSnackbar"
@@ -52,9 +61,12 @@ import { ref, onMounted, computed } from 'vue';
 import { useSightingsStore } from '@/stores/sightings';
 import SightingsFilter from '@/components/sightings/SightingsFilter.vue';
 import SightingsTable from '@/components/sightings/SightingsTable.vue';
+import type { Sighting } from '@/types';
 
 const store = useSightingsStore();
 const showDeleteSnackbar = ref(false);
+const showMeldedSnackbar = ref(false);
+const meldedSnackbarText = ref('');
 const filters = ref({
   start_date: undefined as string | undefined,
   end_date: undefined as string | undefined,
@@ -111,6 +123,13 @@ const handleSightingDeleted = async (id: string) => {
 const retryLoading = () => {
   store.error = null;
   loadSightings();
+};
+
+const handleMeldedUpdated = (sighting: Sighting) => {
+  showMeldedSnackbar.value = true;
+  meldedSnackbarText.value = sighting.melded 
+    ? 'Sichtung als gemeldet markiert'
+    : 'Sichtung als nicht gemeldet markiert';
 };
 
 onMounted(async () => {

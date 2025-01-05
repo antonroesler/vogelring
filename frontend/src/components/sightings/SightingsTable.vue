@@ -11,10 +11,16 @@
       {{ formatDate(item.date) }}
     </template>
     <template v-slot:item.melded="{ item }">
-      <v-icon
-        :color="item.melded ? 'success' : 'grey'"
+      <v-btn
         :icon="item.melded ? 'mdi-check-circle' : 'mdi-circle-outline'"
-      ></v-icon>
+        :color="item.melded ? 'success' : 'grey'"
+        variant="text"
+        color="error"
+        size="small"
+        :loading="loadingMeldedStates[item.id]"
+        @click.stop="toggleMelded(item)"
+        :disabled="loading"
+      ></v-btn>
     </template>
     <template v-slot:item.actions="{ item }">
       <v-btn
@@ -62,6 +68,7 @@ import { useRouter } from 'vue-router';
 import { format } from 'date-fns';
 import type { Sighting } from '@/types';
 import * as api from '@/api';
+import { useSightingsStore } from '@/stores/sightings';
 
 const props = defineProps<{
   sightings: Sighting[];
@@ -70,12 +77,16 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'deleted': [id: string];
+  'melded-updated': [sighting: Sighting];
 }>();
 
 const router = useRouter();
 const showDeleteDialog = ref(false);
 const deleteLoading = ref(false);
 const selectedSighting = ref<Sighting | null>(null);
+const loadingMeldedStates = ref<Record<string, boolean>>({});
+
+const store = useSightingsStore();
 
 const headers = [
   { title: 'Datum', key: 'date', sortable: true },
@@ -113,6 +124,26 @@ const handleDelete = async () => {
     deleteLoading.value = false;
   }
 };
+
+const toggleMelded = async (sighting: Sighting) => {
+  if (!sighting.id) return;
+  
+  loadingMeldedStates.value[sighting.id] = true;
+  
+  try {
+    const updatedSighting = {
+      ...sighting,
+      melded: !sighting.melded
+    };
+    
+    await store.updateSighting(updatedSighting);
+    emit('melded-updated', updatedSighting);
+  } catch (error) {
+    console.error('Error updating melded status:', error);
+  } finally {
+    loadingMeldedStates.value[sighting.id] = false;
+  }
+};
 </script>
 
 <style scoped>
@@ -129,5 +160,10 @@ const handleDelete = async () => {
 
 .v-data-table :deep(tr:hover) {
   background: #FAFAFA !important;
+}
+
+.v-btn.v-btn--loading {
+  min-width: 36px;
+  min-height: 36px;
 }
 </style>
