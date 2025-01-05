@@ -16,7 +16,11 @@ def get_bird_by_ring(ring: str) -> BirdMeta | None:
         for species, count in species_counts.items()
         if species != most_likely_species and species is not None
     }
-    partners = [Partner(ring=sighting.ring, year=sighting.date.year) for sighting in sightings]
+    partners = [
+        Partner(ring=sighting.partner, year=sighting.date.year)
+        for sighting in sightings
+        if sighting.partner is not None
+    ]
     partners = list(set(partners))
 
     last_seen = max(sightings, key=lambda sighting: sighting.date).date

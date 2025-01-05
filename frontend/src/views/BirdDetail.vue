@@ -52,13 +52,13 @@
             :ringingData="ringingData"
           ></bird-details>
 
-          <!-- Partners Card - Now shows even when no partners -->
+          <!-- Partners Card -->
           <v-card class="mt-4">
             <v-card-title>Partner</v-card-title>
             <v-card-text>
               <v-list v-if="bird?.partners?.length" density="compact">
                 <v-list-item
-                  v-for="partner in bird.partners"
+                  v-for="partner in sortedPartners"
                   :key="`${partner.ring}-${partner.year}`"
                   :href="partner.ring !== 'ub' ? `/birds/${partner.ring}` : undefined"
                   :target="partner.ring !== 'ub' ? '_blank' : undefined"
@@ -423,6 +423,11 @@ const reporterChartOption = computed(() => {
       data
     }]
   };
+});
+
+const sortedPartners = computed(() => {
+  if (!bird.value?.partners) return [];
+  return [...bird.value.partners].sort((a, b) => b.year - a.year);
 });
 </script>
 
