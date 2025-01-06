@@ -75,11 +75,17 @@
 
       <v-col cols="12" md="4">
         <bird-details
-          v-if="birdDetails"
+          v-if="sighting?.ring"
           :bird="birdDetails"
           :ringingData="ringingData"
           class="mb-4"
         ></bird-details>
+        <missing-ring-details
+          v-else-if="sighting?.reading"
+          :reading="sighting.reading"
+          :sighting="sighting"
+          class="mb-4"
+        ></missing-ring-details>
       </v-col>
 
       <v-col cols="12">
@@ -139,6 +145,7 @@ import SightingsTable from '@/components/sightings/SightingsTable.vue';
 import { useSightingsStore } from '@/stores/sightings';
 import { useTheme } from 'vuetify';
 import ShareDialog from '@/components/dialogs/ShareDialog.vue';
+import MissingRingDetails from '@/components/birds/MissingRingDetails.vue';
 
 const route = useRoute();
 const router = useRouter();
