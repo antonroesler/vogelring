@@ -61,7 +61,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useSightingsStore } from '@/stores/sightings';
 import SightingsFilter from '@/components/sightings/SightingsFilter.vue';
 import SightingsTable from '@/components/sightings/SightingsTable.vue';
-import type { Sighting } from '@/types';
+import type { Sighting, BirdStatus, BirdAge } from '@/types';
 
 const store = useSightingsStore();
 const showDeleteSnackbar = ref(false);
@@ -74,7 +74,11 @@ const filters = ref({
   place: undefined as string | undefined,
   ring: undefined as string | undefined,
   melder: undefined as string | undefined,
-  melded: undefined as boolean | undefined
+  melded: undefined as boolean | undefined,
+  status: undefined as BirdStatus | undefined,
+  age: undefined as BirdAge | undefined,
+  month_start: undefined as number | undefined,
+  month_end: undefined as number | undefined,
 });
 
 const filteredSightings = computed(() => {
@@ -101,6 +105,34 @@ const filteredSightings = computed(() => {
     }
     if (filters.value.melded !== undefined) {
       matches = matches && sighting.melded === filters.value.melded;
+    }
+    if (filters.value.status) {
+      matches = matches && sighting.status === filters.value.status;
+    }
+    
+    if (filters.value.age) {
+      matches = matches && sighting.age === filters.value.age;
+    }
+    
+    if (filters.value.month_start || filters.value.month_end) {
+      const sightingDate = new Date(sighting.date || '');
+      const sightingMonth = sightingDate.getMonth() + 1;
+      
+      if (filters.value.month_start && filters.value.month_end) {
+        if (filters.value.month_start <= filters.value.month_end) {
+          matches = matches && 
+            sightingMonth >= filters.value.month_start && 
+            sightingMonth <= filters.value.month_end;
+        } else {
+          matches = matches && 
+            (sightingMonth >= filters.value.month_start || 
+             sightingMonth <= filters.value.month_end);
+        }
+      } else if (filters.value.month_start) {
+        matches = matches && sightingMonth >= filters.value.month_start;
+      } else if (filters.value.month_end) {
+        matches = matches && sightingMonth <= filters.value.month_end;
+      }
     }
     
     return matches;
