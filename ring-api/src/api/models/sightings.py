@@ -8,6 +8,7 @@ class BirdStatus(str, Enum):
     BV = "BV"  # Brutvogel
     MG = "MG"  # Mausergast
     NB = "NB"  # Nichtbrüter
+    RV = "RV"  # Reviervogel
 
 
 class BirdAge(str, Enum):

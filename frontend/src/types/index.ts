@@ -28,7 +28,8 @@ export interface Sighting {
 export enum BirdStatus {
   BV = "BV",
   MG = "MG",
-  NB = "NB"
+  NB = "NB",
+  RV = "RV"
 }
 
 export interface BirdMeta {

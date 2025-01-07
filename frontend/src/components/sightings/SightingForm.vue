@@ -193,7 +193,7 @@
         <v-select
           v-model="localSighting.pair"
           :items="pairItems"
-          label="Paarung"
+          label="Paar Status"
           density="comfortable"
           clearable
         ></v-select>
@@ -341,7 +341,8 @@ const filteredFieldFruits = ref<string[]>([]);
 const statusItems = [
   { title: 'Brutvogel', value: BirdStatus.BV },
   { title: 'Mausergast', value: BirdStatus.MG },
-  { title: 'Nichtbrüter', value: BirdStatus.NB }
+  { title: 'Nichtbrüter', value: BirdStatus.NB },
+  { title: 'Reviervogel', value: BirdStatus.RV }
 ];
 
 const ageItems = [
