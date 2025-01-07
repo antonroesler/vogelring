@@ -1,7 +1,22 @@
 <template>
   <div>
     <div class="d-flex align-center mb-4">
+      <v-btn
+        v-if="$route.query.from === 'detail'"
+        icon="mdi-arrow-left"
+        variant="text"
+        @click="handleBack"
+        class="me-2"
+      ></v-btn>
       <h1 class="text-h4 flex-grow-1">Eintragliste</h1>
+      <v-btn
+        v-if="store.activeFilters.length > 0"
+        variant="text"
+        @click="clearAllFilters"
+        class="me-2"
+      >
+        Filter zurücksetzen
+      </v-btn>
       <v-btn
         icon="mdi-refresh"
         @click="loadSightings"
@@ -57,28 +72,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useSightingsStore } from '@/stores/sightings';
 import SightingsFilter from '@/components/sightings/SightingsFilter.vue';
 import SightingsTable from '@/components/sightings/SightingsTable.vue';
 import type { Sighting, BirdStatus, BirdAge } from '@/types';
+import { useRouter } from 'vue-router';
 
 const store = useSightingsStore();
+const router = useRouter();
 const showDeleteSnackbar = ref(false);
 const showMeldedSnackbar = ref(false);
 const meldedSnackbarText = ref('');
-const filters = ref({
-  start_date: undefined as string | undefined,
-  end_date: undefined as string | undefined,
-  species: undefined as string | undefined,
-  place: undefined as string | undefined,
-  ring: undefined as string | undefined,
-  melder: undefined as string | undefined,
-  melded: undefined as boolean | undefined,
-  status: undefined as BirdStatus | undefined,
-  age: undefined as BirdAge | undefined,
-  month_start: undefined as number | undefined,
-  month_end: undefined as number | undefined,
+
+const filters = computed({
+  get: () => store.filters,
+  set: (newFilters) => store.setFilters(newFilters, activeFilters.value)
+});
+
+const activeFilters = computed({
+  get: () => store.activeFilters,
+  set: (newActiveFilters) => store.setFilters(filters.value, newActiveFilters)
 });
 
 const filteredSightings = computed(() => {
@@ -163,6 +177,40 @@ const handleMeldedUpdated = (sighting: Sighting) => {
     ? 'Sichtung als gemeldet markiert'
     : 'Sichtung als nicht gemeldet markiert';
 };
+
+const handleBack = () => {
+  router.back();
+};
+
+const clearAllFilters = () => {
+  store.clearState();
+};
+
+// Watch for route changes
+watch(
+  () => router.currentRoute.value.query.from,
+  (newFrom) => {
+    // Only clear everything if we're not coming from a detail view
+    if (!newFrom) {
+      store.clearState(); // This will clear filters and reset pagination
+    }
+  },
+  { immediate: true }
+);
+
+// Add this watch to handle pagination restoration
+watch(
+  () => router.currentRoute.value.query,
+  (query) => {
+    if (query.from === 'detail' && query.page) {
+      store.setPagination({
+        page: parseInt(query.page as string),
+        itemsPerPage: parseInt(query.perPage as string) || 10
+      });
+    }
+  },
+  { immediate: true }
+);
 
 onMounted(async () => {
   if (!store.initialized) {

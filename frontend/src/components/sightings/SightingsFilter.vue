@@ -160,26 +160,27 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import type { BirdStatus } from '@/types';
+import { useSightingsStore } from '@/stores/sightings';
 
-interface Filters {
-  species?: string;
-  ring?: string;
-  place?: string;
-  melder?: string;
-  start_date?: string;
-  end_date?: string;
-  melded?: boolean;
-  status?: BirdStatus;
-  month_start?: number;
-  month_end?: number;
-}
+const store = useSightingsStore();
 
 const emit = defineEmits<{
   'update:filters': [filters: Filters];
 }>();
 
-const filters = ref<Filters>({});
-const activeFilters = ref<string[]>([]);
+// Use computed properties to sync with store
+const filters = computed({
+  get: () => store.filters,
+  set: (newFilters) => {
+    store.setFilters(newFilters, activeFilters.value);
+    emit('update:filters', newFilters);
+  }
+});
+
+const activeFilters = computed({
+  get: () => store.activeFilters,
+  set: (newActiveFilters) => store.setFilters(filters.value, newActiveFilters)
+});
 
 const availableFilters = [
   { id: 'dateRange', title: 'Datumsbereich', icon: 'mdi-calendar-range' },
@@ -213,7 +214,7 @@ const getFilterById = (id: string) => {
 
 const addFilter = (filterId: string) => {
   if (!activeFilters.value.includes(filterId)) {
-    activeFilters.value.push(filterId);
+    activeFilters.value = [...activeFilters.value, filterId];
   }
 };
 
@@ -221,17 +222,18 @@ const removeFilter = (filterId: string) => {
   activeFilters.value = activeFilters.value.filter(id => id !== filterId);
   
   // Clear the corresponding filter values
+  const newFilters = { ...filters.value };
   if (filterId === 'dateRange') {
-    filters.value.start_date = undefined;
-    filters.value.end_date = undefined;
+    newFilters.start_date = undefined;
+    newFilters.end_date = undefined;
   } else if (filterId === 'monthRange') {
-    filters.value.month_start = undefined;
-    filters.value.month_end = undefined;
+    newFilters.month_start = undefined;
+    newFilters.month_end = undefined;
   } else {
-    filters.value[filterId as keyof Filters] = undefined;
+    newFilters[filterId as keyof Filters] = undefined;
   }
   
-  emitFilters();
+  filters.value = newFilters;
 };
 
 const emitFilters = () => {

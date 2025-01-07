@@ -4,6 +4,9 @@
     :items="sightings"
     :loading="loading"
     hover
+    v-model:page="page"
+    v-model:items-per-page="itemsPerPage"
+    :items-per-page-options="[10, 25, 50, 100]"
     class="elevation-0 border rounded"
     @click:row="handleRowClick"
   >
@@ -63,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { format } from 'date-fns';
 import type { Sighting } from '@/types';
@@ -88,6 +91,17 @@ const loadingMeldedStates = ref<Record<string, boolean>>({});
 
 const store = useSightingsStore();
 
+// Add computed properties for pagination
+const page = computed({
+  get: () => store.pagination.page,
+  set: (value) => store.setPagination({ page: value })
+});
+
+const itemsPerPage = computed({
+  get: () => store.pagination.itemsPerPage,
+  set: (value) => store.setPagination({ itemsPerPage: value })
+});
+
 const headers = [
   { title: 'Datum', key: 'date', sortable: true },
   { title: 'Ring', key: 'ring', sortable: true },
@@ -105,7 +119,14 @@ const formatDate = (date?: string) => {
 
 const handleRowClick = (event: Event, item: any) => {
   const sighting = item.item;
-  router.push(`/entries/${sighting.id}`);
+  router.push({
+    path: `/entries/${sighting.id}`,
+    query: { 
+      from: 'list',
+      page: store.pagination.page.toString(),
+      perPage: store.pagination.itemsPerPage.toString()
+    }
+  });
 };
 
 const confirmDelete = (item: Sighting) => {

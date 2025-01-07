@@ -2,6 +2,12 @@
   <div>
     <v-row>
       <v-col cols="12" class="d-flex align-center">
+        <v-btn
+          icon="mdi-arrow-left"
+          variant="text"
+          @click="handleBack"
+          class="me-2"
+        ></v-btn>
         <h1 class="text-h4">Eintrag Details</h1>
         <v-spacer></v-spacer>
         <v-dialog v-model="showDeleteDialog" max-width="400">
@@ -601,5 +607,12 @@ const confirmDelete = async () => {
   } finally {
     isDeleting.value = false;
   }
+};
+
+const handleBack = () => {
+  router.push({
+    path: '/entries',
+    query: { from: 'detail' }
+  });
 };
 </script>
