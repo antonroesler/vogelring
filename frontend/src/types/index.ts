@@ -17,6 +17,7 @@ export interface Sighting {
   melded?: boolean;
   lat?: number;
   lon?: number;
+  is_exact_location?: boolean;
   partner?: string | null;
   status?: 'BV' | 'MG' | 'NB' | null;
   age?: BirdAge | null;

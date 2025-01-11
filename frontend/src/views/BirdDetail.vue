@@ -106,7 +106,27 @@
                 :other-sightings="bird.sightings"
                 :ringing-data="ringingData"
                 :timeline-mode="true"
-              ></sightings-map>
+              >
+                <template #legend>
+                  <div class="legend-item">
+                    <div class="legend-gradient"></div>
+                    <div class="legend-labels-horizontal">
+                      <span>Ältere</span>
+                      <span class="arrow">→</span>
+                      <span>Neuere</span>
+                      <span>Sichtungen</span>
+                    </div>
+                  </div>
+                  <div class="legend-item">
+                    <div class="legend-marker approximate"></div>
+                    <span>Ungefähre Position</span>
+                  </div>
+                  <div v-if="ringingData" class="legend-item">
+                    <div class="legend-marker ringing"></div>
+                    <span>Beringungsort</span>
+                  </div>
+                </template>
+              </sightings-map>
               <p v-else class="text-body-1 text-medium-emphasis">
                 Keine Sichtungsdaten verfügbar.
               </p>

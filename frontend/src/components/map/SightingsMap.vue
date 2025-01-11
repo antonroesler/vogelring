@@ -39,6 +39,10 @@
           <div class="legend-marker other"></div>
           <span>Frühere Sichtungen</span>
         </div>
+        <div class="legend-item">
+          <div class="legend-marker approximate"></div>
+          <span>Ungefähre Position</span>
+        </div>
         <div v-if="props.ringingData" class="legend-item">
           <div class="legend-marker ringing"></div>
           <span>Beringungsort</span>
@@ -49,8 +53,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, onMounted, watch, computed, onUnmounted } from 'vue';
 import L from 'leaflet';
+import 'leaflet.markercluster';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import type { Sighting, Ringing } from '@/types';
 
 const props = defineProps<{
@@ -111,34 +118,59 @@ const getTimelineColor = (date: string) => {
 const createTimelineIcon = (date: string) => {
   const color = getTimelineColor(date);
   return L.divIcon({
-    html: `<div style="background-color: ${color}; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>`,
+    html: `<div style="
+      background-color: ${color}; 
+      width: 12px; 
+      height: 12px; 
+      border-radius: 50%; 
+      border: 2px solid white;
+    "></div>`,
     className: 'custom-div-icon',
     iconSize: [16, 16],
     iconAnchor: [8, 8]
   });
 };
 
-// Define custom icons
-const currentIcon = L.divIcon({
-  html: '<div style="background-color: #FF4444; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white;"></div>',
-  className: 'custom-div-icon',
-  iconSize: [20, 20],
-  iconAnchor: [10, 10]
-});
+const createTimelineIconWithExactLocation = (date: string, isExact: boolean = true) => {
+  const color = getTimelineColor(date);
+  const border = isExact ? 'solid' : 'dashed';
+  return L.divIcon({
+    html: `<div style="
+      background-color: ${color}; 
+      width: 12px; 
+      height: 12px; 
+      border-radius: 50%; 
+      border: 2px ${border} white;
+    "></div>`,
+    className: 'custom-div-icon',
+    iconSize: [16, 16],
+    iconAnchor: [8, 8]
+  });
+};
 
-const otherIcon = L.divIcon({
-  html: '<div style="background-color: #FFB300; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white;"></div>',
-  className: 'custom-div-icon',
-  iconSize: [16, 16],
-  iconAnchor: [8, 8]
-});
+// Create marker cluster groups
+const markerClusterGroup = ref<L.MarkerClusterGroup | null>(null);
 
-const ringingIcon = L.divIcon({
-  html: '<div style="background-color: #4CAF50; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white;"></div>',
-  className: 'custom-div-icon',
-  iconSize: [20, 20],
-  iconAnchor: [10, 10]
-});
+// Define custom icons with approximate location variants
+const createMarkerIcon = (color: string, isExact: boolean = true, size: number = 16) => {
+  const border = isExact ? 'solid' : 'dashed';
+  return L.divIcon({
+    html: `<div style="
+      background-color: ${color}; 
+      width: ${size}px; 
+      height: ${size}px; 
+      border-radius: 50%; 
+      border: 2px ${border} white;
+    "></div>`,
+    className: 'custom-div-icon',
+    iconSize: [size, size],
+    iconAnchor: [size/2, size/2]
+  });
+};
+
+const currentIcon = (isExact: boolean) => createMarkerIcon('#FF4444', isExact, 16);
+const otherIcon = (isExact: boolean) => createMarkerIcon('#FFB300', isExact, 12);
+const ringingIcon = createMarkerIcon('#4CAF50', true, 16);
 
 const initMap = () => {
   if (!mapContainer.value) return;
@@ -178,18 +210,50 @@ const initMap = () => {
   `;
   document.head.appendChild(style);
 
+  // Initialize marker cluster group
+  markerClusterGroup.value = L.markerClusterGroup({
+    maxClusterRadius: 30,
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false,
+    zoomToBoundsOnClick: true
+  });
+
+  map.value.addLayer(markerClusterGroup.value);
+
   updateMarkers();
 };
 
-const updateMarkers = () => {
-  if (!map.value) return;
+// Add cleanup function
+const cleanup = () => {
+  if (map.value) {
+    map.value.remove();
+    map.value = null;
+  }
+  if (markerClusterGroup.value) {
+    markerClusterGroup.value.clearLayers();
+    markerClusterGroup.value = null;
+  }
+  if (baseMapLayer.value) {
+    baseMapLayer.value = null;
+  }
+};
 
-  // Clear existing markers
-  map.value.eachLayer((layer) => {
-    if (layer instanceof L.Marker) {
-      map.value?.removeLayer(layer);
-    }
-  });
+const updateMarkers = () => {
+  if (!map.value || !markerClusterGroup.value) return;
+
+  // Clear existing markers and close any open popups
+  map.value.closePopup();
+  markerClusterGroup.value.clearLayers();
+
+  // Helper function to create popup
+  const createPopup = (content: string) => {
+    return L.popup({
+      closeButton: false,
+      offset: [0, -10],
+      closeOnClick: true,
+      autoPan: false
+    }).setContent(content);
+  };
 
   // Helper function to check if coordinates are valid
   const hasValidCoordinates = (lat: number | null | undefined, lon: number | null | undefined): boolean => {
@@ -200,61 +264,62 @@ const updateMarkers = () => {
     // Add timeline markers
     props.otherSightings.forEach(sighting => {
       if (hasValidCoordinates(sighting.lat, sighting.lon) && sighting.date) {
-        L.marker(
+        const marker = L.marker(
           [sighting.lat!, sighting.lon!],
           { 
-            icon: createTimelineIcon(sighting.date),
+            icon: createTimelineIconWithExactLocation(sighting.date, sighting.is_exact_location ?? false),
             zIndexOffset: 0
           }
-        )
-          .addTo(map.value!)
-          .bindPopup(`Sichtung am ${formatDate(sighting.date)}`);
+        ).bindPopup(createPopup(`Sichtung am ${formatDate(sighting.date)}`));
+        
+        markerClusterGroup.value?.addLayer(marker);
       }
     });
   } else {
+    // Add other sightings markers
     if (props.otherSightings) {
       props.otherSightings
         .filter(sighting => !props.currentSighting || sighting.id !== props.currentSighting.id)
         .forEach(sighting => {
           if (hasValidCoordinates(sighting.lat, sighting.lon)) {
-            L.marker(
+            const marker = L.marker(
               [sighting.lat!, sighting.lon!],
               { 
-                icon: otherIcon,
+                icon: otherIcon(sighting.is_exact_location ?? false),
                 zIndexOffset: 0
               }
-            )
-              .addTo(map.value!)
-              .bindPopup(`Sichtung am ${formatDate(sighting.date)}`);
+            ).bindPopup(createPopup(`Sichtung am ${formatDate(sighting.date)}`));
+            
+            markerClusterGroup.value?.addLayer(marker);
           }
         });
     }
 
-    // Add current sighting marker last (on top)
+    // Add current sighting marker (not in cluster)
     if (props.currentSighting && hasValidCoordinates(props.currentSighting.lat, props.currentSighting.lon)) {
-      L.marker(
+      const currentMarker = L.marker(
         [props.currentSighting.lat!, props.currentSighting.lon!],
         { 
-          icon: currentIcon,
+          icon: currentIcon(props.currentSighting.is_exact_location ?? false),
           zIndexOffset: 1000
         }
-      )
-        .addTo(map.value)
-        .bindPopup(`Aktuelle Sichtung (${formatDate(props.currentSighting.date)})`);
+      ).bindPopup(createPopup(`Aktuelle Sichtung (${formatDate(props.currentSighting.date)})`));
+      
+      map.value.addLayer(currentMarker);
     }
   }
 
-  // Always add ringing marker if available (on top of everything)
+  // Add ringing marker if available (not in cluster)
   if (props.ringingData && hasValidCoordinates(props.ringingData.lat, props.ringingData.lon)) {
-    L.marker(
+    const ringingMarker = L.marker(
       [props.ringingData.lat!, props.ringingData.lon!],
       { 
         icon: ringingIcon,
         zIndexOffset: 2000
       }
-    )
-      .addTo(map.value)
-      .bindPopup(`Beringungsort (${formatDate(props.ringingData.date)})`);
+    ).bindPopup(createPopup(`Beringungsort (${formatDate(props.ringingData.date)})`));
+    
+    map.value.addLayer(ringingMarker);
   }
 
   // Adjust bounds
@@ -295,11 +360,17 @@ const switchBaseMap = (mapKey: string) => {
   }).addTo(map.value);
 };
 
-// Watch for changes in sightings
+// Add onUnmounted lifecycle hook
+onUnmounted(() => {
+  cleanup();
+});
+
+// Modify the watch to handle cleanup
 watch(
   () => [props.currentSighting, props.otherSightings, props.ringingData],
   () => {
     if (map.value) {
+      map.value.closePopup(); // Close any open popups before updating
       updateMarkers();
     }
   },
@@ -350,6 +421,13 @@ onMounted(() => {
   background-color: #4CAF50;
 }
 
+.legend-marker.approximate {
+  border: 2px dashed white !important;
+  background-color: #FFB300;
+  width: 12px;
+  height: 12px;
+}
+
 .custom-div-icon {
   background: none !important;
   border: none !important;
@@ -391,5 +469,34 @@ onMounted(() => {
   background: white;
   border-radius: 4px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Override marker cluster default styles */
+:deep(.marker-cluster) {
+  background-color: rgba(255, 255, 255, 0.8);
+  border: 2px solid #fff;
+  box-shadow: 0 0 3px rgba(0,0,0,0.3);
+  width: 30px !important;
+  height: 30px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin-left: -15px !important;
+  margin-top: -15px !important;
+}
+
+:deep(.marker-cluster div) {
+  background-color: rgba(34, 128, 150, 0.8);
+  color: white;
+  width: 26px;
+  height: 26px;
+  margin: 0 !important;
+  text-align: center;
+  border-radius: 13px;
+  font-size: 12px;
+  line-height: 26px;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 </style>

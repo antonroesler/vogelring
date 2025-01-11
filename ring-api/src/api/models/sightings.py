@@ -59,6 +59,7 @@ class Sighting(BaseModel):
     area: str | None = None  # Special Area within the place
     lat: float | None = None
     lon: float | None = None
+    is_exact_location: bool | None = False
     habitat: str | None = None  # Habitat Type
     field_fruit: str | None = None  # Field Fruit Type
 

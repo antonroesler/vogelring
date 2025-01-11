@@ -45,7 +45,8 @@ const sighting = ref<Partial<Sighting>>({
   date: new Date().toISOString().split('T')[0],
   lat: 50.1109,
   lon: 8.6821,
-  melded: false
+  melded: false,
+  is_exact_location: true
 });
 
 const saveSighting = async (newSighting: Partial<Sighting>) => {

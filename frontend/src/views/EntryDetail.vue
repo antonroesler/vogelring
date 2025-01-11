@@ -182,6 +182,14 @@ const loadSighting = async () => {
 const updateSighting = async (updatedSighting: Partial<Sighting>) => {
   loading.value = true;
   try {
+    // Check if coordinates have changed
+    if (sighting.value && (
+      updatedSighting.lat !== sighting.value.lat || 
+      updatedSighting.lon !== sighting.value.lon
+    )) {
+      updatedSighting.is_exact_location = true;
+    }
+    
     await store.updateSighting(updatedSighting);
     showSnackbar.value = true;
     await loadSighting(); // Reload the current sighting details
