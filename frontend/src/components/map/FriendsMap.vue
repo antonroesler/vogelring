@@ -45,7 +45,12 @@ const createMap = () => {
   const firstSighting = props.bird.sightings.find(s => s.lat && s.lon);
   const center = firstSighting ? [firstSighting.lat!, firstSighting.lon!] : [50.1109, 8.6821];
 
-  map.value = L.map(mapContainer.value).setView(center as [number, number], 13);
+  map.value = L.map(mapContainer.value, {
+    // Disable animations at high zoom levels to prevent rendering issues
+    zoomAnimation: true,
+    markerZoomAnimation: false,
+    fadeAnimation: true
+  }).setView(center as [number, number], 13);
 
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
@@ -57,7 +62,8 @@ const createMap = () => {
     spiderfyOnMaxZoom: false,
     showCoverageOnHover: false,
     zoomToBoundsOnClick: true,
-    disableClusteringAtZoom: 16
+    disableClusteringAtZoom: 16,
+    animate: false  // Disable cluster animations
   });
 
   // Override the default cluster click behavior
@@ -69,32 +75,21 @@ const createMap = () => {
     // Prevent the default zoom behavior
     event.originalEvent.preventDefault();
     
-    // Close all tooltips before zooming
-    map.eachLayer((layer) => {
-      if (layer.getTooltip) {
-        const tooltip = layer.getTooltip();
-        if (tooltip) {
-          layer.closeTooltip();
-        }
-      }
-    });
-    
     // Zoom to the cluster position at zoom level 16
-    map.setView(clusterLatLng, 16);
+    map.setView(clusterLatLng, 16, {
+      animate: false  // Disable animation for manual zoom
+    });
   });
 
   map.value.addLayer(markerClusterGroup.value);
 
-  // Add zoom start handler to close tooltips
-  map.value.on('zoomstart', () => {
-    map.value?.eachLayer((layer) => {
-      if (layer.getTooltip) {
-        const tooltip = layer.getTooltip();
-        if (tooltip) {
-          layer.closeTooltip();
-        }
-      }
-    });
+  // Handle zoom levels
+  map.value.on('zoomend', () => {
+    const currentZoom = map.value?.getZoom();
+    if (map.value) {
+      // Toggle animations based on zoom level
+      map.value.options.zoomAnimation = !(currentZoom && currentZoom >= 16);
+    }
   });
 
   updateMarkers();
@@ -106,46 +101,88 @@ const updateMarkers = () => {
   // Clear existing markers
   markerClusterGroup.value.clearLayers();
 
-  // Helper function to create tooltip
-  const createTooltip = (content: string) => {
-    return L.tooltip({
-      permanent: false,
-      direction: 'top',
-      offset: [0, -8],
-      opacity: 0.9,
-    }).setContent(content);
-  };
+  // Create a map to group sightings by coordinates
+  const coordMap = new Map<string, { ring: string; color: string; isExact: boolean }[]>();
 
-  // Add friend birds' sightings first (so they'll be below)
+  // Helper function to get coordinate key
+  const getCoordKey = (lat: number, lon: number) => `${lat},${lon}`;
+
+  // First, group all friend sightings by coordinates
   props.friends.forEach(friend => {
     const color = props.friendColors?.[friend.ring] || 'blue';
     friend.sightings.forEach(sighting => {
       if (sighting.lat && sighting.lon) {
-        const marker = L.marker([sighting.lat, sighting.lon], {
-          icon: createMarkerIcon(color, sighting.is_exact_location ?? false, 10),
-          zIndexOffset: 100
-        })
-          .bindTooltip(createTooltip(friend.ring))
-          markerClusterGroup.value.addLayer(marker);
+        const key = getCoordKey(sighting.lat, sighting.lon);
+        if (!coordMap.has(key)) {
+          coordMap.set(key, []);
+        }
+        coordMap.get(key)?.push({
+          ring: friend.ring,
+          color,
+          isExact: sighting.is_exact_location ?? false
+        });
       }
     });
   });
 
-  // Add selected bird's sightings last (so they'll be on top)
+  // Add the current bird's sightings to the coordinate map
   props.bird.sightings.forEach(sighting => {
     if (sighting.lat && sighting.lon) {
-      const marker = L.marker([sighting.lat, sighting.lon], {
-        icon: createMarkerIcon('#FF0000', sighting.is_exact_location ?? false, 10),
-        zIndexOffset: 1000
-      })
-        .bindTooltip(createTooltip(props.bird.ring))
-        markerClusterGroup.value.addLayer(marker);
+      const key = getCoordKey(sighting.lat, sighting.lon);
+      if (!coordMap.has(key)) {
+        coordMap.set(key, []);
+      }
+      coordMap.get(key)?.push({
+        ring: props.bird.ring,
+        color: '#FF0000',
+        isExact: sighting.is_exact_location ?? false
+      });
     }
   });
 
-  // Fit bounds to include all markers
+  // Create markers for each unique coordinate
+  coordMap.forEach((birds, coordKey) => {
+    const [lat, lon] = coordKey.split(',').map(Number);
+    
+    // Use the first bird's exact/inexact status for the marker style
+    const isExact = birds[0].isExact;
+    
+    // Create tooltip content showing all birds at this location
+    const tooltipContent = birds.length > 1
+      ? `<div style="text-align: center;">
+          <strong>${birds.length} Vögel an diesem Ort:</strong><br>
+          ${birds.map(b => 
+            `<span style="color: ${b.color};">${b.ring}</span>`
+          ).join('<br>')}
+        </div>`
+      : birds[0].ring;
+
+    // Create marker with the appropriate style
+    const marker = L.marker([lat, lon], {
+      icon: createMarkerIcon(
+        birds.length > 1 ? '#9C27B0' : birds[0].color,  // Use purple for multiple birds
+        isExact,
+        birds.length > 1 ? 14 : 10  // Larger marker for multiple birds
+      ),
+      zIndexOffset: birds.some(b => b.ring === props.bird.ring) ? 1000 : 100
+    })
+    .bindTooltip(L.tooltip({
+      permanent: false,
+      direction: 'top',
+      offset: [0, birds.length > 1 ? -12 : -8],
+      opacity: 0.9,
+      className: 'multi-bird-tooltip'
+    }).setContent(tooltipContent));
+
+    markerClusterGroup.value?.addLayer(marker);
+  });
+
+  // Fit bounds with animation disabled at high zoom
   if (markerClusterGroup.value.getLayers().length > 0) {
-    map.value.fitBounds(markerClusterGroup.value.getBounds().pad(0.1));
+    const zoom = map.value?.getZoom() || 0;
+    map.value?.fitBounds(markerClusterGroup.value.getBounds().pad(0.1), {
+      animate: zoom < 16
+    });
   }
 };
 
@@ -189,5 +226,12 @@ watch([() => props.bird, () => props.friends], () => {
 .custom-div-icon {
   background: none !important;
   border: none !important;
+}
+
+:deep(.multi-bird-tooltip) {
+  .leaflet-tooltip-content {
+    font-size: 0.9em;
+    line-height: 1.3;
+  }
 }
 </style>
