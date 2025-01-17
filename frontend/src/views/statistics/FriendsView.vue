@@ -138,12 +138,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { format } from 'date-fns';
 import type { BirdMeta, AnalyticsBirdMeta, Ringing, FriendResponse } from '@/types';
 import * as api from '@/api';
 import BirdDetails from '@/components/birds/BirdDetails.vue';
 import FriendsMap from '@/components/map/FriendsMap.vue';
+import { useRoute, useRouter } from 'vue-router';
 
 const searchQuery = ref('');
 const suggestions = ref<BirdMeta[]>([]);
@@ -153,6 +154,8 @@ const friendResponse = ref<FriendResponse | null>(null);
 const isLoadingSuggestions = ref(false);
 const isLoadingFriends = ref(false);
 const ringingData = ref<Ringing | null>(null);
+const route = useRoute();
+const router = useRouter();
 
 const friendColors = computed(() => {
   const colors = [
@@ -202,6 +205,17 @@ const loadRingingData = async (ring: string) => {
   }
 };
 
+const loadBirdByRing = async (ring: string) => {
+  try {
+    const bird = await api.getBirdByRing(ring);
+    if (bird) {
+      await selectBird(bird);
+    }
+  } catch (error) {
+    console.error('Error loading bird by ring:', error);
+  }
+};
+
 const selectBird = async (bird: BirdMeta) => {
   isLoadingFriends.value = true;
   try {
@@ -213,6 +227,7 @@ const selectBird = async (bird: BirdMeta) => {
     
     if (friendResponse.value.bird.ring) {
       await loadRingingData(friendResponse.value.bird.ring);
+      router.replace({ query: { ring: friendResponse.value.bird.ring }});
     }
   } catch (error) {
     console.error('Error fetching bird friends:', error);
@@ -224,6 +239,24 @@ const selectBird = async (bird: BirdMeta) => {
 const formatDate = (date: string) => {
   return format(new Date(date), 'dd.MM.yyyy');
 };
+
+// Handle direct navigation with ring parameter
+onMounted(async () => {
+  const ringParam = route.query.ring;
+  if (typeof ringParam === 'string' && ringParam.length > 0) {
+    await loadBirdByRing(ringParam);
+  }
+});
+
+// Watch for route changes to handle navigation
+watch(
+  () => route.query.ring,
+  async (newRing) => {
+    if (typeof newRing === 'string' && newRing.length > 0) {
+      await loadBirdByRing(newRing);
+    }
+  }
+);
 </script>
 
 <style scoped>

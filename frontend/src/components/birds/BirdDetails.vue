@@ -4,6 +4,15 @@
       Vogel Details
       <v-spacer></v-spacer>
       <v-btn
+        icon
+        variant="text"
+        :to="`/statistics/friends?ring=${bird?.ring}`"
+        v-tooltip="'Freunde analysieren'"
+        class="me-2"
+      >
+        <v-icon>mdi-account-group</v-icon>
+      </v-btn>
+      <v-btn
         v-if="bird?.ring"
         icon
         variant="text"

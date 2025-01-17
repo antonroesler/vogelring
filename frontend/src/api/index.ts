@@ -102,22 +102,13 @@ export const getBirdSuggestions = async (partialReading: string) => {
   return response.data;
 };
 
-export const getBirdByRing = async (ring: string) => {
-  console.log('Fetching bird with ring:', ring);
-  const encodedRing = encodeURIComponent(ring);
+export const getBirdByRing = async (ring: string): Promise<BirdMeta | null> => {
   try {
-    const response = await api.get<BirdMeta>(`/birds/${encodedRing}`);
-    console.log('Received bird:', response.data);
+    const response = await api.get<BirdMeta>(`/birds/${ring}`);
     return response.data;
   } catch (error) {
-    console.error('Error fetching bird:', error);
-    if (axios.isAxiosError(error) && error.response?.status === 502) {
-      // Log more details about the error
-      console.error('Full error details:', {
-        status: error.response?.status,
-        data: error.response?.data,
-        headers: error.response?.headers
-      });
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return null;
     }
     throw error;
   }
