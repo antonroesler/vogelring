@@ -74,3 +74,4 @@ env = ["LOCAL=true", "LOCAL_PATH=/Users/anton/Projects/vogelring/data/pkl"]
 convert = "rye run python scripts/processor/converter.py"
 deploy = "bash deploy.sh"
 test = "rye run pytest ring-api/tests/unit"
+local = "bash run.sh"
