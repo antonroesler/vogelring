@@ -127,6 +127,7 @@
                 :bird="selectedBird"
                 :friends="friends"
                 :friend-colors="friendColors"
+                :seen-status="friendResponse?.seen_status ?? {}"
               ></friends-map>
             </v-card-text>
           </v-card>
@@ -139,7 +140,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { format } from 'date-fns';
-import type { BirdMeta, AnalyticsBirdMeta, Ringing } from '@/types';
+import type { BirdMeta, AnalyticsBirdMeta, Ringing, FriendResponse } from '@/types';
 import * as api from '@/api';
 import BirdDetails from '@/components/birds/BirdDetails.vue';
 import FriendsMap from '@/components/map/FriendsMap.vue';
@@ -148,6 +149,7 @@ const searchQuery = ref('');
 const suggestions = ref<BirdMeta[]>([]);
 const selectedBird = ref<BirdMeta | null>(null);
 const friends = ref<AnalyticsBirdMeta[]>([]);
+const friendResponse = ref<FriendResponse | null>(null);
 const isLoadingSuggestions = ref(false);
 const isLoadingFriends = ref(false);
 const ringingData = ref<Ringing | null>(null);
@@ -203,14 +205,14 @@ const loadRingingData = async (ring: string) => {
 const selectBird = async (bird: BirdMeta) => {
   isLoadingFriends.value = true;
   try {
-    const response = await api.getBirdFriends(bird.ring);
-    selectedBird.value = response.bird;
-    friends.value = response.friends;
+    friendResponse.value = await api.getBirdFriends(bird.ring);
+    selectedBird.value = friendResponse.value.bird;
+    friends.value = friendResponse.value.friends;
     suggestions.value = [];
     searchQuery.value = '';
     
-    if (response.bird.ring) {
-      await loadRingingData(response.bird.ring);
+    if (friendResponse.value.bird.ring) {
+      await loadRingingData(friendResponse.value.bird.ring);
     }
   } catch (error) {
     console.error('Error fetching bird friends:', error);

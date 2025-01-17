@@ -52,6 +52,7 @@ export interface AnalyticsBirdMeta extends BirdMeta {
 export interface FriendResponse {
   bird: BirdMeta;
   friends: AnalyticsBirdMeta[];
+  seen_status: Record<string, SeenStatus>;
 }
 
 export interface RollingYearCountPerMonth {
@@ -128,4 +129,10 @@ export enum PairType {
   PAIRED = "x",
   FAMILY = "F",
   SCHOOL = "S"
+}
+
+export enum SeenStatus {
+  CURRENT_BIRD = "CURRENT_BIRD",
+  SEEN_TOGETHER = "SEEN_TOGETHER",
+  SEEN_SEPARATE = "SEEN_SEPARATE"
 }

@@ -1,5 +1,38 @@
 <template>
   <div>
+    <v-card v-if="selectedSighting" class="mb-4">
+      <v-card-text class="d-flex align-center justify-space-between">
+        <div>
+          <span class="font-weight-medium">{{ formatDate(selectedSighting.date) }}</span>
+          <span class="mx-2">•</span>
+          <span>{{ selectedSighting.place || 'Kein Ort' }}</span>
+          <span v-if="selectedSighting.area" class="text-medium-emphasis">
+            ({{ selectedSighting.area }})
+          </span>
+        </div>
+        <div class="d-flex align-center">
+          <v-btn
+            variant="text"
+            color="primary"
+            :to="`/entries/${selectedSighting.id}`"
+            target="_blank"
+            size="small"
+          >
+            Details öffnen
+            <v-icon size="small" class="ml-1">mdi-open-in-new</v-icon>
+          </v-btn>
+          <v-btn
+            variant="text"
+            color="grey"
+            @click="selectedSighting = null"
+            size="small"
+          >
+            <v-icon size="small">mdi-close</v-icon>
+          </v-btn>
+        </div>
+      </v-card-text>
+    </v-card>
+
     <div ref="mapContainer" style="height: 400px;"></div>
     <div class="map-controls">
       <v-btn-group density="compact" variant="outlined">
@@ -58,7 +91,9 @@ import L from 'leaflet';
 import 'leaflet.markercluster';
 import 'leaflet.markercluster/dist/MarkerCluster.css';
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+import '@/utils/leaflet-extensions';
 import type { Sighting, Ringing } from '@/types';
+import { format } from 'date-fns';
 
 const props = defineProps<{
   currentSighting?: Sighting;
@@ -90,12 +125,9 @@ const baseMaps = {
   }
 };
 
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('de-DE', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
+const formatDate = (date: string | undefined | null) => {
+  if (!date) return '';
+  return format(new Date(date), 'dd.MM.yyyy');
 };
 
 const timelineMode = computed(() => props.timelineMode);
@@ -238,22 +270,13 @@ const cleanup = () => {
   }
 };
 
+const selectedSighting = ref<Sighting | null>(null);
+
 const updateMarkers = () => {
   if (!map.value || !markerClusterGroup.value) return;
 
-  // Clear existing markers and close any open popups
-  map.value.closePopup();
+  // Clear existing markers
   markerClusterGroup.value.clearLayers();
-
-  // Helper function to create popup
-  const createPopup = (content: string) => {
-    return L.popup({
-      closeButton: false,
-      offset: [0, -10],
-      closeOnClick: true,
-      autoPan: false
-    }).setContent(content);
-  };
 
   // Helper function to check if coordinates are valid
   const hasValidCoordinates = (lat: number | null | undefined, lon: number | null | undefined): boolean => {
@@ -270,7 +293,9 @@ const updateMarkers = () => {
             icon: createTimelineIconWithExactLocation(sighting.date, sighting.is_exact_location ?? false),
             zIndexOffset: 0
           }
-        ).bindPopup(createPopup(`Sichtung am ${formatDate(sighting.date)}`));
+        ).on('click', () => {
+          selectedSighting.value = sighting;
+        });
         
         markerClusterGroup.value?.addLayer(marker);
       }
@@ -288,14 +313,16 @@ const updateMarkers = () => {
                 icon: otherIcon(sighting.is_exact_location ?? false),
                 zIndexOffset: 0
               }
-            ).bindPopup(createPopup(`Sichtung am ${formatDate(sighting.date)}`));
+            ).on('click', () => {
+              selectedSighting.value = sighting;
+            });
             
             markerClusterGroup.value?.addLayer(marker);
           }
         });
     }
 
-    // Add current sighting marker (not in cluster)
+    // Add current sighting marker
     if (props.currentSighting && hasValidCoordinates(props.currentSighting.lat, props.currentSighting.lon)) {
       const currentMarker = L.marker(
         [props.currentSighting.lat!, props.currentSighting.lon!],
@@ -303,13 +330,15 @@ const updateMarkers = () => {
           icon: currentIcon(props.currentSighting.is_exact_location ?? false),
           zIndexOffset: 1000
         }
-      ).bindPopup(createPopup(`Aktuelle Sichtung (${formatDate(props.currentSighting.date)})`));
+      ).on('click', () => {
+        selectedSighting.value = props.currentSighting!;
+      });
       
       map.value.addLayer(currentMarker);
     }
   }
 
-  // Add ringing marker if available (not in cluster)
+  // Add ringing marker if available
   if (props.ringingData && hasValidCoordinates(props.ringingData.lat, props.ringingData.lon)) {
     const ringingMarker = L.marker(
       [props.ringingData.lat!, props.ringingData.lon!],
@@ -317,7 +346,9 @@ const updateMarkers = () => {
         icon: ringingIcon,
         zIndexOffset: 2000
       }
-    ).bindPopup(createPopup(`Beringungsort (${formatDate(props.ringingData.date)})`));
+    ).on('click', () => {
+      // For ringing data, we could show a different kind of info or disable click
+    });
     
     map.value.addLayer(ringingMarker);
   }
@@ -498,5 +529,9 @@ onMounted(() => {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+}
+
+.v-card-text {
+  padding: 12px 16px !important;
 }
 </style>
