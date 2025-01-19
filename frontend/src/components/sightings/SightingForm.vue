@@ -263,8 +263,23 @@
         <leaflet-map
           v-model:latitude="latitude"
           v-model:longitude="longitude"
+          :show-default-marker="false"
+          @marker-placed="handleMarkerPlaced"
         ></leaflet-map>
-        <v-row v-if="showCoordinates" class="mt-2" dense>
+        
+        <!-- Add location accuracy toggle when coordinates are set -->
+        <v-row v-if="hasCoordinates" class="mt-2" dense>
+          <v-col cols="12">
+            <v-checkbox
+              v-model="localSighting.is_exact_location"
+              label="Exakter Standort"
+              density="comfortable"
+              hint="Deaktivieren Sie diese Option, wenn der Standort nicht genau ist"
+            ></v-checkbox>
+          </v-col>
+        </v-row>
+
+        <v-row v-if="showCoordinates && hasCoordinates" class="mt-2" dense>
           <v-col cols="6">
             <v-text-field
               v-model="latitude"
@@ -449,14 +464,37 @@ const saveSighting = () => {
   emit('submit', localSighting.value);
 };
 
+const hasCoordinates = computed(() => {
+  return typeof latitude.value === 'number' && 
+         typeof longitude.value === 'number' &&
+         !isNaN(latitude.value) && 
+         !isNaN(longitude.value);
+});
+
+const handleMarkerPlaced = () => {
+  if (!localSighting.value.is_exact_location) {
+    localSighting.value.is_exact_location = true;
+  }
+};
+
 const latitude = computed({
-  get: () => localSighting.value.lat ?? 50.1109,
-  set: (val) => localSighting.value.lat = val
+  get: () => localSighting.value.lat ?? null,
+  set: (val) => {
+    localSighting.value.lat = val;
+    if (val === null) {
+      localSighting.value.is_exact_location = false;
+    }
+  }
 });
 
 const longitude = computed({
-  get: () => localSighting.value.lon ?? 8.6821,
-  set: (val) => localSighting.value.lon = val
+  get: () => localSighting.value.lon ?? null,
+  set: (val) => {
+    localSighting.value.lon = val;
+    if (val === null) {
+      localSighting.value.is_exact_location = false;
+    }
+  }
 });
 </script>
 

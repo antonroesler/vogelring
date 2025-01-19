@@ -43,10 +43,8 @@ const clearFieldsSettings = ref<Record<string, boolean>>({});
 
 const sighting = ref<Partial<Sighting>>({
   date: new Date().toISOString().split('T')[0],
-  lat: 50.1109,
-  lon: 8.6821,
   melded: false,
-  is_exact_location: true
+  is_exact_location: false
 });
 
 const saveSighting = async (newSighting: Partial<Sighting>) => {
@@ -65,11 +63,18 @@ const saveSighting = async (newSighting: Partial<Sighting>) => {
       }
     });
 
-    // Always preserve coordinates
-    preservedSighting.lat = newSighting.lat;
-    preservedSighting.lon = newSighting.lon;
-    preservedSighting.melded = false;
+    // Handle coordinates together
+    if (clearFieldsSettings.value.lat || clearFieldsSettings.value.lon) {
+      preservedSighting.lat = null;
+      preservedSighting.lon = null;
+      preservedSighting.is_exact_location = false;
+    } else {
+      preservedSighting.lat = newSighting.lat;
+      preservedSighting.lon = newSighting.lon;
+      preservedSighting.is_exact_location = newSighting.is_exact_location;
+    }
 
+    preservedSighting.melded = false;
     sighting.value = preservedSighting;
   } catch (error) {
     console.error('Error saving sighting:', error);

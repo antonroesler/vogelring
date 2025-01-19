@@ -31,7 +31,7 @@
           <v-row dense>
             <v-col 
               cols="12" 
-              v-for="field in fields" 
+              v-for="field in fields.filter(f => !f.hidden)" 
               :key="field.key"
               class="field-col"
             >
@@ -84,8 +84,6 @@ const fields = [
   { key: 'habitat', label: 'Habitat' },
   { key: 'area', label: 'Kleinfläche' },
   { key: 'field_fruit', label: 'Feldfrucht' },
-  { key: 'reading', label: 'Ablesung' },
-  { key: 'ring', label: 'Ring' },
   { key: 'species', label: 'Spezies' },
   { key: 'partner', label: 'Partner' },
   { key: 'small_group_size', label: 'Kleingruppe' },
@@ -98,7 +96,8 @@ const fields = [
   { key: 'melder', label: 'Melder' },
   { key: 'melded', label: 'Gemeldet' },
   { key: 'comment', label: 'Kommentar' },
-  { key: 'coordinates', label: 'Koordinaten' },
+  { key: 'lat', label: 'Koordinaten' },
+  { key: 'lon', label: 'Koordinaten (hidden)', hidden: true },
 ];
 
 const defaultSettings = Object.fromEntries(
