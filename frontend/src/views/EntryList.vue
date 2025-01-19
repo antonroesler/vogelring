@@ -50,6 +50,7 @@
     <sightings-table
       :sightings="filteredSightings"
       :loading="store.loading"
+      :use-store-pagination="true"
       @deleted="handleSightingDeleted"
       @melded-updated="handleMeldedUpdated"
     ></sightings-table>

@@ -116,6 +116,9 @@
               v-if="otherSightings.length > 0"
               :sightings="otherSightings"
               :loading="false"
+              :use-store-pagination="false"
+              :default-page="1"
+              :default-items-per-page="10"
               @deleted="handleSightingDeleted"
             ></sightings-table>
             <v-alert

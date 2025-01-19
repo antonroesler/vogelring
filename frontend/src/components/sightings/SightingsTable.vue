@@ -76,6 +76,9 @@ import { useSightingsStore } from '@/stores/sightings';
 const props = defineProps<{
   sightings: Sighting[];
   loading: boolean;
+  useStorePagination?: boolean;
+  defaultPage?: number;
+  defaultItemsPerPage?: number;
 }>();
 
 const emit = defineEmits<{
@@ -91,15 +94,29 @@ const loadingMeldedStates = ref<Record<string, boolean>>({});
 
 const store = useSightingsStore();
 
-// Add computed properties for pagination
+const localPage = ref(props.defaultPage || 1);
+const localItemsPerPage = ref(props.defaultItemsPerPage || 10);
+
 const page = computed({
-  get: () => store.pagination.page,
-  set: (value) => store.setPagination({ page: value })
+  get: () => props.useStorePagination ? store.pagination.page : localPage.value,
+  set: (value) => {
+    if (props.useStorePagination) {
+      store.setPagination({ page: value });
+    } else {
+      localPage.value = value;
+    }
+  }
 });
 
 const itemsPerPage = computed({
-  get: () => store.pagination.itemsPerPage,
-  set: (value) => store.setPagination({ itemsPerPage: value })
+  get: () => props.useStorePagination ? store.pagination.itemsPerPage : localItemsPerPage.value,
+  set: (value) => {
+    if (props.useStorePagination) {
+      store.setPagination({ itemsPerPage: value });
+    } else {
+      localItemsPerPage.value = value;
+    }
+  }
 });
 
 const headers = [
@@ -119,13 +136,16 @@ const formatDate = (date?: string) => {
 
 const handleRowClick = (event: Event, item: any) => {
   const sighting = item.item;
+  const query: Record<string, string> = { from: 'list' };
+  
+  if (props.useStorePagination) {
+    query.page = store.pagination.page.toString();
+    query.perPage = store.pagination.itemsPerPage.toString();
+  }
+  
   router.push({
     path: `/entries/${sighting.id}`,
-    query: { 
-      from: 'list',
-      page: store.pagination.page.toString(),
-      perPage: store.pagination.itemsPerPage.toString()
-    }
+    query
   });
 };
 
