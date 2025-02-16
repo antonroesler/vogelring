@@ -24,6 +24,7 @@ export interface Sighting {
   breed_size?: number | null;
   family_size?: number | null;
   pair?: PairType | null;
+  sex?: "M" | "W" | null;
 }
 
 export enum BirdStatus {

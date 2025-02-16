@@ -219,6 +219,17 @@
         ></v-select>
       </v-col>
       <v-col cols="12" sm="4" md="4">
+        <v-select
+          v-model="localSighting.sex"
+          :items="sexItems"
+          label="Geschlecht"
+          density="comfortable"
+          clearable
+        ></v-select>
+      </v-col>
+
+      <!-- Third row -->
+      <v-col cols="12" sm="4" md="4">
         <v-autocomplete
           v-model="localSighting.melder"
           :items="filteredMelders"
@@ -233,8 +244,6 @@
           density="comfortable"
         ></v-autocomplete>
       </v-col>
-
-      <!-- Third row -->
       <v-col cols="12" sm="4" md="4">
         <v-checkbox
           v-model="localSighting.melded"
@@ -365,6 +374,11 @@ const ageItems = [
   { title: 'Diesjährig', value: BirdAge.DJ },
   { title: 'Vorjährig', value: BirdAge.VJ },
   { title: 'Juvenil', value: BirdAge.JUV }
+];
+
+const sexItems = [
+  { title: 'Männlich', value: 'M' },
+  { title: 'Weiblich', value: 'W' }
 ];
 
 const pairItems = [

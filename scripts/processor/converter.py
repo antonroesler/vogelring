@@ -8,9 +8,9 @@ import random
 import math
 
 
-outfile = Path("data/pkl/sightings-jan-5.pkl")
-infile = Path("/Users/anton/Documents/export-jan-5/main.csv")
-orte_file = Path("/Users/anton/Documents/export-jan-5/places.csv")
+outfile = Path("data/pkl/sightings-feb-16.pkl")
+infile = Path("/Users/anton/Documents/vogelring/main.csv")
+orte_file = Path("/Users/anton/Documents/vogelring/orte.csv")
 
 
 class SightingCols(Enum):
@@ -20,6 +20,7 @@ class SightingCols(Enum):
     date = 7
     place = 8
     area = 11
+    sex = 12
     age = 13
     breed_size = 14
     family_size = 15
@@ -152,6 +153,9 @@ def extract_sighting_data(entry: list[str]) -> dict:
     json_data["melded"] = not (json_data.get("melded", "") == "x")
 
     json_data["age"] = parse_age(entry[SightingCols.age.value])
+    json_data["sex"] = (
+        entry[SightingCols.sex.value].strip() if entry[SightingCols.sex.value].strip() in ["M", "W"] else None
+    )
     json_data["status"] = parse_status(entry[SightingCols.status.value])
     json_data["habitat"] = None if entry[SightingCols.habitat.value] in ["0", ""] else entry[SightingCols.habitat.value]
     json_data["field_fruit"] = extract_field_fruit(entry[SightingCols.field_fruit.value])

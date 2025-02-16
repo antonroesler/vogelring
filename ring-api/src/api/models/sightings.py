@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field, field_serializer
 from datetime import date as _date
 from uuid import uuid4
 from enum import Enum
+from typing import Literal
 
 
 class BirdStatus(str, Enum):
@@ -35,6 +36,7 @@ class Sighting(BaseModel):
     ring: str | None = None
     reading: str | None = None
     age: BirdAge | None = None
+    sex: Literal["M", "W"] | None = None
 
     # Date
     date: _date | None = None
