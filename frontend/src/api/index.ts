@@ -196,3 +196,10 @@ export const updateRinging = async (ringing: Partial<Ringing>) => {
   console.log('Updated ringing:', response.data);
   return response.data;
 };
+
+export const getSeasonalAnalysis = async () => {
+  console.log('Fetching seasonal analysis');
+  const response = await api.get('/seasonal-analysis');
+  console.log('Received seasonal analysis:', response.data);
+  return response.data;
+};

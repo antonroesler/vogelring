@@ -29,6 +29,7 @@ from api.service.places import get_place_name_list
 from api.service.species import get_species_name_list
 from api.service.ringing import get_ringing_by_ring, upsert_ringing, delete_ringing
 from api.service.suggestions import get_suggestion_lists
+from api.service.seasonal_analysis import get_seasonal_analysis
 
 __all__ = [
     "add_sighting",
@@ -55,4 +56,5 @@ __all__ = [
     "delete_ringing",
     "get_species_name_list",
     "get_suggestion_lists",
+    "get_seasonal_analysis",
 ]

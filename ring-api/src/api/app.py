@@ -19,6 +19,7 @@ from api.version import __version__
 from api import service
 from api.models.sightings import BirdMeta, Sighting
 from api.models.ringing import Ringing
+from api.service.seasonal_analysis import SeasonalAnalysis
 from typing import Optional
 import json
 import re
@@ -334,6 +335,14 @@ def post_shareable_report():
     except Exception as e:
         logger.error(f"Error generating shareable report: {str(e)}")
         raise InternalServerError("Error generating shareable report")
+
+
+# Seasonal Analysis
+
+
+@app.get("/seasonal-analysis")
+def get_seasonal_analysis() -> SeasonalAnalysis:
+    return Response(status_code=200, body=json.dumps(service.get_seasonal_analysis().model_dump()), headers=headers)
 
 
 # Main

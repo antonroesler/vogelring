@@ -23,6 +23,12 @@
           >
             Umkreis
           </v-btn>
+          <v-btn
+            :to="{ name: 'statistics-seasonal' }"
+            :color="isActive('statistics-seasonal') ? 'primary' : undefined"
+          >
+            Saisonale Analyse
+          </v-btn>
         </v-btn-group>
       </v-card-text>
     </v-card>

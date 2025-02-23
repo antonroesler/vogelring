@@ -17,6 +17,11 @@ const routes = [
         path: 'radius',
         name: 'statistics-radius',
         component: () => import('@/views/statistics/RadiusView.vue')
+      },
+      {
+        path: 'seasonal',
+        name: 'statistics-seasonal',
+        component: () => import('@/views/statistics/SeasonalAnalysisView.vue')
       }
     ]
   },

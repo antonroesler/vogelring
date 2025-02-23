@@ -27,8 +27,8 @@ class RingingCols(Enum):
     species = 2  # E
     date = 9  # L Format is 2011-10-03 07:30:00
     place_id = 12
-    lat = 26
-    lon = 27
+    lat = 27
+    lon = 26
     ringer = 15
     sex = 4
     age = 5
