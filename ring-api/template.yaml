@@ -87,6 +87,8 @@ Resources:
             BucketName: vogelring-data
         - DynamoDBReadPolicy:
             TableName: vogelring
+        - DynamoDBCrudPolicy:
+            TableName: vogelring
         - Statement:
             - Effect: Allow
               Action:

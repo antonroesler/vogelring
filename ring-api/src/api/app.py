@@ -218,6 +218,53 @@ def get_ringing_by_ring(ring: str) -> Ringing | None:
     return Response(status_code=200, body=json.dumps(ringing.model_dump()), headers=headers)
 
 
+@app.post("/ringing")
+def add_ringing():
+    body: Optional[str] = app.current_event.body
+    if body is None:
+        raise BadRequestError("Request body is required")
+    logger.info(f"Add ringing: {body}")
+    try:
+        ringing = Ringing(**json.loads(body))
+        service.upsert_ringing(ringing)
+        return Response(status_code=201, body=json.dumps(ringing.model_dump()), headers=headers)
+    except ValidationError as e:
+        logger.error(f"Validation error adding ringing: {e}")
+        raise BadRequestError(str(e))
+    except Exception as e:
+        logger.error(f"Error adding ringing: {e}")
+        raise InternalServerError("An error occurred while adding the ringing")
+
+
+@app.put("/ringing")
+def update_ringing():
+    body: Optional[str] = app.current_event.body
+    if body is None:
+        raise BadRequestError("Request body is required")
+    logger.info(f"Update ringing: {body}")
+    try:
+        ringing = Ringing(**json.loads(body))
+        if service.get_ringing_by_ring(ringing.ring) is None:
+            raise NotFoundError(f"Ringing with ring {ringing.ring} not found")
+        service.upsert_ringing(ringing)
+        return Response(status_code=200, body=json.dumps(ringing.model_dump()), headers=headers)
+    except ValidationError as e:
+        logger.error(f"Validation error updating ringing: {e}")
+        raise BadRequestError(str(e))
+    except Exception as e:
+        logger.error(f"Error updating ringing: {e}")
+        raise InternalServerError("An error occurred while updating the ringing")
+
+
+@app.delete("/ringing/<ring>")
+def delete_ringing(ring: str):
+    logger.info(f"Delete ringing: {ring}")
+    if service.get_ringing_by_ring(ring) is None:
+        raise NotFoundError(f"Ringing with ring {ring} not found")
+    service.delete_ringing(ring)
+    return Response(status_code=204, headers=headers)
+
+
 # Places
 
 
