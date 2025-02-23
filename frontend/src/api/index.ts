@@ -176,3 +176,23 @@ export const getRingingByRing = async (ring: string) => {
     throw error;
   }
 };
+
+export const createRinging = async (ringing: Partial<Ringing>) => {
+  console.log('Creating ringing:', ringing);
+  const response = await api.post<Ringing>('/ringing', ringing);
+  console.log('Created ringing:', response.data);
+  return response.data;
+};
+
+export const deleteRinging = async (ring: string) => {
+  console.log('Deleting ringing:', ring);
+  await api.delete(`/ringing/${ring}`);
+  console.log('Ringing deleted');
+};
+
+export const updateRinging = async (ringing: Partial<Ringing>) => {
+  console.log('Updating ringing:', ringing);
+  const response = await api.put<Ringing>('/ringing', ringing);
+  console.log('Updated ringing:', response.data);
+  return response.data;
+};

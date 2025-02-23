@@ -66,6 +66,11 @@
           color="white"
         >Eintragliste</v-btn>
         <v-btn 
+          to="/ringing" 
+          variant="text"
+          color="white"
+        >Beringungen</v-btn>
+        <v-btn 
           to="/statistics" 
           variant="text"
           color="white"
