@@ -22,24 +22,64 @@
           :no-data-append-icon="null"
           placeholder="Ring suchen..."
           item-title="ring"
+          item-value="ring"
           return-object
           class="bird-search"
           density="compact"
           variant="solo"
           @update:search="debouncedSearch"
           @update:model-value="onBirdSelected"
+          :filter="() => true"
+          :custom-filter="() => true"
         >
-          <template v-slot:item="{ props, item }">
-            <v-list-item v-bind="props">
-              <template v-slot:title>
-                <strong>{{ item.raw.ring }}</strong> - {{ item.raw.species }}
-              </template>
-              <template v-slot:subtitle>
-                {{ item.raw.sighting_count }} 
-                Sichtung{{ item.raw.sighting_count !== 1 ? 'en' : '' }},
-                zuletzt: {{ formatDate(item.raw.last_seen) }}
-              </template>
-            </v-list-item>
+          <template v-slot:item="{ item }">
+            <div class="d-flex align-center py-1 px-2 suggestion-item" @click="navigateToBird(item.raw)">
+              <v-icon icon="mdi-bird" color="primary" size="small" class="mr-2"></v-icon>
+              <div class="flex-grow-1">
+                <div><strong>{{ item.raw.ring }}</strong> - {{ item.raw.species }}</div>
+                <div class="text-caption">
+                  {{ item.raw.sighting_count }} 
+                  Sichtung{{ item.raw.sighting_count !== 1 ? 'en' : '' }} | 
+                  Letzte Sichtung: {{ formatDate(item.raw.last_seen) }}
+                </div>
+              </div>
+              <v-btn
+                icon
+                size="small"
+                variant="text"
+                color="primary"
+                @click.stop="navigateToBird(item.raw)"
+                class="ml-2"
+              >
+                <v-icon>mdi-eye</v-icon>
+                <v-tooltip activator="parent" location="bottom">
+                  Details anzeigen
+                </v-tooltip>
+              </v-btn>
+            </div>
+          </template>
+
+          <!-- Custom no-data slot to differentiate between loading and no results -->
+          <template v-slot:no-data>
+            <div class="pa-2">
+              <div v-if="isLoading" class="d-flex align-center">
+                <v-progress-circular
+                  indeterminate
+                  size="20"
+                  width="2"
+                  color="primary"
+                  class="mr-2"
+                ></v-progress-circular>
+                <span>Suche läuft...</span>
+              </div>
+              <div v-else-if="noResults && searchQuery.length >= 2" class="text-center">
+                <v-icon icon="mdi-alert-circle-outline" color="warning" class="mr-1"></v-icon>
+                Keine Ergebnisse gefunden
+              </div>
+              <div v-else-if="searchQuery.length < 2" class="text-center text-medium-emphasis">
+                Bitte mindestens 2 Zeichen eingeben
+              </div>
+            </div>
           </template>
 
           <!-- Add message for additional results -->
@@ -91,6 +131,7 @@ import { ref, onMounted, computed } from 'vue';
 import { api } from './api';
 import { useRouter } from 'vue-router';
 import debounce from 'lodash/debounce';
+import { SuggestionBird } from './types';
 
 interface Sighting {
   id: string;
@@ -109,15 +150,8 @@ interface Sighting {
   habitat: string;
 }
 
-interface BirdSuggestion {
-  species: string;
-  ring: string;
-  sighting_count: number;
-  last_seen: string;
-  first_seen: string;
-  other_species_identifications: Record<string, number>;
-  sightings: Sighting[];
-}
+// Use the SuggestionBird type directly instead of redefining it
+type BirdSuggestion = SuggestionBird;
 
 const router = useRouter();
 const version = ref<string>();
@@ -126,23 +160,16 @@ const suggestions = ref<BirdSuggestion[]>([]);
 const isLoading = ref(false);
 const selectedBird = ref<BirdSuggestion | null>(null);
 const totalResults = ref(0);
+const noResults = ref(false);
+const latestRequestId = ref(0); // To track the latest request
 
-// Computed property for sorted and limited suggestions
+// Updated computed property - no sorting needed, API provides sorted results
 const sortedSuggestions = computed(() => {
-  const sorted = [...suggestions.value].sort((a, b) => {
-    // First sort by sighting count (descending)
-    const countDiff = b.sighting_count - a.sighting_count;
-    if (countDiff !== 0) return countDiff;
-    
-    // Then by last seen date (descending)
-    return new Date(b.last_seen).getTime() - new Date(a.last_seen).getTime();
-  });
-  
-  // Store total count before limiting
-  totalResults.value = sorted.length;
+  // Store total count
+  totalResults.value = suggestions.value.length;
   
   // Return only first 50 results
-  return sorted.slice(0, 50);
+  return suggestions.value.slice(0, 50);
 });
 
 // Format date helper function
@@ -151,22 +178,57 @@ const formatDate = (date: string | null) => {
   return new Date(date).toLocaleDateString('de-DE');
 };
 
+// Format the autocomplete item text for display
+const formatBirdInfo = (item: SuggestionBird) => {
+  return {
+    title: `${item.ring} - ${item.species}`,
+    subtitle: `${item.sighting_count} Sichtung${item.sighting_count !== 1 ? 'en' : ''} | Letzte Sichtung: ${formatDate(item.last_seen)}`
+  };
+};
+
 // Debounced search function
 const debouncedSearch = debounce(async (query: string) => {
   if (!query || query.length < 2) {
     suggestions.value = [];
+    noResults.value = false;
     return;
   }
 
   isLoading.value = true;
+  noResults.value = false;
+  
+  // Generate a unique request ID
+  const currentRequestId = ++latestRequestId.value;
+  
   try {
+    console.log(`Sending request for query "${query}" (request ID: ${currentRequestId})`);
     const response = await api.get<BirdSuggestion[]>(`/birds/suggestions/${query}`);
-    suggestions.value = response.data;
+    
+    // Only update if this is still the latest request
+    if (currentRequestId === latestRequestId.value) {
+      console.log(`Received ${response.data.length} suggestions for query "${query}"`);
+      suggestions.value = response.data;
+      noResults.value = response.data.length === 0;
+      
+      // Debugging log to see the structure of the response data
+      if (response.data.length > 0) {
+        console.log('First suggestion:', JSON.stringify(response.data[0]));
+      }
+    } else {
+      console.log(`Discarding stale response for query "${query}" (request ID: ${currentRequestId})`);
+    }
   } catch (error) {
-    console.error('Failed to fetch suggestions:', error);
-    suggestions.value = [];
+    // Only update if this is still the latest request
+    if (currentRequestId === latestRequestId.value) {
+      console.error('Failed to fetch suggestions:', error);
+      suggestions.value = [];
+      noResults.value = true;
+    }
   } finally {
-    isLoading.value = false;
+    // Only update if this is still the latest request
+    if (currentRequestId === latestRequestId.value) {
+      isLoading.value = false;
+    }
   }
 }, 900);
 
@@ -177,6 +239,13 @@ const onBirdSelected = (bird: BirdSuggestion | null) => {
     selectedBird.value = null;
     searchQuery.value = '';
   }
+};
+
+// Navigate to bird details page
+const navigateToBird = (bird: BirdSuggestion) => {
+  router.push(`/birds/${bird.ring}`);
+  selectedBird.value = null;
+  searchQuery.value = '';
 };
 
 onMounted(async () => {
@@ -335,5 +404,42 @@ onMounted(async () => {
 .navigation-buttons .v-btn:hover {
   opacity: 1;
   background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Styles for loading and no-results states */
+.bird-search .v-autocomplete__no-data {
+  padding: 8px;
+  min-height: 48px;
+}
+
+.bird-search .v-autocomplete__no-data .v-progress-circular {
+  margin-right: 8px;
+}
+
+.bird-search .v-autocomplete__no-data .text-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+}
+
+/* Styles for suggestion items */
+.suggestion-item {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border-radius: 4px;
+  margin: 2px 0;
+}
+
+.suggestion-item:hover {
+  background-color: rgba(0, 67, 108, 0.05);
+}
+
+.suggestion-item .v-btn {
+  opacity: 0.7;
+}
+
+.suggestion-item:hover .v-btn {
+  opacity: 1;
 }
 </style>

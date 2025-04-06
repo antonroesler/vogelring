@@ -1,6 +1,7 @@
 from typing import Counter
 from api.service.get_sightings import get_sightings_by_ring, get_sightings
-from api.models.sightings import BirdMeta, Partner
+from api.models.sightings import BirdMeta, Partner, SuggestionBird
+from collections import defaultdict
 
 
 def get_bird_by_ring(ring: str) -> BirdMeta | None:
@@ -44,30 +45,83 @@ def get_unique_rings() -> list[str]:
     return list(set(sighting.ring for sighting in sightings if sighting.ring is not None))
 
 
-def get_bird_suggestions_by_partial_reading(partial_reading: str) -> list[BirdMeta]:
+def is_suggestion(partial_reading, ring):
+    # Case 1: Partial reading is missing both outer endings *8043*
+    if partial_reading.startswith("*") and partial_reading.endswith("*"):
+        if partial_reading[1:-1] in ring:
+            return True
+    # Case 2: Partial reading is missing ending 280*
+    elif partial_reading.endswith("*"):
+        if ring.startswith(partial_reading[:-1]):
+            return True
+    # Case 3: Partial reading is missing starting *35
+    elif partial_reading.startswith("*"):
+        if ring.endswith(partial_reading[1:]):
+            return True
+    # Case 4: Partial reading is missing middle 28*35
+    elif "*" in partial_reading:
+        start, end = partial_reading.split("*")
+        if ring.startswith(start) and ring.endswith(end):
+            return True
+    return False
+
+
+def max_or_none(a, b):
+    if a is None:
+        return b
+    if b is None:
+        return a
+    return max(a, b)
+
+
+def min_or_none(a, b):
+    if a is None:
+        return b
+    if b is None:
+        return a
+    return min(a, b)
+
+
+def get_bird_suggestions_by_partial_reading(partial_reading: str) -> list[SuggestionBird]:
     """Return a list of bird meta information suggestions by partial reading.
     Partial reading can be only front, back, outer or middle reading."""
     partial_reading = partial_reading.replace("...", "*").replace("…", "*")
-    all_rings = get_unique_rings()
+    sightings = get_sightings()
+    suggestions = dict()
 
-    # Case 1: Partial reading is outer reading *8043*
-    if partial_reading.startswith("*") and partial_reading.endswith("*"):
-        potential_rings = [ring for ring in all_rings if partial_reading.replace("*", "") in ring]
-        return [get_bird_by_ring(ring) for ring in potential_rings]
-    # Case 2: Partial reading is front reading 280*
-    elif partial_reading.endswith("*"):
-        potential_rings = [ring for ring in all_rings if ring.startswith(partial_reading[:-1])]
-        return [get_bird_by_ring(ring) for ring in potential_rings]
-    # Case 3: Partial reading is back reading *35
-    elif partial_reading.startswith("*"):
-        return [get_bird_by_ring(ring) for ring in all_rings if ring.endswith(partial_reading[1:])]
-    # Case 4: Partial reading is middle reading 28*35
-    elif "*" in partial_reading:
-        start = partial_reading.split("*")[0]
-        end = partial_reading.split("*")[-1]
-        return [get_bird_by_ring(ring) for ring in all_rings if ring.startswith(start) and ring.endswith(end)]
-    return [get_bird_by_ring(partial_reading)]
+    for sighting in sightings:
+        if len(suggestions) >= 30:
+            break
+        if sighting.ring and is_suggestion(partial_reading, sighting.ring):
+            if sighting.ring not in suggestions:
+                suggestions[sighting.ring] = dict(
+                    ring=sighting.ring,
+                    species=[sighting.species],
+                    sighting_count=1,
+                    last_seen=sighting.date,
+                    first_seen=sighting.date,
+                )
+            else:
+                suggestions[sighting.ring]["sighting_count"] += 1
+                suggestions[sighting.ring]["species"].append(sighting.species)
+                suggestions[sighting.ring]["last_seen"] = max_or_none(
+                    suggestions[sighting.ring]["last_seen"], sighting.date
+                )
+                suggestions[sighting.ring]["first_seen"] = min_or_none(
+                    suggestions[sighting.ring]["first_seen"], sighting.date
+                )
+    suggestion_birds = [
+        SuggestionBird(
+            ring=suggestion["ring"],
+            species=max(suggestion["species"], key=suggestion["species"].count),
+            sighting_count=suggestion["sighting_count"],
+            last_seen=suggestion["last_seen"],
+            first_seen=suggestion["first_seen"],
+        )
+        for suggestion in suggestions.values()
+    ]
+    return sorted(suggestion_birds, key=lambda suggestion: suggestion.sighting_count, reverse=True)
 
 
 if __name__ == "__main__":
-    print(get_bird_suggestions_by_partial_reading("27484*"))
+    print(get_bird_suggestions_by_partial_reading("*22"))

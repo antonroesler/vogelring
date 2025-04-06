@@ -43,11 +43,16 @@ def get_seasonal_analysis() -> SeasonalAnalysis:
         if sighting.species not in recent_counts:
             recent_counts[sighting.species] = {k: 0 for k in range(1, 13)}
 
-        # Check if this sighting is from the last 12 months
+        # Check if this sighting is from the last 12 months+
         months_diff = (current_year - sighting.date.year) * 12 + (current_month - sighting.date.month)
 
         if 0 <= months_diff < 12:
             recent_counts[sighting.species][sighting.date.month] += 1
+
+    # Replace None species with "Unbekannt"
+    year_species_counts = {
+        "Unbekannt" if species is None else species: year_counts for species, year_counts in year_species_counts.items()
+    }
 
     return SeasonalAnalysis(
         counts={

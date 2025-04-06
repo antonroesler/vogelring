@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Sighting, BirdMeta, FriendResponse, Dashboard, Ringing, ShareableReport } from '../types';
+import type { Sighting, BirdMeta, FriendResponse, Dashboard, Ringing, ShareableReport, SuggestionBird } from '../types';
 
 const API_BASE_URL = 'https://782syzefh4.execute-api.eu-central-1.amazonaws.com/Prod';
 const API_KEY = import.meta.env.VITE_API_KEY;
@@ -97,7 +97,7 @@ export const deleteSighting = async (id: string) => {
 
 export const getBirdSuggestions = async (partialReading: string) => {
   console.log('Fetching bird suggestions for:', partialReading);
-  const response = await api.get<BirdMeta[]>(`/birds/suggestions/${partialReading}`);
+  const response = await api.get<SuggestionBird[]>(`/birds/suggestions/${partialReading}`);
   console.log('Received suggestions:', response.data);
   return response.data;
 };

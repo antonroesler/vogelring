@@ -63,13 +63,6 @@
                         </div>
                         <p>Der schattierte Bereich zeigt die typische Spanne der Sichtungen. 50% aller historischen Sichtungen liegen in diesem Bereich.</p>
                       </div>
-                      <div class="explanation-item">
-                        <div class="explanation-title">
-                          <div class="x-sample">×</div>
-                          <strong>Historisches Maximum</strong>
-                        </div>
-                        <p>Der höchste jemals erfasste Wert für diesen Monat.</p>
-                      </div>
                     </div>
                   </v-card-text>
                 </v-card>
@@ -87,7 +80,7 @@ import { ref, computed, onMounted } from 'vue';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
-import { LineChart } from 'echarts/charts';
+import { LineChart, ScatterChart } from 'echarts/charts';
 import { 
   GridComponent,
   TooltipComponent,
@@ -102,6 +95,7 @@ import * as api from '@/api';
 use([
   CanvasRenderer,
   LineChart,
+  ScatterChart,
   GridComponent,
   TooltipComponent,
   MarkLineComponent,
@@ -149,8 +143,10 @@ const getChartOption = (species: string) => {
   };
 
   // Prepare data arrays
-  const maxValue = Math.max(...speciesData.map((d: { max_count: number }) => d.max_count));
-
+  const maxQ3 = Math.max(...speciesData.map((d: { q3_avg: number }) => d.q3_avg));
+  const maxRecent = Math.max(...speciesData.map((d: { recent_count: number }) => d.recent_count));
+  const maxValue = Math.max(maxQ3, maxRecent);
+  
   const recentData = speciesData.map((count: { recent_count: number }) => 
     (count.recent_count / maxValue) * 100
   );
@@ -159,9 +155,6 @@ const getChartOption = (species: string) => {
   );
   const q3Data = speciesData.map((count: { q3_avg: number }) => 
     (count.q3_avg / maxValue) * 100
-  );
-  const maxData = speciesData.map((count: { max_count: number }) => 
-    (count.max_count / maxValue) * 100
   );
 
   return {
@@ -172,7 +165,7 @@ const getChartOption = (species: string) => {
         const data = speciesData[params[0].dataIndex];
         return `${month}<br/>
                 Aktuelle Sichtungen: ${data.recent_count}<br/>
-                Maximum: ${data.max_count} Sichtungen<br/>
+                Historisches Maximum: ${data.max_count} Sichtungen<br/>
                 Quartile: ${data.q1_avg} - ${data.q3_avg} Sichtungen`;
       }
     },
@@ -260,18 +253,6 @@ const getChartOption = (species: string) => {
         },
         markArea: markArea,
         z: 2
-      },
-      {
-        name: 'Maximum',
-        type: 'scatter',
-        symbol: 'path://M-5,-5 L5,5 M-5,5 L5,-5',  // 'X' shape
-        symbolSize: 8,
-        data: maxData,
-        itemStyle: {
-          color: color,
-          opacity: 0.7
-        },
-        z: 3
       }
     ]
   };
@@ -367,8 +348,8 @@ onMounted(async () => {
 .x-sample {
   font-size: 16px;
   line-height: 1;
-  color: #666;
-  opacity: 0.7;
+  color: #000000;  /* Changed to black to match the new dot style */
+  opacity: 1;
 }
 
 p {

@@ -93,6 +93,7 @@ const fields = [
   { key: 'pair', label: 'Paarung' },
   { key: 'status', label: 'Status' },
   { key: 'age', label: 'Alter' },
+  { key: 'sex', label: 'Geschlecht' },
   { key: 'melder', label: 'Melder' },
   { key: 'melded', label: 'Gemeldet' },
   { key: 'comment', label: 'Kommentar' },

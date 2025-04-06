@@ -22,7 +22,7 @@ from api.models.ringing import Ringing
 from api.service.seasonal_analysis import SeasonalAnalysis
 from typing import Optional
 import json
-import re
+import traceback
 
 
 app = APIGatewayRestResolver(enable_validation=True)
@@ -48,11 +48,15 @@ def is_read_operation(method: str, path: str) -> bool:
 
 @app.exception_handler(ValidationError)
 def handle_validation_error(error: ValidationError):
+    logger.error(f"Validation error: {error}")
+    logger.error(f"Traceback:\n{''.join(traceback.format_tb(error.__traceback__))}")
+
     return Response(status_code=400, body=json.dumps(error.errors()), headers=headers)
 
 
 @app.exception_handler(NotFoundError)
 def handle_not_found_error(error: NotFoundError):
+    logger.error(f"Not found error: {error}")
     return Response(status_code=404, headers=headers)
 
 
@@ -137,12 +141,18 @@ def get_bird_suggestions_by_partial_reading(partial_reading: str) -> list[BirdMe
     logger.info(f"Get bird suggestions by partial reading: {partial_reading}")
     if partial_reading == "":
         raise BadRequestError("Partial reading is required")
+    if len(partial_reading) < 2:
+        raise BadRequestError("Partial reading must be at least 2 characters long")
     if not any([c in partial_reading for c in ["*", "…", "..."]]):
         partial_reading = f"*{partial_reading}*"
     suggestions = service.get_bird_suggestions_by_partial_reading(partial_reading)
     if suggestions is None:
         raise NotFoundError(f"No suggestions found for partial reading: {partial_reading}")
-    return Response(status_code=200, body=json.dumps([bird.model_dump() for bird in suggestions]), headers=headers)
+    return Response(
+        status_code=200,
+        body=json.dumps([suggestion_bird.model_dump() for suggestion_bird in suggestions]),
+        headers=headers,
+    )
 
 
 @app.get("/birds/<ring>")
@@ -384,6 +394,6 @@ def lambda_handler(event: dict, context: LambdaContext) -> dict:
 
 
 @app.get("/suggestions")
-def get_suggestions() -> dict:
+def get_suggestions():
     """Get all suggestion lists for autocomplete fields"""
     return Response(status_code=200, body=json.dumps(service.get_suggestion_lists()), headers=headers)

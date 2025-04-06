@@ -11,6 +11,37 @@ import 'leaflet/dist/leaflet.css'
 import { theme } from './theme'
 import BirdDetail from './views/BirdDetail.vue'
 
+// Register service worker for automatic updates
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').then(registration => {
+      console.log('ServiceWorker registration successful with scope: ', registration.scope);
+      
+      // Check for updates when the page loads
+      if (registration.active) {
+        registration.active.postMessage({ type: 'CHECK_UPDATE' });
+      }
+    }).catch(error => {
+      console.log('ServiceWorker registration failed: ', error);
+    });
+    
+    // Listen for messages from the service worker
+    navigator.serviceWorker.addEventListener('message', event => {
+      if (event.data && event.data.type === 'UPDATE_AVAILABLE') {
+        console.log('New version available:', event.data.version);
+        
+        // Show a notification to the user
+        const shouldUpdate = confirm(`A new version (${event.data.version}) is available. Reload now to update?`);
+        
+        if (shouldUpdate) {
+          // Clear cache and reload the page
+          window.location.reload();
+        }
+      }
+    });
+  });
+}
+
 const vuetify = createVuetify({
   components,
   directives,

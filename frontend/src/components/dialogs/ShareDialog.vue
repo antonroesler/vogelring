@@ -39,6 +39,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import type { ShareableReport } from '@/types';
 
 const props = defineProps<{
   generateHtml: () => string;
@@ -47,11 +48,12 @@ const props = defineProps<{
 
 const dialog = ref(false);
 const showSnackbar = ref(false);
-const selectedDays = ref(30);
+const selectedDays = ref(90);
 const dayOptions = [
   { title: '30 Tage', value: 30 },
-  { title: '60 Tage', value: 60 },
   { title: '90 Tage', value: 90 },
+  { title: '180 Tage', value: 180 },
+  { title: '360 Tage', value: 360 },
 ];
 
 const generateReport = async () => {

@@ -106,3 +106,19 @@ class BirdMeta(BaseModel):
     @field_serializer("first_seen")
     def serialize_first_seen(self, v: _date | None, _info):
         return v.isoformat() if v else None
+
+
+class SuggestionBird(BaseModel):
+    ring: str
+    species: str
+    sighting_count: int
+    last_seen: _date
+    first_seen: _date
+
+    @field_serializer("last_seen")
+    def serialize_last_seen(self, v: _date | None, _info):
+        return v.isoformat() if v else None
+
+    @field_serializer("first_seen")
+    def serialize_first_seen(self, v: _date | None, _info):
+        return v.isoformat() if v else None

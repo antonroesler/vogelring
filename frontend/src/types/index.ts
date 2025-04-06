@@ -73,6 +73,14 @@ export interface SimplePlaceMeta {
   count: number;
 }
 
+export interface SuggestionBird {
+  ring: string;
+  species: string;
+  sighting_count: number;
+  last_seen: string;
+  first_seen: string;
+}
+
 export interface Dashboard {
   total_sightings: number;  // total number of sightings
   total_birds: number;  // total number of individual birds

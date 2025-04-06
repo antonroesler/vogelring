@@ -328,7 +328,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue';
-import type { Sighting, BirdMeta, SuggestionLists } from '@/types';
+import type { Sighting, SuggestionBird, SuggestionLists } from '@/types';
 import { BirdStatus, BirdAge, PairType } from '@/types';
 import LeafletMap from '@/components/map/LeafletMap.vue';
 import BirdSuggestions from '@/components/birds/BirdSuggestions.vue';
@@ -465,12 +465,12 @@ const filterHabitats = createFilter('habitats');
 const filterMelders = createFilter('melders');
 const filterFieldFruits = createFilter('field_fruits');
 
-const handleSuggestionSelect = (suggestion: BirdMeta) => {
+const handleSuggestionSelect = (suggestion: SuggestionBird) => {
   localSighting.value.ring = suggestion.ring;
   localSighting.value.species = suggestion.species;
 };
 
-const handlePartnerSelect = (suggestion: BirdMeta) => {
+const handlePartnerSelect = (suggestion: SuggestionBird) => {
   localSighting.value.partner = suggestion.ring;
 };
 
@@ -492,20 +492,20 @@ const handleMarkerPlaced = () => {
 };
 
 const latitude = computed({
-  get: () => localSighting.value.lat ?? null,
+  get: () => localSighting.value.lat ?? undefined,
   set: (val) => {
-    localSighting.value.lat = val;
-    if (val === null) {
+    localSighting.value.lat = val === null ? undefined : val;
+    if (val === null || val === undefined) {
       localSighting.value.is_exact_location = false;
     }
   }
 });
 
 const longitude = computed({
-  get: () => localSighting.value.lon ?? null,
+  get: () => localSighting.value.lon ?? undefined,
   set: (val) => {
-    localSighting.value.lon = val;
-    if (val === null) {
+    localSighting.value.lon = val === null ? undefined : val;
+    if (val === null || val === undefined) {
       localSighting.value.is_exact_location = false;
     }
   }
