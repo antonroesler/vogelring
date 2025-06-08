@@ -29,11 +29,11 @@ def add_partner_to_family_tree_entry(ring: str, partner_ring: str, year: int) ->
     """
     Adds a partner to a family tree entry in DynamoDB.
     """
-    for ring_number in [ring, partner_ring]:
-        entry = get_family_tree_entry_by_ring(ring_number)
+    for p1, p2 in [(ring, partner_ring), (partner_ring, ring)]:
+        entry = get_family_tree_entry_by_ring(p1)
         if entry is None:
-            entry = FamilyTreeEntry(ring=ring_number)
-        entry.partners.append(FamilyPartner(ring=partner_ring, year=year))
+            entry = FamilyTreeEntry(ring=p1)
+        entry.partners.append(FamilyPartner(ring=p2, year=year))
         upsert_family_tree_entry(entry)
 
 
