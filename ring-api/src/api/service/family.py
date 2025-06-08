@@ -37,7 +37,7 @@ def add_partner_to_family_tree_entry(ring: str, partner_ring: str, year: int) ->
         upsert_family_tree_entry(entry)
 
 
-def add_parent_relationship(parent_ring: str, child_ring: str, year: int, sex: Literal["M", "W", "U"]) -> None:
+def add_child_relationship(parent_ring: str, child_ring: str, year: int, sex: Literal["M", "W", "U"]) -> None:
     """
     Adds a parent-child relationship to the family trees of both the parent and the child in DynamoDB.
     """

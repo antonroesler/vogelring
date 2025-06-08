@@ -19,6 +19,7 @@ from api.version import __version__
 from api import service
 from api.models.sightings import BirdMeta, Sighting
 from api.models.ringing import Ringing
+from api.models.family import FamilyTreeEntry, FamilyChild, FamilyParent, FamilyPartner
 from api.service.seasonal_analysis import SeasonalAnalysis
 from typing import Optional
 import json
@@ -353,6 +354,32 @@ def post_shareable_report():
 @app.get("/seasonal-analysis")
 def get_seasonal_analysis() -> SeasonalAnalysis:
     return Response(status_code=200, body=json.dumps(service.get_seasonal_analysis().model_dump()), headers=headers)
+
+
+# Family Tree
+
+
+@app.get("/family/<ring>")
+def get_family_by_ring(ring: str) -> FamilyTreeEntry | None:
+    logger.info(f"Get family for ring: {ring}")
+    ft = service.get_family_tree_entry_by_ring(ring)
+    if ft is None:
+        raise NotFoundError(f"Family for ring {ring} not found")
+    return Response(status_code=200, body=json.dumps(ft.model_dump()), headers=headers)
+
+
+def add_family_partner():
+    """Adds a partner relationship to two given rings and a given year.
+    use service.add_partner_to_family_tree_entry()
+    """
+    raise NotImplementedError
+
+
+def add_family_child():
+    """Adds a child/parent relationship to given child and parent.
+    use service.add_child_relationship()
+    """
+    raise NotImplementedError
 
 
 # Main
