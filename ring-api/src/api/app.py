@@ -368,18 +368,127 @@ def get_family_by_ring(ring: str) -> FamilyTreeEntry | None:
     return Response(status_code=200, body=json.dumps(ft.model_dump()), headers=headers)
 
 
-def add_family_partner():
-    """Adds a partner relationship to two given rings and a given year.
-    use service.add_partner_to_family_tree_entry()
-    """
-    raise NotImplementedError
+@app.post("/family")
+def create_family_tree_entry():
+    """Create a new family tree entry"""
+    body: Optional[str] = app.current_event.body
+    if body is None:
+        raise BadRequestError("Request body is required")
+    
+    logger.info(f"Create family tree entry: {body}")
+    try:
+        family_entry = FamilyTreeEntry(**json.loads(body))
+        result = service.upsert_family_tree_entry(family_entry)
+        return Response(status_code=201, body=json.dumps(result.model_dump()), headers=headers)
+    except ValidationError as e:
+        logger.error(f"Validation error creating family tree entry: {e}")
+        raise BadRequestError(str(e))
+    except Exception as e:
+        logger.error(f"Error creating family tree entry: {e}")
+        raise InternalServerError("An error occurred while creating the family tree entry")
 
 
-def add_family_child():
-    """Adds a child/parent relationship to given child and parent.
-    use service.add_child_relationship()
-    """
-    raise NotImplementedError
+@app.put("/family")
+def update_family_tree_entry():
+    """Update an existing family tree entry"""
+    body: Optional[str] = app.current_event.body
+    if body is None:
+        raise BadRequestError("Request body is required")
+    
+    logger.info(f"Update family tree entry: {body}")
+    try:
+        family_entry = FamilyTreeEntry(**json.loads(body))
+        result = service.upsert_family_tree_entry(family_entry)
+        return Response(status_code=200, body=json.dumps(result.model_dump()), headers=headers)
+    except ValidationError as e:
+        logger.error(f"Validation error updating family tree entry: {e}")
+        raise BadRequestError(str(e))
+    except Exception as e:
+        logger.error(f"Error updating family tree entry: {e}")
+        raise InternalServerError("An error occurred while updating the family tree entry")
+
+
+@app.delete("/family/<ring>")
+def delete_family_tree_entry(ring: str):
+    """Delete a family tree entry"""
+    logger.info(f"Delete family tree entry for ring: {ring}")
+    try:
+        service.delete_family_tree_entry(ring)
+        return Response(status_code=204, headers=headers)
+    except Exception as e:
+        logger.error(f"Error deleting family tree entry: {e}")
+        raise InternalServerError("An error occurred while deleting the family tree entry")
+
+
+@app.post("/family/<ring>/partners")
+def add_partner_relationship():
+    """Add a partner relationship to a bird's family tree"""
+    body: Optional[str] = app.current_event.body
+    if body is None:
+        raise BadRequestError("Request body is required")
+    
+    ring = app.current_event.path_parameters.get("ring")
+    if not ring:
+        raise BadRequestError("Ring parameter is required")
+    
+    logger.info(f"Add partner relationship for ring {ring}: {body}")
+    try:
+        request_data = json.loads(body)
+        partner_ring = request_data.get("partner_ring")
+        year = request_data.get("year")
+        
+        if not partner_ring:
+            raise BadRequestError("partner_ring is required")
+        if not year:
+            raise BadRequestError("year is required")
+        
+        service.add_partner_to_family_tree_entry(ring, partner_ring, int(year))
+        return Response(status_code=201, body=json.dumps({"message": "Partner relationship added successfully"}), headers=headers)
+    except json.JSONDecodeError:
+        raise BadRequestError("Invalid JSON in request body")
+    except ValueError as e:
+        logger.error(f"Validation error adding partner relationship: {e}")
+        raise BadRequestError(str(e))
+    except Exception as e:
+        logger.error(f"Error adding partner relationship: {e}")
+        raise InternalServerError("An error occurred while adding the partner relationship")
+
+
+@app.post("/family/<parent_ring>/children")
+def add_child_relationship():
+    """Add a parent-child relationship to the family tree"""
+    body: Optional[str] = app.current_event.body
+    if body is None:
+        raise BadRequestError("Request body is required")
+    
+    parent_ring = app.current_event.path_parameters.get("parent_ring")
+    if not parent_ring:
+        raise BadRequestError("Parent ring parameter is required")
+    
+    logger.info(f"Add child relationship for parent {parent_ring}: {body}")
+    try:
+        request_data = json.loads(body)
+        child_ring = request_data.get("child_ring")
+        year = request_data.get("year")
+        sex = request_data.get("sex", "U")  # Default to unknown if not provided
+        
+        if not child_ring:
+            raise BadRequestError("child_ring is required")
+        if not year:
+            raise BadRequestError("year is required")
+        if sex not in ["M", "W", "U"]:
+            raise BadRequestError("sex must be 'M', 'W', or 'U'")
+        
+        service.add_child_relationship(parent_ring, child_ring, int(year), sex)
+        return Response(status_code=201, body=json.dumps({"message": "Child relationship added successfully"}), headers=headers)
+    except json.JSONDecodeError:
+        raise BadRequestError("Invalid JSON in request body")
+    except ValueError as e:
+        logger.error(f"Validation error adding child relationship: {e}")
+        raise BadRequestError(str(e))
+    except Exception as e:
+        logger.error(f"Error adding child relationship: {e}")
+        raise InternalServerError("An error occurred while adding the child relationship")
 
 
 # Main
