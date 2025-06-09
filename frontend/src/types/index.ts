@@ -65,7 +65,7 @@ export interface RollingYearCountPerMonth {
 export interface SimpleBirdMeta {
   species: string;
   ring: string;
-  sighting_count: int;
+  sighting_count: number;
 }
 
 export interface SimplePlaceMeta {
