@@ -15,11 +15,11 @@ from pydantic import ValidationError
 from aws_lambda_powertools.event_handler.openapi.params import Query
 
 from api.models.responses import FriendResponse
+from api.models.family import FamilyTreeEntry, FamilyChild, FamilyParent, FamilyPartner
 from api.version import __version__
 from api import service
 from api.models.sightings import BirdMeta, Sighting
 from api.models.ringing import Ringing
-from api.models.family import FamilyTreeEntry, FamilyChild, FamilyParent, FamilyPartner
 from api.service.seasonal_analysis import SeasonalAnalysis
 from typing import Optional
 import json
@@ -502,7 +502,7 @@ def lambda_handler(event: dict, context: LambdaContext) -> dict:
     method = event["httpMethod"]
     path = event["path"]
 
-    # For OPTIONS requests (preflight)
+    # For OPTIONS requests (preflight) - handle BEFORE any other checks
     if method == "OPTIONS":
         return {"statusCode": 200, "headers": headers, "body": ""}
 
@@ -518,7 +518,7 @@ def lambda_handler(event: dict, context: LambdaContext) -> dict:
             "body": json.dumps({"message": "Operation not allowed on this endpoint"}),
         }
 
-    # Check API key
+    # Check API key - ONLY for non-OPTIONS requests
     if "x-api-key" not in event["headers"] or event["headers"]["x-api-key"] != os.environ["API_KEY"]:
         return {"statusCode": 401, "headers": headers, "body": json.dumps({"message": "Unauthorized"})}
 
