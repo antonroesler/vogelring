@@ -68,3 +68,12 @@ def add_child_relationship(parent_ring: str, child_ring: str, year: int, sex: Li
     if existing_parent is None:
         child_entry.parents.append(FamilyParent(ring=parent_ring, sex=sex))
         upsert_family_tree_entry(child_entry)
+
+
+def add_partner_relationship_from_sighting(ring: str, partner_ring: str, year: int) -> None:
+    """
+    Helper function to add partner relationship when creating/updating sightings.
+    This is called automatically when a sighting with a partner is created.
+    """
+    if ring and partner_ring and year:
+        add_partner_to_family_tree_entry(ring, partner_ring, year)

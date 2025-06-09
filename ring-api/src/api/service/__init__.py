@@ -37,6 +37,7 @@ from api.service.family import (
     add_partner_to_family_tree_entry,
     upsert_family_tree_entry,
     delete_family_tree_entry,
+    add_child_relationship,
 )
 
 __all__ = [
@@ -70,4 +71,5 @@ __all__ = [
     "add_partner_to_family_tree_entry",
     "upsert_family_tree_entry",
     "delete_family_tree_entry",
+    "add_child_relationship",
 ]
