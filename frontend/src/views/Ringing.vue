@@ -367,6 +367,20 @@ const filteredSpecies = ref<string[]>([]);
 
 const showCoordinates = ref(true);
 
+// Define newRinging BEFORE any functions that might use it
+const newRinging = reactive({
+  ring: '',
+  ring_scheme: '',
+  species: '',
+  date: '',
+  place: '',
+  ringer: '',
+  age: undefined as number | undefined,
+  sex: undefined as number | undefined,
+  lat: undefined as number | undefined,
+  lon: undefined as number | undefined
+});
+
 const hasCoordinates = computed(() => {
   return typeof latitude.value === 'number' && 
          typeof longitude.value === 'number' &&
@@ -482,19 +496,6 @@ const parentSexOptions = [
   { text: 'Weiblich', value: 'W' },
   { text: 'Unbekannt', value: 'U' }
 ];
-
-const newRinging = reactive({
-  ring: '',
-  ring_scheme: '',
-  species: '',
-  date: '',
-  place: '',
-  ringer: '',
-  age: undefined as number | undefined,
-  sex: undefined as number | undefined,
-  lat: undefined as number | undefined,
-  lon: undefined as number | undefined
-});
 
 const formatDate = (date: string) => {
   return format(new Date(date), 'dd.MM.yyyy');
