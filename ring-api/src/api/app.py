@@ -421,15 +421,11 @@ def delete_family_tree_entry(ring: str):
 
 
 @app.post("/family/<ring>/partners")
-def add_partner_relationship():
+def add_partner_relationship(ring: str):
     """Add a partner relationship to a bird's family tree"""
     body: Optional[str] = app.current_event.body
     if body is None:
         raise BadRequestError("Request body is required")
-    
-    ring = app.current_event.path_parameters.get("ring")
-    if not ring:
-        raise BadRequestError("Ring parameter is required")
     
     logger.info(f"Add partner relationship for ring {ring}: {body}")
     try:
@@ -454,18 +450,14 @@ def add_partner_relationship():
         raise InternalServerError("An error occurred while adding the partner relationship")
 
 
-@app.post("/family/<parent_ring>/children")
-def add_child_relationship():
+@app.post("/family/<ring>/children")
+def add_child_relationship(ring: str):
     """Add a parent-child relationship to the family tree"""
     body: Optional[str] = app.current_event.body
     if body is None:
         raise BadRequestError("Request body is required")
     
-    parent_ring = app.current_event.path_parameters.get("parent_ring")
-    if not parent_ring:
-        raise BadRequestError("Parent ring parameter is required")
-    
-    logger.info(f"Add child relationship for parent {parent_ring}: {body}")
+    logger.info(f"Add child relationship for parent {ring}: {body}")
     try:
         request_data = json.loads(body)
         child_ring = request_data.get("child_ring")
@@ -479,7 +471,7 @@ def add_child_relationship():
         if sex not in ["M", "W", "U"]:
             raise BadRequestError("sex must be 'M', 'W', or 'U'")
         
-        service.add_child_relationship(parent_ring, child_ring, int(year), sex)
+        service.add_child_relationship(ring, child_ring, int(year), sex)
         return Response(status_code=201, body=json.dumps({"message": "Child relationship added successfully"}), headers=headers)
     except json.JSONDecodeError:
         raise BadRequestError("Invalid JSON in request body")
