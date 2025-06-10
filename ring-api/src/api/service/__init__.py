@@ -31,6 +31,14 @@ from api.service.ringing import get_ringing_by_ring, upsert_ringing, delete_ring
 from api.service.suggestions import get_suggestion_lists
 from api.service.seasonal_analysis import get_seasonal_analysis
 
+from api.service.family import (
+    get_family_tree_entry_by_ring,
+    add_child_relationship,
+    add_partner_to_family_tree_entry,
+    upsert_family_tree_entry,
+    delete_family_tree_entry,
+)
+
 __all__ = [
     "add_sighting",
     "update_sighting",
@@ -57,4 +65,9 @@ __all__ = [
     "get_species_name_list",
     "get_suggestion_lists",
     "get_seasonal_analysis",
+    "get_family_tree_entry_by_ring",
+    "add_child_relationship",
+    "add_partner_to_family_tree_entry",
+    "upsert_family_tree_entry",
+    "delete_family_tree_entry",
 ]

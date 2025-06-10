@@ -52,31 +52,13 @@
             :ringingData="ringingData"
           ></bird-details>
 
-          <!-- Partners Card -->
-          <v-card class="mt-4">
-            <v-card-title>Partner</v-card-title>
-            <v-card-text>
-              <v-list v-if="bird?.partners?.length" density="compact">
-                <v-list-item
-                  v-for="partner in sortedPartners"
-                  :key="`${partner.ring}-${partner.year}`"
-                  :href="partner.ring !== 'ub' ? `/birds/${partner.ring}` : undefined"
-                  :target="partner.ring !== 'ub' ? '_blank' : undefined"
-                  :class="partner.ring !== 'ub' ? 'clickable-partner' : ''"
-                >
-                  <v-list-item-title>
-                    {{ partner.ring === 'ub' ? 'Unberingt' : partner.ring }}
-                  </v-list-item-title>
-                  <v-list-item-subtitle>
-                    {{ partner.year }}
-                  </v-list-item-subtitle>
-                </v-list-item>
-              </v-list>
-              <p v-else class="text-body-1 text-medium-emphasis">
-                Keine Partner aufgezeichnet.
-              </p>
-            </v-card-text>
-          </v-card>
+          <!-- Family Tree Card (replaces Partners Card) -->
+          <family-tree
+            v-if="bird?.ring"
+            :ring="bird.ring"
+            class="mt-4"
+            @family-updated="handleFamilyUpdated"
+          ></family-tree>
         </v-col>
 
         <!-- Analytics Cards -->
@@ -182,6 +164,7 @@ import { format } from 'date-fns';
 import type { BirdMeta, Ringing } from '@/types';
 import * as api from '@/api';
 import BirdDetails from '@/components/birds/BirdDetails.vue';
+import FamilyTree from '@/components/birds/FamilyTree.vue';
 import SightingsMap from '@/components/map/SightingsMap.vue';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
@@ -266,12 +249,9 @@ const navigateToSighting = (id: string) => {
   router.push(`/entries/${id}`);
 };
 
-const navigateToEnvironmentAnalysis = () => {
-  if (bird.value?.ring) {
-    router.push(`/birds/${bird.value.ring}/environment-analysis`);
-  } else {
-    console.error('Ring number is not available');
-  }
+const handleFamilyUpdated = () => {
+  // Optionally reload bird data or show a success message
+  console.log('Family tree updated for bird:', bird.value?.ring);
 };
 
 // Timeline Chart
@@ -444,11 +424,6 @@ const reporterChartOption = computed(() => {
     }]
   };
 });
-
-const sortedPartners = computed(() => {
-  if (!bird.value?.partners) return [];
-  return [...bird.value.partners].sort((a, b) => b.year - a.year);
-});
 </script>
 
 <style scoped>
@@ -474,13 +449,4 @@ const sortedPartners = computed(() => {
   font-family: monospace;
   margin-left: 4px;
 }
-
-.clickable-partner {
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.clickable-partner:hover {
-  background-color: rgba(0, 0, 0, 0.04);
-}
-</style> 
+</style>

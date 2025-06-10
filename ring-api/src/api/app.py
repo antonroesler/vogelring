@@ -15,6 +15,7 @@ from pydantic import ValidationError
 from aws_lambda_powertools.event_handler.openapi.params import Query
 
 from api.models.responses import FriendResponse
+from api.models.family import FamilyTreeEntry, FamilyChild, FamilyParent, FamilyPartner
 from api.version import __version__
 from api import service
 from api.models.sightings import BirdMeta, Sighting
@@ -355,6 +356,133 @@ def get_seasonal_analysis() -> SeasonalAnalysis:
     return Response(status_code=200, body=json.dumps(service.get_seasonal_analysis().model_dump()), headers=headers)
 
 
+# Family Tree
+
+
+@app.get("/family/<ring>")
+def get_family_by_ring(ring: str) -> FamilyTreeEntry | None:
+    logger.info(f"Get family for ring: {ring}")
+    ft = service.get_family_tree_entry_by_ring(ring)
+    if ft is None:
+        raise NotFoundError(f"Family for ring {ring} not found")
+    return Response(status_code=200, body=json.dumps(ft.model_dump()), headers=headers)
+
+
+@app.post("/family")
+def create_family_tree_entry():
+    """Create a new family tree entry"""
+    body: Optional[str] = app.current_event.body
+    if body is None:
+        raise BadRequestError("Request body is required")
+    
+    logger.info(f"Create family tree entry: {body}")
+    try:
+        family_entry = FamilyTreeEntry(**json.loads(body))
+        result = service.upsert_family_tree_entry(family_entry)
+        return Response(status_code=201, body=json.dumps(result.model_dump()), headers=headers)
+    except ValidationError as e:
+        logger.error(f"Validation error creating family tree entry: {e}")
+        raise BadRequestError(str(e))
+    except Exception as e:
+        logger.error(f"Error creating family tree entry: {e}")
+        raise InternalServerError("An error occurred while creating the family tree entry")
+
+
+@app.put("/family")
+def update_family_tree_entry():
+    """Update an existing family tree entry"""
+    body: Optional[str] = app.current_event.body
+    if body is None:
+        raise BadRequestError("Request body is required")
+    
+    logger.info(f"Update family tree entry: {body}")
+    try:
+        family_entry = FamilyTreeEntry(**json.loads(body))
+        result = service.upsert_family_tree_entry(family_entry)
+        return Response(status_code=200, body=json.dumps(result.model_dump()), headers=headers)
+    except ValidationError as e:
+        logger.error(f"Validation error updating family tree entry: {e}")
+        raise BadRequestError(str(e))
+    except Exception as e:
+        logger.error(f"Error updating family tree entry: {e}")
+        raise InternalServerError("An error occurred while updating the family tree entry")
+
+
+@app.delete("/family/<ring>")
+def delete_family_tree_entry(ring: str):
+    """Delete a family tree entry"""
+    logger.info(f"Delete family tree entry for ring: {ring}")
+    try:
+        service.delete_family_tree_entry(ring)
+        return Response(status_code=204, headers=headers)
+    except Exception as e:
+        logger.error(f"Error deleting family tree entry: {e}")
+        raise InternalServerError("An error occurred while deleting the family tree entry")
+
+
+@app.post("/family/<ring>/partners")
+def add_partner_relationship(ring: str):
+    """Add a partner relationship to a bird's family tree"""
+    body: Optional[str] = app.current_event.body
+    if body is None:
+        raise BadRequestError("Request body is required")
+    
+    logger.info(f"Add partner relationship for ring {ring}: {body}")
+    try:
+        request_data = json.loads(body)
+        partner_ring = request_data.get("partner_ring")
+        year = request_data.get("year")
+        
+        if not partner_ring:
+            raise BadRequestError("partner_ring is required")
+        if not year:
+            raise BadRequestError("year is required")
+        
+        service.add_partner_to_family_tree_entry(ring, partner_ring, int(year))
+        return Response(status_code=201, body=json.dumps({"message": "Partner relationship added successfully"}), headers=headers)
+    except json.JSONDecodeError:
+        raise BadRequestError("Invalid JSON in request body")
+    except ValueError as e:
+        logger.error(f"Validation error adding partner relationship: {e}")
+        raise BadRequestError(str(e))
+    except Exception as e:
+        logger.error(f"Error adding partner relationship: {e}")
+        raise InternalServerError("An error occurred while adding the partner relationship")
+
+
+@app.post("/family/<ring>/children")
+def add_child_relationship(ring: str):
+    """Add a parent-child relationship to the family tree"""
+    body: Optional[str] = app.current_event.body
+    if body is None:
+        raise BadRequestError("Request body is required")
+    
+    logger.info(f"Add child relationship for parent {ring}: {body}")
+    try:
+        request_data = json.loads(body)
+        child_ring = request_data.get("child_ring")
+        year = request_data.get("year")
+        sex = request_data.get("sex", "U")  # Default to unknown if not provided
+        
+        if not child_ring:
+            raise BadRequestError("child_ring is required")
+        if not year:
+            raise BadRequestError("year is required")
+        if sex not in ["M", "W", "U"]:
+            raise BadRequestError("sex must be 'M', 'W', or 'U'")
+        
+        service.add_child_relationship(ring, child_ring, int(year), sex)
+        return Response(status_code=201, body=json.dumps({"message": "Child relationship added successfully"}), headers=headers)
+    except json.JSONDecodeError:
+        raise BadRequestError("Invalid JSON in request body")
+    except ValueError as e:
+        logger.error(f"Validation error adding child relationship: {e}")
+        raise BadRequestError(str(e))
+    except Exception as e:
+        logger.error(f"Error adding child relationship: {e}")
+        raise InternalServerError("An error occurred while adding the child relationship")
+
+
 # Main
 
 
@@ -366,7 +494,7 @@ def lambda_handler(event: dict, context: LambdaContext) -> dict:
     method = event["httpMethod"]
     path = event["path"]
 
-    # For OPTIONS requests (preflight)
+    # For OPTIONS requests (preflight) - handle BEFORE any other checks
     if method == "OPTIONS":
         return {"statusCode": 200, "headers": headers, "body": ""}
 
@@ -382,7 +510,7 @@ def lambda_handler(event: dict, context: LambdaContext) -> dict:
             "body": json.dumps({"message": "Operation not allowed on this endpoint"}),
         }
 
-    # Check API key
+    # Check API key - ONLY for non-OPTIONS requests
     if "x-api-key" not in event["headers"] or event["headers"]["x-api-key"] != os.environ["API_KEY"]:
         return {"statusCode": 401, "headers": headers, "body": json.dumps({"message": "Unauthorized"})}
 

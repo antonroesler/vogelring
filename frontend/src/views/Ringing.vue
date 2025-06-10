@@ -201,6 +201,47 @@
                 </v-col>
               </v-row>
 
+              <!-- Parent Fields Section -->
+              <v-card-subtitle class="px-0 mt-4">Eltern (optional)</v-card-subtitle>
+              <v-row>
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="parent1Ring"
+                    label="Elternteil 1 Ring"
+                    hint="Optional: Ring des ersten Elternteils"
+                    persistent-hint
+                  ></v-text-field>
+                </v-col>
+                <v-col cols="12" sm="6">
+                  <v-select
+                    v-model="parent1Sex"
+                    label="Geschlecht Elternteil 1"
+                    :items="parentSexOptions"
+                    item-title="text"
+                    item-value="value"
+                    :disabled="!parent1Ring"
+                  ></v-select>
+                </v-col>
+                <v-col cols="12" sm="6">
+                  <v-text-field
+                    v-model="parent2Ring"
+                    label="Elternteil 2 Ring"
+                    hint="Optional: Ring des zweiten Elternteils"
+                    persistent-hint
+                  ></v-text-field>
+                </v-col>
+                <v-col cols="12" sm="6">
+                  <v-select
+                    v-model="parent2Sex"
+                    label="Geschlecht Elternteil 2"
+                    :items="parentSexOptions"
+                    item-title="text"
+                    item-value="value"
+                    :disabled="!parent2Ring"
+                  ></v-select>
+                </v-col>
+              </v-row>
+
               <!-- Map Section -->
               <v-card-subtitle class="px-0 mt-4">Standort*</v-card-subtitle>
               <v-row>
@@ -304,6 +345,12 @@ const form = ref();
 const isFormValid = ref(false);
 const isUpdateMode = ref(false);
 
+// Parent fields
+const parent1Ring = ref('');
+const parent1Sex = ref<'M' | 'W' | 'U'>('U');
+const parent2Ring = ref('');
+const parent2Sex = ref<'M' | 'W' | 'U'>('U');
+
 const snackbar = reactive({
   show: false,
   text: '',
@@ -319,6 +366,20 @@ const filteredPlaces = ref<string[]>([]);
 const filteredSpecies = ref<string[]>([]);
 
 const showCoordinates = ref(true);
+
+// Define newRinging BEFORE any functions that might use it
+const newRinging = reactive({
+  ring: '',
+  ring_scheme: '',
+  species: '',
+  date: '',
+  place: '',
+  ringer: '',
+  age: undefined as number | undefined,
+  sex: undefined as number | undefined,
+  lat: undefined as number | undefined,
+  lon: undefined as number | undefined
+});
 
 const hasCoordinates = computed(() => {
   return typeof latitude.value === 'number' && 
@@ -430,18 +491,11 @@ const sexOptions = [
   { text: 'Unbekannt (0)', value: 0 }
 ];
 
-const newRinging = reactive({
-  ring: '',
-  ring_scheme: '',
-  species: '',
-  date: '',
-  place: '',
-  ringer: '',
-  age: undefined as number | undefined,
-  sex: undefined as number | undefined,
-  lat: undefined as number | undefined,
-  lon: undefined as number | undefined
-});
+const parentSexOptions = [
+  { text: 'Männlich', value: 'M' },
+  { text: 'Weiblich', value: 'W' },
+  { text: 'Unbekannt', value: 'U' }
+];
 
 const formatDate = (date: string) => {
   return format(new Date(date), 'dd.MM.yyyy');
@@ -526,12 +580,36 @@ const submitForm = async () => {
 
   isSubmitting.value = true;
   try {
+    // First, create or update the ringing
     if (isUpdateMode.value) {
       await api.updateRinging(newRinging);
       showNotification('Beringung wurde erfolgreich aktualisiert.');
     } else {
       await api.createRinging(newRinging);
       showNotification('Beringung wurde erfolgreich erstellt.');
+    }
+
+    // Then, add parent relationships if provided
+    const currentYear = new Date().getFullYear();
+    
+    if (parent1Ring.value) {
+      try {
+        await api.addChildRelationship(parent1Ring.value, newRinging.ring, currentYear, parent1Sex.value);
+        showNotification(`Eltern-Kind-Beziehung zu ${parent1Ring.value} hinzugefügt.`);
+      } catch (error) {
+        console.error('Error adding parent 1 relationship:', error);
+        showNotification(`Warnung: Beziehung zu ${parent1Ring.value} konnte nicht hinzugefügt werden.`, true);
+      }
+    }
+
+    if (parent2Ring.value) {
+      try {
+        await api.addChildRelationship(parent2Ring.value, newRinging.ring, currentYear, parent2Sex.value);
+        showNotification(`Eltern-Kind-Beziehung zu ${parent2Ring.value} hinzugefügt.`);
+      } catch (error) {
+        console.error('Error adding parent 2 relationship:', error);
+        showNotification(`Warnung: Beziehung zu ${parent2Ring.value} konnte nicht hinzugefügt werden.`, true);
+      }
     }
     
     // Store current values that should be preserved
@@ -561,6 +639,12 @@ const submitForm = async () => {
       lat: preservedValues.lat,
       lon: preservedValues.lon
     });
+
+    // Reset parent fields
+    parent1Ring.value = '';
+    parent1Sex.value = 'U';
+    parent2Ring.value = '';
+    parent2Sex.value = 'U';
     
     isUpdateMode.value = false;
   } catch (error) {
@@ -580,4 +664,4 @@ const submitForm = async () => {
   display: flex;
   align-items: center;
 }
-</style> 
+</style>

@@ -23,8 +23,12 @@ boto3==1.35.57
 botocore==1.35.57
     # via boto3
     # via s3transfer
+certifi==2025.4.26
+    # via requests
 cffi==1.17.1
     # via cryptography
+charset-normalizer==3.4.2
+    # via requests
 comm==0.2.2
     # via ipykernel
 cryptography==44.0.0
@@ -35,6 +39,8 @@ decorator==5.1.1
     # via ipython
 executing==2.1.0
     # via stack-data
+idna==3.10
+    # via requests
 ipykernel==6.29.5
     # via vogelring
 ipython==8.29.0
@@ -97,6 +103,8 @@ pytz==2024.2
 pyzmq==26.2.0
     # via ipykernel
     # via jupyter-client
+requests==2.32.4
+    # via vogelring
 s3transfer==0.10.3
     # via boto3
 six==1.16.0
@@ -122,5 +130,6 @@ tzdata==2024.2
     # via pandas
 urllib3==2.2.3
     # via botocore
+    # via requests
 wcwidth==0.2.13
     # via prompt-toolkit
