@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from datetime import date
 from uuid import uuid4
+from api.models.sightings import BirdStatus
 
 
 class Ringing(BaseModel):
@@ -15,6 +16,7 @@ class Ringing(BaseModel):
     ringer: str
     sex: int
     age: int
+    status: BirdStatus | None = None  # New optional field
 
     def model_dump(self, **kwargs):
         data = super().model_dump(**kwargs)
