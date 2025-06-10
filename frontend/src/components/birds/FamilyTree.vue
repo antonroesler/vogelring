@@ -240,7 +240,7 @@ const sortedRelationships = computed(() => {
   // Add children
   familyData.value.children.forEach(child => {
     relationships.push({
-      year: child.year || new Date().getFullYear(),
+      year: child.year !== undefined ? child.year : null,
       type: 'child',
       data: child
     });
