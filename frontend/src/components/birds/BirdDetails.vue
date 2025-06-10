@@ -56,17 +56,31 @@
 
         <v-divider class="my-4"></v-divider>
 
-        <h3 class="text-h6 mb-2">Beringungsdaten</h3>
+        <div class="d-flex align-center mb-2">
+          <h3 class="text-h6">Beringungsdaten</h3>
+          <v-spacer></v-spacer>
+          <v-progress-circular
+            v-if="isLoadingRinging"
+            indeterminate
+            color="primary"
+            size="20"
+            width="2"
+            class="me-2"
+          ></v-progress-circular>
+          <v-btn
+            v-if="ringingData && !isLoadingRinging"
+            variant="text"
+            color="primary"
+            size="small"
+            @click="showAllRingingData = !showAllRingingData"
+          >
+            {{ showAllRingingData ? 'Weniger Daten' : 'Mehr Daten' }}
+            <v-icon :icon="showAllRingingData ? 'mdi-chevron-up' : 'mdi-chevron-down'" class="ms-1"></v-icon>
+          </v-btn>
+        </div>
         
-        <v-progress-circular
-          v-if="isLoadingRinging"
-          indeterminate
-          color="primary"
-          size="24"
-          class="ma-2"
-        ></v-progress-circular>
-
-        <template v-else-if="ringingData">
+        <template v-if="ringingData">
+          <!-- Essential ringing data (always visible) -->
           <v-list>
             <v-list-item>
               <v-list-item-title>Beringungsdatum</v-list-item-title>
@@ -77,45 +91,51 @@
               <v-list-item-subtitle>{{ ringingData.place }}</v-list-item-subtitle>
             </v-list-item>
             <v-list-item>
-              <v-list-item-title>Beringer</v-list-item-title>
-              <v-list-item-subtitle>{{ ringingData.ringer }}</v-list-item-subtitle>
-            </v-list-item>
-            <v-list-item>
-              <v-list-item-title>Ring Schema</v-list-item-title>
-              <v-list-item-subtitle>{{ ringingData.ring_scheme }}</v-list-item-subtitle>
-            </v-list-item>
-            <v-list-item>
-              <v-list-item-title>Alter bei Beringung</v-list-item-title>
-              <v-list-item-subtitle>{{ formatAge(ringingData.age) }}</v-list-item-subtitle>
-            </v-list-item>
-            <v-list-item>
-              <v-list-item-title>Geschlecht</v-list-item-title>
-              <v-list-item-subtitle>{{ formatSex(ringingData.sex) }}</v-list-item-subtitle>
-            </v-list-item>
-            <v-list-item v-if="ringingData.status">
               <v-list-item-title>Status</v-list-item-title>
               <v-list-item-subtitle>{{ formatStatus(ringingData.status) }}</v-list-item-subtitle>
             </v-list-item>
-            <v-list-item>
-              <v-list-item-title>Koordinaten</v-list-item-title>
-              <v-list-item-subtitle>
-                {{ formatCoordinates(ringingData.lat, ringingData.lon) }}
-                <v-btn
-                  icon="mdi-map-marker"
-                  size="small"
-                  variant="text"
-                  density="compact"
-                  :href="getGoogleMapsLink(ringingData.lat, ringingData.lon)"
-                  target="_blank"
-                  class="ms-2"
-                  v-tooltip="'In Google Maps öffnen'"
-                >
-                </v-btn>
-              </v-list-item-subtitle>
-            </v-list-item>
           </v-list>
+
+          <!-- Additional ringing data (collapsible) -->
+          <v-expand-transition>
+            <v-list v-if="showAllRingingData">
+              <v-list-item>
+                <v-list-item-title>Beringer</v-list-item-title>
+                <v-list-item-subtitle>{{ ringingData.ringer }}</v-list-item-subtitle>
+              </v-list-item>
+              <v-list-item>
+                <v-list-item-title>Ring Schema</v-list-item-title>
+                <v-list-item-subtitle>{{ ringingData.ring_scheme }}</v-list-item-subtitle>
+              </v-list-item>
+              <v-list-item>
+                <v-list-item-title>Alter bei Beringung</v-list-item-title>
+                <v-list-item-subtitle>{{ formatAge(ringingData.age) }}</v-list-item-subtitle>
+              </v-list-item>
+              <v-list-item>
+                <v-list-item-title>Geschlecht</v-list-item-title>
+                <v-list-item-subtitle>{{ formatSex(ringingData.sex) }}</v-list-item-subtitle>
+              </v-list-item>
+              <v-list-item>
+                <v-list-item-title>Koordinaten</v-list-item-title>
+                <v-list-item-subtitle>
+                  {{ formatCoordinates(ringingData.lat, ringingData.lon) }}
+                  <v-btn
+                    icon="mdi-map-marker"
+                    size="small"
+                    variant="text"
+                    density="compact"
+                    :href="getGoogleMapsLink(ringingData.lat, ringingData.lon)"
+                    target="_blank"
+                    class="ms-2"
+                    v-tooltip="'In Google Maps öffnen'"
+                  >
+                  </v-btn>
+                </v-list-item-subtitle>
+              </v-list-item>
+            </v-list>
+          </v-expand-transition>
         </template>
-        <p v-else class="text-body-1 text-medium-emphasis">
+        <p v-else-if="!isLoadingRinging" class="text-body-1 text-medium-emphasis">
           Keine Beringungsdaten verfügbar.
         </p>
 
@@ -148,6 +168,7 @@ const props = defineProps<{
 }>();
 
 const isLoadingRinging = ref(false);
+const showAllRingingData = ref(false);
 
 const formatDate = (date: string | null) => {
   if (!date) return 'Unbekannt';
@@ -174,7 +195,9 @@ const formatSex = (sex: number) => {
   }
 };
 
-const formatStatus = (status: string) => {
+const formatStatus = (status: string | null | undefined) => {
+  if (!status) return 'Unbekannt';
+  
   switch (status) {
     case 'BV': return 'Brutvogel';
     case 'MG': return 'Mausergast';
