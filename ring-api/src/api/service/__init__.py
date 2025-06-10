@@ -33,11 +33,10 @@ from api.service.seasonal_analysis import get_seasonal_analysis
 
 from api.service.family import (
     get_family_tree_entry_by_ring,
-    add_parent_relationship,
+    add_child_relationship,
     add_partner_to_family_tree_entry,
     upsert_family_tree_entry,
     delete_family_tree_entry,
-    add_child_relationship,
 )
 
 __all__ = [
@@ -67,7 +66,7 @@ __all__ = [
     "get_suggestion_lists",
     "get_seasonal_analysis",
     "get_family_tree_entry_by_ring",
-    "add_parent_relationship",
+    "add_child_relationship",
     "add_partner_to_family_tree_entry",
     "upsert_family_tree_entry",
     "delete_family_tree_entry",
