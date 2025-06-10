@@ -90,23 +90,11 @@
               <v-list-item-title>Beringungsort</v-list-item-title>
               <v-list-item-subtitle>{{ ringingData.place }}</v-list-item-subtitle>
             </v-list-item>
-            <v-list-item>
-              <v-list-item-title>Status</v-list-item-title>
-              <v-list-item-subtitle>{{ formatStatus(ringingData.status) }}</v-list-item-subtitle>
-            </v-list-item>
           </v-list>
 
           <!-- Additional ringing data (collapsible) -->
           <v-expand-transition>
             <v-list v-if="showAllRingingData">
-              <v-list-item>
-                <v-list-item-title>Beringer</v-list-item-title>
-                <v-list-item-subtitle>{{ ringingData.ringer }}</v-list-item-subtitle>
-              </v-list-item>
-              <v-list-item>
-                <v-list-item-title>Ring Schema</v-list-item-title>
-                <v-list-item-subtitle>{{ ringingData.ring_scheme }}</v-list-item-subtitle>
-              </v-list-item>
               <v-list-item>
                 <v-list-item-title>Alter bei Beringung</v-list-item-title>
                 <v-list-item-subtitle>{{ formatAge(ringingData.age) }}</v-list-item-subtitle>
@@ -114,6 +102,18 @@
               <v-list-item>
                 <v-list-item-title>Geschlecht</v-list-item-title>
                 <v-list-item-subtitle>{{ formatSex(ringingData.sex) }}</v-list-item-subtitle>
+              </v-list-item>
+              <v-list-item>
+                <v-list-item-title>Status</v-list-item-title>
+                <v-list-item-subtitle>{{ formatStatus(ringingData.status) }}</v-list-item-subtitle>
+              </v-list-item>
+              <v-list-item>
+                <v-list-item-title>Beringer</v-list-item-title>
+                <v-list-item-subtitle>{{ ringingData.ringer }}</v-list-item-subtitle>
+              </v-list-item>
+              <v-list-item>
+                <v-list-item-title>Ring Schema</v-list-item-title>
+                <v-list-item-subtitle>{{ ringingData.ring_scheme }}</v-list-item-subtitle>
               </v-list-item>
               <v-list-item>
                 <v-list-item-title>Koordinaten</v-list-item-title>
