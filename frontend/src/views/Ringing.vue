@@ -79,6 +79,10 @@
                     <v-list-item-title>Geschlecht</v-list-item-title>
                     <v-list-item-subtitle>{{ formatSex(foundRinging.sex) }}</v-list-item-subtitle>
                   </v-list-item>
+                  <v-list-item v-if="foundRinging.status">
+                    <v-list-item-title>Status</v-list-item-title>
+                    <v-list-item-subtitle>{{ formatStatus(foundRinging.status) }}</v-list-item-subtitle>
+                  </v-list-item>
                   <v-list-item>
                     <v-list-item-title>Koordinaten</v-list-item-title>
                     <v-list-item-subtitle>
@@ -197,6 +201,16 @@
                     item-title="text"
                     item-value="value"
                     :rules="[v => v !== undefined || 'Geschlecht ist erforderlich']"
+                  ></v-select>
+                </v-col>
+                <v-col cols="12" sm="6">
+                  <v-select
+                    v-model="newRinging.status"
+                    label="Status"
+                    :items="statusOptions"
+                    item-title="text"
+                    item-value="value"
+                    clearable
                   ></v-select>
                 </v-col>
               </v-row>
@@ -377,6 +391,7 @@ const newRinging = reactive({
   ringer: '',
   age: undefined as number | undefined,
   sex: undefined as number | undefined,
+  status: undefined as string | undefined,
   lat: undefined as number | undefined,
   lon: undefined as number | undefined
 });
@@ -491,6 +506,13 @@ const sexOptions = [
   { text: 'Unbekannt (0)', value: 0 }
 ];
 
+const statusOptions = [
+  { text: 'Brutvogel', value: 'BV' },
+  { text: 'Mausergast', value: 'MG' },
+  { text: 'Nichtbrüter', value: 'NB' },
+  { text: 'Reviervogel', value: 'RV' }
+];
+
 const parentSexOptions = [
   { text: 'Männlich', value: 'M' },
   { text: 'Weiblich', value: 'W' },
@@ -509,6 +531,11 @@ const formatAge = (age: number) => {
 const formatSex = (sex: number) => {
   const option = sexOptions.find(opt => opt.value === sex);
   return option ? option.text : `Code ${sex}`;
+};
+
+const formatStatus = (status: string) => {
+  const option = statusOptions.find(opt => opt.value === status);
+  return option ? option.text : status;
 };
 
 const formatCoordinates = (lat: number, lon: number) => {
@@ -620,7 +647,8 @@ const submitForm = async () => {
       place: newRinging.place,
       species: newRinging.species,
       lat: newRinging.lat,
-      lon: newRinging.lon
+      lon: newRinging.lon,
+      status: newRinging.status
     };
     
     // Reset form
@@ -636,6 +664,7 @@ const submitForm = async () => {
       ringer: preservedValues.ringer,
       age: undefined,
       sex: undefined,
+      status: preservedValues.status,
       lat: preservedValues.lat,
       lon: preservedValues.lon
     });

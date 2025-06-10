@@ -108,6 +108,7 @@ export interface Ringing {
   ringer: string;
   sex: number;
   age: number;
+  status?: BirdStatus;  // New optional field
 }
 
 export interface ShareableReport {

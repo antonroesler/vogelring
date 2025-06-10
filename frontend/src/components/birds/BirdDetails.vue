@@ -92,6 +92,10 @@
               <v-list-item-title>Geschlecht</v-list-item-title>
               <v-list-item-subtitle>{{ formatSex(ringingData.sex) }}</v-list-item-subtitle>
             </v-list-item>
+            <v-list-item v-if="ringingData.status">
+              <v-list-item-title>Status</v-list-item-title>
+              <v-list-item-subtitle>{{ formatStatus(ringingData.status) }}</v-list-item-subtitle>
+            </v-list-item>
             <v-list-item>
               <v-list-item-title>Koordinaten</v-list-item-title>
               <v-list-item-subtitle>
@@ -167,6 +171,16 @@ const formatSex = (sex: number) => {
     case 2: return 'Weiblich (2)';
     case 0: return 'Unbekannt (0)';
     default: return `Code ${sex}`;
+  }
+};
+
+const formatStatus = (status: string) => {
+  switch (status) {
+    case 'BV': return 'Brutvogel';
+    case 'MG': return 'Mausergast';
+    case 'NB': return 'Nichtbrüter';
+    case 'RV': return 'Reviervogel';
+    default: return status;
   }
 };
 
