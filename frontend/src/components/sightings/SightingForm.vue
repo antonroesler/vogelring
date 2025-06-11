@@ -343,6 +343,7 @@ import LeafletMap from '@/components/map/LeafletMap.vue';
 import BirdSuggestions from '@/components/birds/BirdSuggestions.vue';
 import ClearFieldsSettings from '@/components/settings/ClearFieldsSettings.vue';
 import { api } from '@/api';
+import { cleanSightingData, toNumberOrNull, createNumericInputHandler } from '@/utils/formValidation';
 
 const props = defineProps<{
   sighting: Partial<Sighting>;
@@ -415,22 +416,11 @@ const initializeNumericInputs = () => {
   familySizeInput.value = localSighting.value.family_size?.toString() || '';
 };
 
-// Handle numeric input changes
+// Handle numeric input changes using the utility function
 const handleNumericInput = (field: string, event: Event) => {
-  const target = event.target as HTMLInputElement;
-  const value = target.value.trim();
-  
-  if (value === '' || value === null || value === undefined) {
-    // Set to null/undefined for empty values
-    (localSighting.value as any)[field] = null;
-  } else {
-    const numValue = parseInt(value, 10);
-    if (!isNaN(numValue) && numValue >= 0) {
-      (localSighting.value as any)[field] = numValue;
-    } else {
-      (localSighting.value as any)[field] = null;
-    }
-  }
+  const inputElement = event.target as HTMLInputElement;
+  const value = toNumberOrNull(inputElement.value);
+  (localSighting.value as any)[field] = value;
 };
 
 onMounted(async () => {
@@ -523,30 +513,8 @@ const handlePartnerSelect = (suggestion: SuggestionBird) => {
 };
 
 const saveSighting = () => {
-  // Clean up the sighting data before submitting
-  const cleanedSighting = { ...localSighting.value };
-  
-  // Ensure numeric fields are properly handled
-  const numericFields = ['small_group_size', 'large_group_size', 'breed_size', 'family_size'];
-  numericFields.forEach(field => {
-    const value = (cleanedSighting as any)[field];
-    if (value === '' || value === null || value === undefined) {
-      (cleanedSighting as any)[field] = null;
-    } else if (typeof value === 'string') {
-      const numValue = parseInt(value.trim(), 10);
-      (cleanedSighting as any)[field] = isNaN(numValue) ? null : numValue;
-    }
-  });
-
-  // Ensure string fields don't contain empty strings
-  const stringFields = ['species', 'ring', 'reading', 'place', 'area', 'habitat', 'field_fruit', 'comment', 'melder', 'partner'];
-  stringFields.forEach(field => {
-    const value = (cleanedSighting as any)[field];
-    if (value === '') {
-      (cleanedSighting as any)[field] = null;
-    }
-  });
-
+  // Use the utility function to clean the data
+  const cleanedSighting = cleanSightingData(localSighting.value);
   emit('submit', cleanedSighting);
 };
 
