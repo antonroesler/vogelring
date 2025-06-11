@@ -133,7 +133,7 @@ def get_sightings(
         raise BadRequestError("Page and per_page must be greater than 0")
     sightings = sightings[(page - 1) * per_page : page * per_page]
     return Response(
-        status_code=200, body=json.dumps([sighting.model_dump() for sighting in sightings]), headers=headers
+        status_code=200, body=json.dumps([sighting.model_dump() for sighting in reversed(sightings)]), headers=headers
     )
 
 
@@ -374,7 +374,7 @@ def create_family_tree_entry():
     body: Optional[str] = app.current_event.body
     if body is None:
         raise BadRequestError("Request body is required")
-    
+
     logger.info(f"Create family tree entry: {body}")
     try:
         family_entry = FamilyTreeEntry(**json.loads(body))
@@ -394,7 +394,7 @@ def update_family_tree_entry():
     body: Optional[str] = app.current_event.body
     if body is None:
         raise BadRequestError("Request body is required")
-    
+
     logger.info(f"Update family tree entry: {body}")
     try:
         family_entry = FamilyTreeEntry(**json.loads(body))
@@ -426,20 +426,22 @@ def add_partner_relationship(ring: str):
     body: Optional[str] = app.current_event.body
     if body is None:
         raise BadRequestError("Request body is required")
-    
+
     logger.info(f"Add partner relationship for ring {ring}: {body}")
     try:
         request_data = json.loads(body)
         partner_ring = request_data.get("partner_ring")
         year = request_data.get("year")
-        
+
         if not partner_ring:
             raise BadRequestError("partner_ring is required")
         if not year:
             raise BadRequestError("year is required")
-        
+
         service.add_partner_to_family_tree_entry(ring, partner_ring, int(year))
-        return Response(status_code=201, body=json.dumps({"message": "Partner relationship added successfully"}), headers=headers)
+        return Response(
+            status_code=201, body=json.dumps({"message": "Partner relationship added successfully"}), headers=headers
+        )
     except json.JSONDecodeError:
         raise BadRequestError("Invalid JSON in request body")
     except ValueError as e:
@@ -456,23 +458,25 @@ def add_child_relationship(ring: str):
     body: Optional[str] = app.current_event.body
     if body is None:
         raise BadRequestError("Request body is required")
-    
+
     logger.info(f"Add child relationship for parent {ring}: {body}")
     try:
         request_data = json.loads(body)
         child_ring = request_data.get("child_ring")
         year = request_data.get("year")
         sex = request_data.get("sex", "U")  # Default to unknown if not provided
-        
+
         if not child_ring:
             raise BadRequestError("child_ring is required")
         if not year:
             raise BadRequestError("year is required")
         if sex not in ["M", "W", "U"]:
             raise BadRequestError("sex must be 'M', 'W', or 'U'")
-        
+
         service.add_child_relationship(ring, child_ring, int(year), sex)
-        return Response(status_code=201, body=json.dumps({"message": "Child relationship added successfully"}), headers=headers)
+        return Response(
+            status_code=201, body=json.dumps({"message": "Child relationship added successfully"}), headers=headers
+        )
     except json.JSONDecodeError:
         raise BadRequestError("Invalid JSON in request body")
     except ValueError as e:
