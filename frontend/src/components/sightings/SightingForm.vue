@@ -6,6 +6,11 @@
         <v-card-subtitle class="px-0">Datum und Ort</v-card-subtitle>
       </v-col>
       <v-col cols="auto">
+        <clear-fields-settings
+          v-model:settings="clearFieldsSettings"
+        />
+      </v-col>
+      <v-col cols="auto">
         <v-btn
           variant="text"
           color="secondary"
@@ -157,36 +162,40 @@
       </v-col>
       <v-col cols="12" sm="4" md="4">
         <v-text-field
-          v-model="localSighting.small_group_size"
+          v-model="smallGroupSizeInput"
           label="Kleingruppe"
           type="number"
           density="comfortable"
+          @input="handleNumericInput('small_group_size', $event)"
         ></v-text-field>
       </v-col>
       <v-col cols="12" sm="4" md="4">
         <v-text-field
-          v-model="localSighting.large_group_size"
+          v-model="largeGroupSizeInput"
           label="Großgruppe"
           type="number"
           density="comfortable"
+          @input="handleNumericInput('large_group_size', $event)"
         ></v-text-field>
       </v-col>
 
       <!-- Add new row for breed_size and family_size -->
       <v-col cols="12" sm="4" md="4">
         <v-text-field
-          v-model="localSighting.breed_size"
+          v-model="breedSizeInput"
           label="Nicht flügge Junge"
           type="number"
           density="comfortable"
+          @input="handleNumericInput('breed_size', $event)"
         ></v-text-field>
       </v-col>
       <v-col cols="12" sm="4" md="4">
         <v-text-field
-          v-model="localSighting.family_size"
+          v-model="familySizeInput"
           label="Flügge Junge"
           type="number"
           density="comfortable"
+          @input="handleNumericInput('family_size', $event)"
         ></v-text-field>
       </v-col>
       <v-col cols="12" sm="4" md="4">
@@ -332,6 +341,7 @@ import type { Sighting, SuggestionBird, SuggestionLists } from '@/types';
 import { BirdStatus, BirdAge, PairType } from '@/types';
 import LeafletMap from '@/components/map/LeafletMap.vue';
 import BirdSuggestions from '@/components/birds/BirdSuggestions.vue';
+import ClearFieldsSettings from '@/components/settings/ClearFieldsSettings.vue';
 import { api } from '@/api';
 
 const props = defineProps<{
@@ -362,6 +372,14 @@ const filteredHabitats = ref<string[]>([]);
 const filteredMelders = ref<string[]>([]);
 const filteredFieldFruits = ref<string[]>([]);
 
+// Separate input refs for numeric fields to handle display vs actual values
+const smallGroupSizeInput = ref<string>('');
+const largeGroupSizeInput = ref<string>('');
+const breedSizeInput = ref<string>('');
+const familySizeInput = ref<string>('');
+
+const clearFieldsSettings = ref<Record<string, boolean>>({});
+
 const statusItems = [
   { title: 'Brutvogel', value: BirdStatus.BV },
   { title: 'Mausergast', value: BirdStatus.MG },
@@ -388,6 +406,32 @@ const pairItems = [
 ];
 
 const showAdditionalFields = ref(false);
+
+// Initialize input fields with current values
+const initializeNumericInputs = () => {
+  smallGroupSizeInput.value = localSighting.value.small_group_size?.toString() || '';
+  largeGroupSizeInput.value = localSighting.value.large_group_size?.toString() || '';
+  breedSizeInput.value = localSighting.value.breed_size?.toString() || '';
+  familySizeInput.value = localSighting.value.family_size?.toString() || '';
+};
+
+// Handle numeric input changes
+const handleNumericInput = (field: string, event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const value = target.value.trim();
+  
+  if (value === '' || value === null || value === undefined) {
+    // Set to null/undefined for empty values
+    (localSighting.value as any)[field] = null;
+  } else {
+    const numValue = parseInt(value, 10);
+    if (!isNaN(numValue) && numValue >= 0) {
+      (localSighting.value as any)[field] = numValue;
+    } else {
+      (localSighting.value as any)[field] = null;
+    }
+  }
+};
 
 onMounted(async () => {
   try {
@@ -420,10 +464,14 @@ onMounted(async () => {
     filteredMelders.value = [];
     filteredFieldFruits.value = [];
   }
+
+  // Initialize numeric inputs
+  initializeNumericInputs();
 });
 
 watch(() => props.sighting, (newSighting) => {
   localSighting.value = { ...newSighting };
+  initializeNumericInputs();
 }, { deep: true });
 
 const createFilter = (field: keyof typeof suggestions.value) => {
@@ -475,7 +523,31 @@ const handlePartnerSelect = (suggestion: SuggestionBird) => {
 };
 
 const saveSighting = () => {
-  emit('submit', localSighting.value);
+  // Clean up the sighting data before submitting
+  const cleanedSighting = { ...localSighting.value };
+  
+  // Ensure numeric fields are properly handled
+  const numericFields = ['small_group_size', 'large_group_size', 'breed_size', 'family_size'];
+  numericFields.forEach(field => {
+    const value = (cleanedSighting as any)[field];
+    if (value === '' || value === null || value === undefined) {
+      (cleanedSighting as any)[field] = null;
+    } else if (typeof value === 'string') {
+      const numValue = parseInt(value.trim(), 10);
+      (cleanedSighting as any)[field] = isNaN(numValue) ? null : numValue;
+    }
+  });
+
+  // Ensure string fields don't contain empty strings
+  const stringFields = ['species', 'ring', 'reading', 'place', 'area', 'habitat', 'field_fruit', 'comment', 'melder', 'partner'];
+  stringFields.forEach(field => {
+    const value = (cleanedSighting as any)[field];
+    if (value === '') {
+      (cleanedSighting as any)[field] = null;
+    }
+  });
+
+  emit('submit', cleanedSighting);
 };
 
 const hasCoordinates = computed(() => {
