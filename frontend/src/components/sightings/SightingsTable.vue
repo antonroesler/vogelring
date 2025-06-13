@@ -153,7 +153,7 @@ const headers = [
   { title: 'Ring', key: 'ring', sortable: true },
   { title: 'Spezies', key: 'species', sortable: true },
   { title: 'Ort', key: 'place', sortable: true },
-  { title: 'Paar Status', key: 'pair', sortable: true },
+  { title: 'Paar-Status', key: 'pair', sortable: true },
   { title: 'Status', key: 'status', sortable: true },
   { title: 'Melder', key: 'melder', sortable: true },
   { title: 'Gemeldet', key: 'melded', sortable: true },
