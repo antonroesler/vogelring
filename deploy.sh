@@ -27,9 +27,12 @@ echo "Deploying frontend"
 cd ../frontend
 npm run deploy
 
+echo "Committing changes to git..."
+cd ..
 git add ring-api/src/api/version.py
 git add frontend/public/version.json
 
 git commit -m "deploy: bump versions"
 
+echo "Pushing to GitHub..."
 git push

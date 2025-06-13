@@ -94,6 +94,11 @@ const router = createRouter({
           path: 'seasonal',
           name: 'statistics-seasonal',
           component: () => import('./views/statistics/SeasonalAnalysisView.vue')
+        },
+        {
+          path: 'data-quality',
+          name: 'statistics-data-quality',
+          component: () => import('./views/statistics/DataQualityView.vue')
         }
       ]
     },
