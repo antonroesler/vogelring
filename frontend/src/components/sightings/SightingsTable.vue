@@ -21,9 +21,10 @@
       >
         <td>{{ formatDate(item.date) }}</td>
         <td>{{ item.ring }}</td>
-        <td>{{ item.reading }}</td>
         <td>{{ item.species }}</td>
         <td>{{ item.place }}</td>
+        <td>{{ formatPairStatus(item.pair) }}</td>
+        <td>{{ formatStatus(item.status) }}</td>
         <td>{{ item.melder }}</td>
         <td>
           <v-btn
@@ -150,9 +151,10 @@ const itemsPerPage = computed({
 const headers = [
   { title: 'Datum', key: 'date', sortable: true },
   { title: 'Ring', key: 'ring', sortable: true },
-  { title: 'Ablesung', key: 'reading', sortable: true },
   { title: 'Spezies', key: 'species', sortable: true },
   { title: 'Ort', key: 'place', sortable: true },
+  { title: 'Paar Status', key: 'pair', sortable: true },
+  { title: 'Status', key: 'status', sortable: true },
   { title: 'Melder', key: 'melder', sortable: true },
   { title: 'Gemeldet', key: 'melded', sortable: true },
   { title: 'Aktionen', key: 'actions', sortable: false }
@@ -160,6 +162,36 @@ const headers = [
 
 const formatDate = (date?: string) => {
   return date ? format(new Date(date), 'dd.MM.yyyy') : '';
+};
+
+const formatPairStatus = (pair?: string) => {
+  if (!pair) return '-';
+  switch (pair) {
+    case 'x':
+      return 'Verpaart';
+    case 'F':
+      return 'Familie';
+    case 'S':
+      return 'Schule';
+    default:
+      return pair;
+  }
+};
+
+const formatStatus = (status?: string) => {
+  if (!status) return '-';
+  switch (status) {
+    case 'BV':
+      return 'Brutvogel';
+    case 'MG':
+      return 'Mausergast';
+    case 'NB':
+      return 'Nichtbrüter';
+    case 'RV':
+      return 'Reviervogel';
+    default:
+      return status;
+  }
 };
 
 const handleRowClick = (event: Event, item: any) => {
@@ -273,15 +305,14 @@ const fieldLabels: Record<string, string> = {
   lon: 'Längengrad',
   is_exact_location: 'Exakter Standort',
   partner: 'Partner',
-  status: 'Status',
   age: 'Alter',
   breed_size: 'Brutgröße',
   family_size: 'Familiengröße',
-  pair: 'Paar-Typ',
   sex: 'Geschlecht',
+  reading: 'Ablesung',
 };
 
-const mainFields: (keyof Sighting | 'actions')[] = ['id', 'date', 'ring', 'reading', 'species', 'place', 'melder', 'melded', 'actions', 'lat', 'lon'];
+const mainFields: (keyof Sighting | 'actions')[] = ['id', 'date', 'ring', 'species', 'place', 'pair', 'status', 'melder', 'melded', 'actions', 'lat', 'lon'];
 
 const getExtraFields = (item: Sighting) => {
   const fields: Record<string, any> = {};
@@ -295,6 +326,8 @@ const getExtraFields = (item: Sighting) => {
 
 const formatField = (key: string, value: any) => {
   if (key === 'date') return formatDate(value);
+  if (key === 'pair') return formatPairStatus(value);
+  if (key === 'status') return formatStatus(value);
   if (typeof value === 'boolean') return value ? 'Ja' : 'Nein';
   return value;
 };
