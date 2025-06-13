@@ -28,6 +28,7 @@ cd ../frontend
 npm run deploy
 
 echo "Committing changes to git..."
+cd ..
 git add ring-api/src/api/version.py
 git add frontend/public/version.json
 
