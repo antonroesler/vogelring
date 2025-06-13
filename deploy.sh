@@ -26,3 +26,10 @@ sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --parameter-overr
 echo "Deploying frontend"
 cd ../frontend
 npm run deploy
+
+git add ring-api/src/api/version.py
+git add frontend/public/version.json
+
+git commit -m "deploy: bump versions"
+
+git push
