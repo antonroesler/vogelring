@@ -1,10 +1,14 @@
 # Vogelring 🦆
 
 A comprehensive bird tracking and sighting management system for ornithologists and bird watchers. Vogelring enables researchers to track ringed birds, manage sightings, analyze migration patterns, and maintain detailed records of bird populations.
+
 <img width="1308" alt="entrylist" src="https://github.com/user-attachments/assets/dd96a7c6-b3c9-45ba-a6bc-c33e816b36df" />
 <img width="1308" alt="entry" src="https://github.com/user-attachments/assets/7a7501a6-ae95-4d1b-b405-5ffc54606c41" />
 <img width="1308" alt="new" src="https://github.com/user-attachments/assets/2208b293-df06-4ab6-84e1-298cc546b293" />
 
+## 🧑🏼‍💻 Become a User
+
+We'd be very pleased to extend the user group of vogelring. If you wish to become a user, please contact me. 
 
 
 ## 🌟 Features
@@ -216,7 +220,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - Built for ornithological research and bird conservation efforts
 - Supports the scientific community in tracking bird populations and migration patterns
-- Designed with input from field researchers and bird ringing stations
+- Designed with input from field researchers
 
 ## 📞 Support
 
