@@ -217,8 +217,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 For questions, issues, or contributions, please:
 - Open an issue on GitHub
-- Check the documentation in the `/docs` directory
-- Review the API documentation at `/swagger`
+- Contact me: anton@antonroesler.com
 
 ---
 
