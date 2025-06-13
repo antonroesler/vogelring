@@ -1,6 +1,11 @@
 # Vogelring 🦆
 
 A comprehensive bird tracking and sighting management system for ornithologists and bird watchers. Vogelring enables researchers to track ringed birds, manage sightings, analyze migration patterns, and maintain detailed records of bird populations.
+<img width="1308" alt="entrylist" src="https://github.com/user-attachments/assets/dd96a7c6-b3c9-45ba-a6bc-c33e816b36df" />
+<img width="1308" alt="entry" src="https://github.com/user-attachments/assets/7a7501a6-ae95-4d1b-b405-5ffc54606c41" />
+<img width="1308" alt="new" src="https://github.com/user-attachments/assets/2208b293-df06-4ab6-84e1-298cc546b293" />
+
+
 
 ## 🌟 Features
 
