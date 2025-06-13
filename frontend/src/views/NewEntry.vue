@@ -15,6 +15,7 @@
         :show-bird-suggestions="true"
         :show-place-suggestions="true"
         :show-coordinates="true"
+        :clear-fields-settings="clearFieldsSettings"
         @submit="saveSighting"
       />
     </v-card-text>
