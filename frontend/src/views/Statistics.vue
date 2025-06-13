@@ -29,6 +29,12 @@
           >
             Saisonale Analyse
           </v-btn>
+          <v-btn
+            :to="{ name: 'statistics-data-quality' }"
+            :color="isActive('statistics-data-quality') ? 'primary' : undefined"
+          >
+            Datenqualität
+          </v-btn>
         </v-btn-group>
       </v-card-text>
     </v-card>
