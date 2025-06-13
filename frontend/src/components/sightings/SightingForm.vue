@@ -6,11 +6,6 @@
         <v-card-subtitle class="px-0">Datum und Ort</v-card-subtitle>
       </v-col>
       <v-col cols="auto">
-        <clear-fields-settings
-          v-model:settings="clearFieldsSettings"
-        />
-      </v-col>
-      <v-col cols="auto">
         <v-btn
           variant="text"
           color="secondary"
@@ -341,7 +336,6 @@ import type { Sighting, SuggestionBird, SuggestionLists } from '@/types';
 import { BirdStatus, BirdAge, PairType } from '@/types';
 import LeafletMap from '@/components/map/LeafletMap.vue';
 import BirdSuggestions from '@/components/birds/BirdSuggestions.vue';
-import ClearFieldsSettings from '@/components/settings/ClearFieldsSettings.vue';
 import { api } from '@/api';
 import { cleanSightingData, toNumberOrNull, createNumericInputHandler } from '@/utils/formValidation';
 
@@ -352,6 +346,7 @@ const props = defineProps<{
   showBirdSuggestions?: boolean;
   showPlaceSuggestions?: boolean;
   showCoordinates?: boolean;
+  clearFieldsSettings?: Record<string, boolean>;
 }>();
 
 const emit = defineEmits<{
@@ -378,8 +373,6 @@ const smallGroupSizeInput = ref<string>('');
 const largeGroupSizeInput = ref<string>('');
 const breedSizeInput = ref<string>('');
 const familySizeInput = ref<string>('');
-
-const clearFieldsSettings = ref<Record<string, boolean>>({});
 
 const statusItems = [
   { title: 'Brutvogel', value: BirdStatus.BV },
