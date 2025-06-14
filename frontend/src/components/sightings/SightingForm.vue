@@ -1,5 +1,5 @@
 <template>
-  <v-form @submit.prevent="saveSighting">
+  <v-form @submit.prevent="handleSubmit">
     <!-- Group 1: Date and Place -->
     <v-row dense align="center" class="header-row">
       <v-col>
@@ -328,6 +328,24 @@
       </v-btn>
     </v-card-actions>
   </v-form>
+
+  <!-- Missing Ring Dialog -->
+  <missing-ring-dialog
+    v-model="showMissingRingDialog"
+    :reading="localSighting.reading"
+    @copy-from-reading="handleCopyFromReading"
+    @continue-without-ring="handleContinueWithoutRing"
+    @cancel="handleCancelRingDialog"
+  />
+
+  <!-- Missing Species Dialog -->
+  <missing-species-dialog
+    v-model="showMissingSpeciesDialog"
+    :ring="localSighting.ring"
+    @use-suggested-species="handleUseSuggestedSpecies"
+    @continue-without-species="handleContinueWithoutSpecies"
+    @cancel="handleCancelSpeciesDialog"
+  />
 </template>
 
 <script setup lang="ts">
@@ -336,6 +354,8 @@ import type { Sighting, SuggestionBird, SuggestionLists } from '@/types';
 import { BirdStatus, BirdAge, PairType } from '@/types';
 import LeafletMap from '@/components/map/LeafletMap.vue';
 import BirdSuggestions from '@/components/birds/BirdSuggestions.vue';
+import MissingRingDialog from '@/components/dialogs/MissingRingDialog.vue';
+import MissingSpeciesDialog from '@/components/dialogs/MissingSpeciesDialog.vue';
 import { api } from '@/api';
 import { cleanSightingData, toNumberOrNull, createNumericInputHandler } from '@/utils/formValidation';
 
@@ -373,6 +393,11 @@ const smallGroupSizeInput = ref<string>('');
 const largeGroupSizeInput = ref<string>('');
 const breedSizeInput = ref<string>('');
 const familySizeInput = ref<string>('');
+
+// Dialog state
+const showMissingRingDialog = ref(false);
+const showMissingSpeciesDialog = ref(false);
+const pendingSighting = ref<Partial<Sighting> | null>(null);
 
 const statusItems = [
   { title: 'Brutvogel', value: BirdStatus.BV },
@@ -505,10 +530,86 @@ const handlePartnerSelect = (suggestion: SuggestionBird) => {
   localSighting.value.partner = suggestion.ring;
 };
 
-const saveSighting = () => {
-  // Use the utility function to clean the data
+const handleSubmit = () => {
+  // Clean the data first
   const cleanedSighting = cleanSightingData(localSighting.value);
+  
+  // Check if we need to show dialogs for missing data
+  const missingRing = !cleanedSighting.ring;
+  const missingSpecies = !cleanedSighting.species;
+  
+  if (props.isNewEntry && (missingRing || missingSpecies)) {
+    // Store the pending sighting
+    pendingSighting.value = cleanedSighting;
+    
+    // Show ring dialog first if ring is missing
+    if (missingRing) {
+      showMissingRingDialog.value = true;
+      return;
+    }
+    
+    // If ring is present but species is missing, show species dialog
+    if (missingSpecies) {
+      showMissingSpeciesDialog.value = true;
+      return;
+    }
+  }
+  
+  // If no dialogs needed or not a new entry, submit directly
   emit('submit', cleanedSighting);
+};
+
+// Ring dialog handlers
+const handleCopyFromReading = () => {
+  if (pendingSighting.value && localSighting.value.reading) {
+    localSighting.value.ring = localSighting.value.reading;
+    pendingSighting.value.ring = localSighting.value.reading;
+    
+    // Check if we still need to show species dialog
+    if (!pendingSighting.value.species) {
+      showMissingSpeciesDialog.value = true;
+    } else {
+      emit('submit', pendingSighting.value);
+      pendingSighting.value = null;
+    }
+  }
+};
+
+const handleContinueWithoutRing = () => {
+  if (pendingSighting.value) {
+    // Check if we still need to show species dialog
+    if (!pendingSighting.value.species) {
+      showMissingSpeciesDialog.value = true;
+    } else {
+      emit('submit', pendingSighting.value);
+      pendingSighting.value = null;
+    }
+  }
+};
+
+const handleCancelRingDialog = () => {
+  pendingSighting.value = null;
+};
+
+// Species dialog handlers
+const handleUseSuggestedSpecies = (species: string) => {
+  if (pendingSighting.value) {
+    localSighting.value.species = species;
+    pendingSighting.value.species = species;
+    emit('submit', pendingSighting.value);
+    pendingSighting.value = null;
+  }
+};
+
+const handleContinueWithoutSpecies = () => {
+  if (pendingSighting.value) {
+    emit('submit', pendingSighting.value);
+    pendingSighting.value = null;
+  }
+};
+
+const handleCancelSpeciesDialog = () => {
+  pendingSighting.value = null;
 };
 
 const hasCoordinates = computed(() => {
