@@ -8,12 +8,12 @@ A comprehensive bird tracking and sighting management system for ornithologists 
 
 ## 🧑🏼‍💻 Become a User
 
-We'd be very pleased to extend the user group of vogelring. If you wish to become a user, please contact me. 
-
+We'd be very pleased to extend the user group of vogelring. If you wish to become a user, please contact me.
 
 ## 🌟 Features
 
 ### Core Functionality
+
 - **Bird Sighting Management**: Record, edit, and track bird sightings with detailed metadata
 - **Ring Database**: Comprehensive database of ringed birds with identification and tracking
 - **Interactive Maps**: Visualize sightings on interactive maps with location accuracy indicators
@@ -21,6 +21,7 @@ We'd be very pleased to extend the user group of vogelring. If you wish to becom
 - **Family Trees**: Track breeding relationships and family lineages between birds
 
 ### Analytics & Insights
+
 - **Friend Analysis**: Discover which birds are frequently seen together
 - **Seasonal Patterns**: Analyze seasonal migration and behavior patterns
 - **Dashboard**: Real-time statistics and insights about bird populations
@@ -28,6 +29,7 @@ We'd be very pleased to extend the user group of vogelring. If you wish to becom
 - **Radius Analysis**: Find all sightings within a specified geographic radius
 
 ### Data Management
+
 - **Import/Export**: Support for various data formats and migration tools
 - **Ringing Records**: Manage detailed ringing information and metadata
 - **Reporting**: Generate shareable reports with customizable time ranges
@@ -38,6 +40,7 @@ We'd be very pleased to extend the user group of vogelring. If you wish to becom
 Vogelring is built as a modern full-stack application:
 
 ### Frontend
+
 - **Vue 3** with TypeScript for type safety
 - **Vuetify 3** for Material Design components
 - **Leaflet** for interactive mapping
@@ -45,6 +48,7 @@ Vogelring is built as a modern full-stack application:
 - **Pinia** for state management
 
 ### Backend
+
 - **AWS Lambda** with Python for serverless computing
 - **API Gateway** for REST API endpoints
 - **DynamoDB** for NoSQL data storage
@@ -52,6 +56,7 @@ Vogelring is built as a modern full-stack application:
 - **CloudFront** for content delivery
 
 ### Key Technologies
+
 - **AWS SAM** for infrastructure as code
 - **Pydantic** for data validation
 - **AWS Lambda Powertools** for observability
@@ -60,6 +65,7 @@ Vogelring is built as a modern full-stack application:
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 - Node.js 18+ and npm
 - Python 3.12+
 - AWS CLI configured
@@ -68,33 +74,37 @@ Vogelring is built as a modern full-stack application:
 ### Local Development
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd vogelring
    ```
 
 2. **Set up environment variables**
+
    ```bash
    cp .env.example .env
    # Edit .env with your configuration
    ```
 
 3. **Install dependencies**
+
    ```bash
    # Frontend
    cd frontend
    npm install
-   
+
    # Backend
    cd ../
    rye sync
    ```
 
 4. **Start development servers**
+
    ```bash
    # Frontend (runs on http://localhost:5173)
    npm run dev
-   
+
    # Backend (local API)
    rye run local
    ```
@@ -102,6 +112,7 @@ Vogelring is built as a modern full-stack application:
 ### Deployment
 
 1. **Deploy the API**
+
    ```bash
    rye run deploy
    ```
@@ -151,12 +162,14 @@ API documentation is available at `/swagger` when running the development server
 ## 📈 Analytics
 
 ### Dashboard
+
 - Real-time statistics and trends
 - Top birds and locations
 - Streak tracking for consecutive observation days
 - Rolling 12-month analysis by species
 
 ### Advanced Analytics
+
 - **Friend Networks**: Identify birds frequently seen together
 - **Seasonal Patterns**: Migration and behavior analysis
 - **Data Quality**: Validation and completeness metrics
@@ -225,6 +238,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## 📞 Support
 
 For questions, issues, or contributions, please:
+
 - Open an issue on GitHub
 - Contact me: anton@antonroesler.com
 

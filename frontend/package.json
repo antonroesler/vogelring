@@ -8,6 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "bash deploy/deploy.sh",
+    "deploy:dev": "bash deploy/deploy-dev.sh",
+    "deploy:prod": "bash deploy/deploy-prod.sh",
     "deploy:setup": "bash deploy/setup.sh"
   },
   "dependencies": {
