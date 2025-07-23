@@ -13,7 +13,11 @@
     "deploy:setup": "bash deploy/setup.sh"
   },
   "dependencies": {
+    "@aws-amplify/auth": "^6.14.0",
+    "@aws-amplify/core": "^6.13.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.848.0",
     "@mdi/font": "^7.4.47",
+    "amazon-cognito-identity-js": "^6.3.15",
     "axios": "^1.6.7",
     "date-fns": "^3.3.1",
     "echarts": "^5.5.1",

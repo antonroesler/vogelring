@@ -95,26 +95,67 @@
 
       <!-- Right section -->
       <div class="navigation-buttons pe-4">
-        <v-btn 
-          to="/new-entry" 
-          variant="text"
-          color="white"
-        >Neuer Eintrag</v-btn>
-        <v-btn 
-          to="/entries" 
-          variant="text"
-          color="white"
-        >Eintragliste</v-btn>
-        <v-btn 
-          to="/ringing" 
-          variant="text"
-          color="white"
-        >Beringungen</v-btn>
-        <v-btn 
-          to="/statistics" 
-          variant="text"
-          color="white"
-        >Statistiken</v-btn>
+        <template v-if="authStore.isAuthenticated">
+          <v-btn 
+            to="/new-entry" 
+            variant="text"
+            color="white"
+          >Neuer Eintrag</v-btn>
+          <v-btn 
+            to="/entries" 
+            variant="text"
+            color="white"
+          >Eintragliste</v-btn>
+          <v-btn 
+            to="/ringing" 
+            variant="text"
+            color="white"
+          >Beringungen</v-btn>
+          <v-btn 
+            to="/statistics" 
+            variant="text"
+            color="white"
+          >Statistiken</v-btn>
+          
+          <!-- User menu -->
+          <v-menu>
+            <template v-slot:activator="{ props }">
+              <v-btn
+                v-bind="props"
+                variant="text"
+                color="white"
+                icon
+              >
+                <v-icon>mdi-account-circle</v-icon>
+              </v-btn>
+            </template>
+            <v-list>
+              <v-list-item v-if="authStore.userAttributes?.email">
+                <v-list-item-title>{{ authStore.userAttributes.email }}</v-list-item-title>
+                <v-list-item-subtitle>Angemeldet</v-list-item-subtitle>
+              </v-list-item>
+              <v-divider />
+              <v-list-item @click="handleLogout">
+                <v-list-item-prepend>
+                  <v-icon>mdi-logout</v-icon>
+                </v-list-item-prepend>
+                <v-list-item-title>Abmelden</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+        </template>
+        <template v-else>
+          <v-btn 
+            to="/auth/login" 
+            variant="text"
+            color="white"
+          >Anmelden</v-btn>
+          <v-btn 
+            to="/auth/register" 
+            variant="outlined"
+            color="white"
+          >Registrieren</v-btn>
+        </template>
       </div>
     </v-app-bar>
 
@@ -132,6 +173,7 @@ import { api } from './api';
 import { useRouter } from 'vue-router';
 import debounce from 'lodash/debounce';
 import { SuggestionBird } from './types';
+import { useAuthStore } from './stores/auth';
 
 interface Sighting {
   id: string;
@@ -154,6 +196,7 @@ interface Sighting {
 type BirdSuggestion = SuggestionBird;
 
 const router = useRouter();
+const authStore = useAuthStore();
 const version = ref<string>();
 const searchQuery = ref('');
 const suggestions = ref<BirdSuggestion[]>([]);
@@ -246,6 +289,16 @@ const navigateToBird = (bird: BirdSuggestion) => {
   router.push(`/birds/${bird.ring}`);
   selectedBird.value = null;
   searchQuery.value = '';
+};
+
+// Handle user logout
+const handleLogout = async () => {
+  try {
+    await authStore.signOut();
+    router.push('/auth/login');
+  } catch (error) {
+    console.error('Logout failed:', error);
+  }
 };
 
 onMounted(async () => {

@@ -1,13 +1,14 @@
 import axios from 'axios';
 import type { Sighting, BirdMeta, FriendResponse, Dashboard, Ringing, ShareableReport, SuggestionBird, FamilyTreeEntry } from '../types';
+import { useAuthStore } from '@/stores/auth';
 
-const API_BASE_URL = 'https://782syzefh4.execute-api.eu-central-1.amazonaws.com/Prod';
-const API_KEY = import.meta.env.VITE_API_KEY;
+// Use dev environment API URL for now - will be configurable via env vars
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://xvc1zh25e3.execute-api.eu-central-1.amazonaws.com/Prod';
+const API_KEY = import.meta.env.VITE_API_KEY; // Keep for backwards compatibility during migration
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'x-api-key': API_KEY,
     'Accept': 'application/json',
     'Content-Type': 'application/json'
   },
@@ -17,10 +18,31 @@ const api = axios.create({
 
 export { api };
 
-// Add request interceptor for logging
+// Add request interceptor for JWT token authentication
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     console.log('Making request:', config.method?.toUpperCase(), config.url, config.params || config.data);
+    
+    // Try to get JWT token first
+    try {
+      const authStore = useAuthStore();
+      const token = await authStore.getIdToken();
+      
+      if (token) {
+        config.headers.authorization = `Bearer ${token}`;
+        console.log('Using JWT token authentication');
+      } else if (API_KEY) {
+        // Fallback to API key for backwards compatibility
+        config.headers['x-api-key'] = API_KEY;
+        console.log('Using API key authentication (fallback)');
+      }
+    } catch (error) {
+      console.warn('Failed to get auth token, falling back to API key:', error);
+      if (API_KEY) {
+        config.headers['x-api-key'] = API_KEY;
+      }
+    }
+    
     return config;
   },
   (error) => {
@@ -29,14 +51,36 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor for logging
+// Add response interceptor for handling auth errors and logging
 api.interceptors.response.use(
   (response) => {
     console.log('Response received:', response.status, response.data);
     return response;
   },
-  (error) => {
+  async (error) => {
     console.error('Response error:', error.response?.status, error.response?.data || error.message);
+    
+    // Handle authentication errors
+    if (error.response?.status === 401) {
+      console.warn('Authentication failed - redirecting to login');
+      const authStore = useAuthStore();
+      
+      // Try to refresh the session first
+      const refreshed = await authStore.refreshSession();
+      if (!refreshed) {
+        // If refresh fails, sign out and redirect to login
+        await authStore.signOut();
+        
+        // Only redirect if we're not already on an auth page
+        if (!window.location.pathname.startsWith('/auth')) {
+          window.location.href = '/auth/login';
+        }
+      } else {
+        // Session refreshed, retry the original request
+        return api.request(error.config);
+      }
+    }
+    
     return Promise.reject(error);
   }
 );

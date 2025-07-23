@@ -21,6 +21,7 @@ from api import service
 from api.models.sightings import BirdMeta, Sighting
 from api.models.ringing import Ringing
 from api.service.seasonal_analysis import SeasonalAnalysis
+from api.auth.cognito import get_user_id_from_token, get_user_context_from_token
 from typing import Optional
 import json
 import traceback
@@ -514,9 +515,41 @@ def lambda_handler(event: dict, context: LambdaContext) -> dict:
             "body": json.dumps({"message": "Operation not allowed on this endpoint"}),
         }
 
-    # Check API key - ONLY for non-OPTIONS requests
-    if "x-api-key" not in event["headers"] or event["headers"]["x-api-key"] != os.environ["API_KEY"]:
-        return {"statusCode": 401, "headers": headers, "body": json.dumps({"message": "Unauthorized"})}
+    # Skip authentication for health check
+    if path == "/health":
+        return app.resolve(event, context)
+
+    # Extract and verify JWT token - ONLY for non-OPTIONS requests
+    auth_header = event["headers"].get("authorization") or event["headers"].get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        # Fallback to API key for backwards compatibility during migration
+        if "x-api-key" in event["headers"] and event["headers"]["x-api-key"] == os.environ.get("API_KEY"):
+            logger.info("Using API key authentication (legacy)")
+            event["user_id"] = "api_key_user"  # Default user for API key access
+            event["user_context"] = {"user_id": "api_key_user", "auth_method": "api_key"}
+        else:
+            return {
+                "statusCode": 401,
+                "headers": headers,
+                "body": json.dumps({"message": "Unauthorized - Bearer token required"}),
+            }
+    else:
+        # JWT authentication
+        token = auth_header.split(" ")[1]
+        user_context = get_user_context_from_token(
+            token,
+            os.environ["USER_POOL_ID"],
+            os.environ["USER_POOL_CLIENT_ID"],
+            os.environ.get("AWS_REGION", "eu-central-1"),
+        )
+
+        if not user_context:
+            return {"statusCode": 401, "headers": headers, "body": json.dumps({"message": "Invalid or expired token"})}
+
+        # Add user context to event for use in handlers
+        event["user_id"] = user_context["user_id"]
+        event["user_context"] = user_context
+        logger.info(f"Authenticated user: {user_context['user_id']}")
 
     try:
         return app.resolve(event, context)

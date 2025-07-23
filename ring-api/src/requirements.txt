@@ -4,3 +4,4 @@ pydantic-settings
 pydantic
 cryptography
 boto3==1.39.11
+PyJWT[crypto]==2.10.1
