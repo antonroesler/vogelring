@@ -342,6 +342,8 @@ onMounted(async () => {
 
 .app-title {
   color: white !important;
+  flex-shrink: 0 !important;
+  min-width: fit-content !important;
 }
 
 .logo-icon {
