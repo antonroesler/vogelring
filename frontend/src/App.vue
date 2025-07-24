@@ -185,11 +185,14 @@
         <router-view :key="$route.fullPath"></router-view>
       </v-container>
     </v-main>
+
+    <Footer />
   </v-app>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import Footer from './components/layout/Footer.vue';
 import { api } from './api';
 import { useRouter } from 'vue-router';
 import debounce from 'lodash/debounce';
