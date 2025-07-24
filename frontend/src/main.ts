@@ -149,7 +149,7 @@ const router = createRouter({
       name: 'ringing',
       component: () => import('./views/Ringing.vue'),
       meta: { requiresAuth: true }
-    }
+    },
     // Legal pages (public)
     {
       path: '/impressum',
