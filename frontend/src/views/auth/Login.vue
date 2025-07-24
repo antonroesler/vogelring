@@ -121,7 +121,7 @@ const handleLogin = async () => {
   }
 
   try {
-    await authStore.login(username.value, password.value);
+    await authStore.signIn(username.value, password.value);
     router.push("/");
   } catch (error) {
     console.error("Login failed:", error);
