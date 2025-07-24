@@ -637,6 +637,15 @@ onMounted(async () => {
   transform: translateY(0);
 }
 
+/* Force white background for login page */
+.v-application.v-theme--light {
+  background-color: #ffffff !important;
+}
+
+.v-main {
+  background-color: #ffffff !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 960px) {
   .search-container {
