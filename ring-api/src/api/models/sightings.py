@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field, field_serializer, field_validator
 from datetime import date as _date
 from uuid import uuid4
 from enum import Enum
-from typing import Literal, Union
+from typing import Literal
 
 
 class BirdStatus(str, Enum):
@@ -65,15 +65,15 @@ class Sighting(BaseModel):
     habitat: str | None = None  # Habitat Type
     field_fruit: str | None = None  # Field Fruit Type
 
-    @field_validator('large_group_size', 'small_group_size', 'breed_size', 'family_size', mode='before')
+    @field_validator("large_group_size", "small_group_size", "breed_size", "family_size", mode="before")
     @classmethod
     def validate_numeric_fields(cls, v):
         """Convert empty strings to None for numeric fields"""
-        if v == '' or v is None:
+        if v == "" or v is None:
             return None
         if isinstance(v, str):
             v = v.strip()
-            if v == '':
+            if v == "":
                 return None
             try:
                 return int(v)
@@ -81,15 +81,27 @@ class Sighting(BaseModel):
                 return None
         return v
 
-    @field_validator('species', 'ring', 'reading', 'partner', 'comment', 'melder', 'place', 'area', 'habitat', 'field_fruit', mode='before')
+    @field_validator(
+        "species",
+        "ring",
+        "reading",
+        "partner",
+        "comment",
+        "melder",
+        "place",
+        "area",
+        "habitat",
+        "field_fruit",
+        mode="before",
+    )
     @classmethod
     def validate_string_fields(cls, v):
         """Convert empty strings to None for string fields"""
-        if v == '' or v is None:
+        if v == "" or v is None:
             return None
         if isinstance(v, str):
             v = v.strip()
-            if v == '':
+            if v == "":
                 return None
         return v
 

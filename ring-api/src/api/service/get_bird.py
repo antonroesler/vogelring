@@ -1,12 +1,11 @@
 from typing import Counter
 from api.service.get_sightings import get_sightings_by_ring, get_sightings
 from api.models.sightings import BirdMeta, Partner, SuggestionBird
-from collections import defaultdict
 
 
-def get_bird_by_ring(ring: str) -> BirdMeta | None:
+def get_bird_by_ring(ring: str, user: str) -> BirdMeta | None:
     """Return bird meta information by ring or None if bird is not found."""
-    sightings = get_sightings_by_ring(ring)
+    sightings = get_sightings_by_ring(ring, user)
     if not sightings:
         return None
 
@@ -39,9 +38,9 @@ def get_bird_by_ring(ring: str) -> BirdMeta | None:
     )
 
 
-def get_unique_rings() -> list[str]:
+def get_unique_rings(user: str) -> list[str]:
     """Return a list of unique rings."""
-    sightings = get_sightings()
+    sightings = get_sightings(user)
     return list(set(sighting.ring for sighting in sightings if sighting.ring is not None))
 
 
@@ -82,11 +81,11 @@ def min_or_none(a, b):
     return min(a, b)
 
 
-def get_bird_suggestions_by_partial_reading(partial_reading: str) -> list[SuggestionBird]:
+def get_bird_suggestions_by_partial_reading(partial_reading: str, user: str) -> list[SuggestionBird]:
     """Return a list of bird meta information suggestions by partial reading.
     Partial reading can be only front, back, outer or middle reading."""
     partial_reading = partial_reading.replace("...", "*").replace("…", "*")
-    sightings = get_sightings()
+    sightings = get_sightings(user)
     suggestions = dict()
 
     for sighting in sightings:

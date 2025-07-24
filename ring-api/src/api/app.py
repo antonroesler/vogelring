@@ -15,13 +15,13 @@ from pydantic import ValidationError
 from aws_lambda_powertools.event_handler.openapi.params import Query
 
 from api.models.responses import FriendResponse
-from api.models.family import FamilyTreeEntry, FamilyChild, FamilyParent, FamilyPartner
+from api.models.family import FamilyTreeEntry
 from api.version import __version__
 from api import service
 from api.models.sightings import BirdMeta, Sighting
 from api.models.ringing import Ringing
 from api.service.seasonal_analysis import SeasonalAnalysis
-from api.auth.cognito import get_user_id_from_token, get_user_context_from_token
+from api.auth.cognito import get_user_context_from_token
 from typing import Optional
 import json
 import traceback
@@ -71,7 +71,11 @@ def health():
 @app.get("/sightings/count")
 def get_sightings_count() -> int:
     logger.info("Get sightings count")
-    return Response(status_code=200, body=json.dumps(service.get_sightings_count()), headers=headers)
+    return Response(
+        status_code=200,
+        body=json.dumps(service.get_sightings_count(user=app.current_event.get("user_id"))),
+        headers=headers,
+    )
 
 
 @app.get("/sightings/radius")
@@ -86,7 +90,14 @@ def get_sightings_by_radius(
     radius_m = int(app.current_event.query_string_parameters.get("radius_m", "0"))
     return Response(
         status_code=200,
-        body=json.dumps([sighting.model_dump() for sighting in service.get_sightings_by_radius(lat, lon, radius_m)]),
+        body=json.dumps(
+            [
+                sighting.model_dump()
+                for sighting in service.get_sightings_by_radius(
+                    lat, lon, radius_m, user=app.current_event.get("user_id")
+                )
+            ]
+        ),
         headers=headers,
     )
 
@@ -94,7 +105,7 @@ def get_sightings_by_radius(
 @app.get("/sightings/<id>")
 def get_sighting_by_id(id: str) -> Sighting | None:
     logger.info(f"Get sighting by id: {id}")
-    sighting = service.get_sighting_by_id(id)
+    sighting = service.get_sighting_by_id(id, user=app.current_event.get("user_id"))
     if sighting is None:
         raise NotFoundError(f"Sighting with id {id} not found")
     return Response(status_code=200, body=json.dumps(sighting.model_dump()), headers=headers)
@@ -109,6 +120,9 @@ def get_sightings(
     species: Annotated[Optional[str], Query(examples=["Kanadagans"])] = None,
     place: Annotated[Optional[str], Query(examples=["Ostpark"])] = None,
 ) -> list[Sighting]:
+    logger.warning(f"User: {app.current_event.get('user_id')}")
+    logger.warning(f"User: {app.current_event.get('user_context')}")
+
     page = int(app.current_event.query_string_parameters.get("page", "1"))
     per_page = int(app.current_event.query_string_parameters.get("per_page", "100"))
     start_date = app.current_event.query_string_parameters.get("start_date", None)
@@ -117,7 +131,7 @@ def get_sightings(
     place = app.current_event.query_string_parameters.get("place", None)
     logger.info(f"Get sightings page {page} with {per_page} per page")
 
-    sightings = service.get_sightings()
+    sightings = service.get_sightings(user=app.current_event.get("user_id"))
 
     if place is not None:
         logger.info(f"Filtering by place: {place}")
@@ -147,7 +161,9 @@ def get_bird_suggestions_by_partial_reading(partial_reading: str) -> list[BirdMe
         raise BadRequestError("Partial reading must be at least 2 characters long")
     if not any([c in partial_reading for c in ["*", "…", "..."]]):
         partial_reading = f"*{partial_reading}*"
-    suggestions = service.get_bird_suggestions_by_partial_reading(partial_reading)
+    suggestions = service.get_bird_suggestions_by_partial_reading(
+        partial_reading, user=app.current_event.get("user_id")
+    )
     if suggestions is None:
         raise NotFoundError(f"No suggestions found for partial reading: {partial_reading}")
     return Response(
@@ -162,7 +178,7 @@ def get_bird_by_ring(ring: str) -> BirdMeta | None:
     logger.info(f"Get bird by ring: {ring}")
     if ring == "suggestions":
         return get_bird_suggestions_by_partial_reading("")
-    bird = service.get_bird_by_ring(ring)
+    bird = service.get_bird_by_ring(ring, user=app.current_event.get("user_id"))
     return (
         Response(status_code=200, body=json.dumps(bird.model_dump()), headers=headers)
         if bird
@@ -178,7 +194,7 @@ def add_sighting():
     sighting = Sighting(**json.loads(body))
     logger.info(f"Add sighting: {sighting}")
     try:
-        service.add_sighting(sighting)
+        service.add_sighting(sighting, user=app.current_event.get("user_id"))
     except ValueError as e:
         logger.error(f"Error adding sighting: {e}")
         raise BadRequestError(str(e))
@@ -197,25 +213,25 @@ def update_sighting():
         raise BadRequestError("Request body is required")
     logger.info(f"Update sighting: {body}")
     sighting = Sighting(**json.loads(body))
-    if service.get_sighting_by_id(sighting.id) is None:
+    if service.get_sighting_by_id(sighting.id, user=app.current_event.get("user_id")) is None:
         raise NotFoundError(f"Sighting with id {sighting.id} not found")
-    service.update_sighting(sighting)
+    service.update_sighting(sighting, user=app.current_event.get("user_id"))
     return Response(status_code=200, body=json.dumps(sighting.model_dump()), headers=headers)
 
 
 @app.delete("/sightings/<id>")
 def delete_sighting(id: str):
     logger.info(f"Delete sighting: {id}")
-    if service.get_sighting_by_id(id) is None:
+    if service.get_sighting_by_id(id, user=app.current_event.get("user_id")) is None:
         raise NotFoundError(f"Sighting with id {id} not found")
-    service.delete_sighting(id)
+    service.delete_sighting(id, user=app.current_event.get("user_id"))
     return Response(status_code=204, headers=headers)
 
 
 @app.get("/cache/invalidate")
 def invalidate_cache():
     logger.info("Invalidate cache")
-    service.invalidate_cache()
+    service.invalidate_cache(user=app.current_event.get("user_id"))
     return Response(status_code=200, headers=headers)
 
 
@@ -225,7 +241,7 @@ def invalidate_cache():
 @app.get("/ringing/<ring>")
 def get_ringing_by_ring(ring: str) -> Ringing | None:
     logger.info(f"Get ringing by ring: {ring}")
-    ringing = service.get_ringing_by_ring(ring)
+    ringing = service.get_ringing_by_ring(ring, user=app.current_event.get("user_id"))
     if ringing is None:
         raise NotFoundError(f"Ringing with ring {ring} not found")
     return Response(status_code=200, body=json.dumps(ringing.model_dump()), headers=headers)
@@ -239,7 +255,7 @@ def add_ringing():
     logger.info(f"Add ringing: {body}")
     try:
         ringing = Ringing(**json.loads(body))
-        service.upsert_ringing(ringing)
+        service.upsert_ringing(ringing, user=app.current_event.get("user_id"))
         return Response(status_code=201, body=json.dumps(ringing.model_dump()), headers=headers)
     except ValidationError as e:
         logger.error(f"Validation error adding ringing: {e}")
@@ -257,9 +273,9 @@ def update_ringing():
     logger.info(f"Update ringing: {body}")
     try:
         ringing = Ringing(**json.loads(body))
-        if service.get_ringing_by_ring(ringing.ring) is None:
+        if service.get_ringing_by_ring(ringing.ring, user=app.current_event.get("user_id")) is None:
             raise NotFoundError(f"Ringing with ring {ringing.ring} not found")
-        service.upsert_ringing(ringing)
+        service.upsert_ringing(ringing, user=app.current_event.get("user_id"))
         return Response(status_code=200, body=json.dumps(ringing.model_dump()), headers=headers)
     except ValidationError as e:
         logger.error(f"Validation error updating ringing: {e}")
@@ -272,9 +288,9 @@ def update_ringing():
 @app.delete("/ringing/<ring>")
 def delete_ringing(ring: str):
     logger.info(f"Delete ringing: {ring}")
-    if service.get_ringing_by_ring(ring) is None:
+    if service.get_ringing_by_ring(ring, user=app.current_event.get("user_id")) is None:
         raise NotFoundError(f"Ringing with ring {ring} not found")
-    service.delete_ringing(ring)
+    service.delete_ringing(ring, user=app.current_event.get("user_id"))
     return Response(status_code=204, headers=headers)
 
 
@@ -291,7 +307,11 @@ def get_place_name_list() -> list[str]:
 
 @app.get("/species")
 def get_species_name_list() -> list[str]:
-    return Response(status_code=200, body=json.dumps(service.get_species_name_list()), headers=headers)
+    return Response(
+        status_code=200,
+        body=json.dumps(service.get_species_name_list(user=app.current_event.get("user_id"))),
+        headers=headers,
+    )
 
 
 # Dashboard
@@ -300,7 +320,11 @@ def get_species_name_list() -> list[str]:
 @app.get("/dashboard")
 def get_dashboard() -> list[Sighting]:
     logger.info("Get dashboard")
-    return Response(status_code=200, body=json.dumps(service.get_dashboard().model_dump()), headers=headers)
+    return Response(
+        status_code=200,
+        body=json.dumps(service.get_dashboard(user=app.current_event.get("user_id")).model_dump()),
+        headers=headers,
+    )
 
 
 # Analytics
@@ -309,14 +333,20 @@ def get_dashboard() -> list[Sighting]:
 @app.get("/analytics/history/<ring>")
 def get_all_sightings_from_ring(ring: str) -> list[Sighting]:
     logger.info(f"Get all history from ring: {ring}")
-    return Response(status_code=200, body=json.dumps(service.get_all_sightings_from_ring(ring)), headers=headers)
+    return Response(
+        status_code=200,
+        body=json.dumps(service.get_all_sightings_from_ring(ring, user=app.current_event.get("user_id"))),
+        headers=headers,
+    )
 
 
 @app.get("/analytics/groups/<ring>")
 def get_groups_from_ring(ring: str) -> FriendResponse:
     logger.info(f"Get groups from ring: {ring}")
     min_shared_sightings = int(app.current_event.query_string_parameters.get("min_shared_sightings", "2"))
-    friends = service.get_friends_from_ring(ring, min_shared_sightings)
+    friends = service.get_friends_from_ring(
+        ring, min_shared_sightings=min_shared_sightings, user=app.current_event.get("user_id")
+    )
     return Response(status_code=200, body=json.dumps(friends.model_dump()), headers=headers)
 
 
@@ -340,7 +370,7 @@ def post_shareable_report():
 
     try:
         assert 0 < days <= 365, "Days must be between 1 and 365"
-        shareable_report = service.post_shareable_report(days, html_content)
+        shareable_report = service.post_shareable_report(days, html_content, user=app.current_event.get("user_id"))
         return Response(status_code=200, body=json.dumps(shareable_report.model_dump(mode="json")), headers=headers)
     except AssertionError as e:
         raise BadRequestError(str(e))
@@ -354,7 +384,11 @@ def post_shareable_report():
 
 @app.get("/seasonal-analysis")
 def get_seasonal_analysis() -> SeasonalAnalysis:
-    return Response(status_code=200, body=json.dumps(service.get_seasonal_analysis().model_dump()), headers=headers)
+    return Response(
+        status_code=200,
+        body=json.dumps(service.get_seasonal_analysis(user=app.current_event.get("user_id")).model_dump()),
+        headers=headers,
+    )
 
 
 # Family Tree
@@ -363,7 +397,7 @@ def get_seasonal_analysis() -> SeasonalAnalysis:
 @app.get("/family/<ring>")
 def get_family_by_ring(ring: str) -> FamilyTreeEntry | None:
     logger.info(f"Get family for ring: {ring}")
-    ft = service.get_family_tree_entry_by_ring(ring)
+    ft = service.get_family_tree_entry_by_ring(ring, user=app.current_event.get("user_id"))
     if ft is None:
         raise NotFoundError(f"Family for ring {ring} not found")
     return Response(status_code=200, body=json.dumps(ft.model_dump()), headers=headers)
@@ -379,7 +413,7 @@ def create_family_tree_entry():
     logger.info(f"Create family tree entry: {body}")
     try:
         family_entry = FamilyTreeEntry(**json.loads(body))
-        result = service.upsert_family_tree_entry(family_entry)
+        result = service.upsert_family_tree_entry(family_entry, user=app.current_event.get("user_id"))
         return Response(status_code=201, body=json.dumps(result.model_dump()), headers=headers)
     except ValidationError as e:
         logger.error(f"Validation error creating family tree entry: {e}")
@@ -399,7 +433,7 @@ def update_family_tree_entry():
     logger.info(f"Update family tree entry: {body}")
     try:
         family_entry = FamilyTreeEntry(**json.loads(body))
-        result = service.upsert_family_tree_entry(family_entry)
+        result = service.upsert_family_tree_entry(family_entry, user=app.current_event.get("user_id"))
         return Response(status_code=200, body=json.dumps(result.model_dump()), headers=headers)
     except ValidationError as e:
         logger.error(f"Validation error updating family tree entry: {e}")
@@ -414,7 +448,7 @@ def delete_family_tree_entry(ring: str):
     """Delete a family tree entry"""
     logger.info(f"Delete family tree entry for ring: {ring}")
     try:
-        service.delete_family_tree_entry(ring)
+        service.delete_family_tree_entry(ring, user=app.current_event.get("user_id"))
         return Response(status_code=204, headers=headers)
     except Exception as e:
         logger.error(f"Error deleting family tree entry: {e}")
@@ -439,7 +473,7 @@ def add_partner_relationship(ring: str):
         if not year:
             raise BadRequestError("year is required")
 
-        service.add_partner_to_family_tree_entry(ring, partner_ring, int(year))
+        service.add_partner_to_family_tree_entry(ring, partner_ring, int(year), user=app.current_event.get("user_id"))
         return Response(
             status_code=201, body=json.dumps({"message": "Partner relationship added successfully"}), headers=headers
         )
@@ -474,7 +508,7 @@ def add_child_relationship(ring: str):
         if sex not in ["M", "W", "U"]:
             raise BadRequestError("sex must be 'M', 'W', or 'U'")
 
-        service.add_child_relationship(ring, child_ring, int(year), sex)
+        service.add_child_relationship(ring, child_ring, int(year), sex, user=app.current_event.get("user_id"))
         return Response(
             status_code=201, body=json.dumps({"message": "Child relationship added successfully"}), headers=headers
         )
@@ -561,4 +595,8 @@ def lambda_handler(event: dict, context: LambdaContext) -> dict:
 @app.get("/suggestions")
 def get_suggestions():
     """Get all suggestion lists for autocomplete fields"""
-    return Response(status_code=200, body=json.dumps(service.get_suggestion_lists()), headers=headers)
+    return Response(
+        status_code=200,
+        body=json.dumps(service.get_suggestion_lists(user=app.current_event.get("user_id"))),
+        headers=headers,
+    )

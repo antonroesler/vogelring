@@ -2,9 +2,9 @@ from api.db import loader
 from collections import Counter
 
 
-def get_suggestion_lists() -> dict:
+def get_suggestion_lists(user: str) -> dict:
     """Returns lists of all suggestions for places, species, habitats, and melders. Ordered by frequency."""
-    sightings = loader.get_sightings()
+    sightings = loader.get_sightings(user=user)
 
     # Helper function to count and sort values
     def get_sorted_values(field_getter) -> list[str]:
