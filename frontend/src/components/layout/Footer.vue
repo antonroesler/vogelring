@@ -51,11 +51,15 @@ const currentYear = computed(() => new Date().getFullYear());
 <style scoped>
 .legal-footer {
   background: linear-gradient(135deg, #00436C 0%, #228096 100%);
+  background-color: #00436C; /* Fallback solid color */
   color: white;
   padding: 48px 0 24px;
   margin-top: auto;
   position: relative;
-  z-index: 10;
+  z-index: 1000;
+  /* Ensure footer completely blocks background */
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .footer-content {
