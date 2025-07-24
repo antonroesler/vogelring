@@ -62,6 +62,7 @@ export default defineConfig({
     }
   },
   define: {
-    __APP_VERSION__: JSON.stringify(versionInfo.version)
+    __APP_VERSION__: JSON.stringify(versionInfo.version),
+    global: 'window'
   }
 })
