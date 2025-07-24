@@ -141,14 +141,14 @@ const handleLogin = async () => {
 .auth-container::before {
   content: '';
   position: fixed;
-  top: 50%;
+  top: 65%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 90%;
-  height: 90%;
+  width: 110%;
+  height: 110%;
   background: url('/blackheadedgull.png') no-repeat center center;
   background-size: contain;
-  opacity: 1;
+  opacity: 0.7;
   z-index: 0;
   pointer-events: none;
   background-attachment: fixed;
