@@ -6,10 +6,10 @@
           <v-card class="auth-card">
             <div class="auth-header">
               <div class="auth-logo">
-                <v-icon icon="mdi-bird" size="48" class="logo-icon"></v-icon>
+                <v-icon icon="mdi-account-circle" size="48" class="logo-icon"></v-icon>
               </div>
-              <h1 class="auth-title">Willkommen zurück</h1>
-              <p class="auth-subtitle">Melden Sie sich bei Vogelring an</p>
+              <h1 class="auth-title">Anmelden</h1>
+              <p class="auth-subtitle">Willkommen zurück</p>
             </div>
             
             <v-card-text class="auth-form">
@@ -28,14 +28,14 @@
 
                 <v-text-field
                   v-model="password"
-                  label="Passwort"
+                  :label="passwordLabel"
                   name="password"
                   prepend-inner-icon="mdi-lock"
-                  :type="showPassword ? 'text' : 'password'"
                   :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-                  @click:append-inner="showPassword = !showPassword"
+                  :type="showPassword ? 'text' : 'password'"
                   :rules="[rules.required]"
                   required
+                  @click:append-inner="showPassword = !showPassword"
                   variant="outlined"
                   class="auth-input"
                 />
@@ -71,14 +71,14 @@
             <v-divider class="auth-divider"></v-divider>
             
             <v-card-text class="auth-footer">
-              <p class="text-center mb-2">
-                Noch kein Konto?
+              <p class="text-center">
+                Noch kein Konto? 
                 <router-link to="/auth/register" class="auth-link">
                   Registrieren
                 </router-link>
               </p>
-              <p class="text-center">
-                <router-link to="/auth/forgot-password" class="auth-link-secondary">
+              <p class="text-center mt-2">
+                <router-link to="/auth/forgot-password" class="auth-link">
                   Passwort vergessen?
                 </router-link>
               </p>
@@ -107,6 +107,10 @@ const rules = {
   required: (value: string) => !!value || "Dieses Feld ist erforderlich",
 };
 
+const passwordLabel = computed(() => {
+  return showPassword.value ? "Passwort" : "Passwort";
+});
+
 const isFormValid = computed(() => {
   return username.value && password.value;
 });
@@ -117,8 +121,7 @@ const handleLogin = async () => {
   }
 
   try {
-    await authStore.signIn(username.value, password.value);
-    // Redirect to main app after successful login
+    await authStore.login(username.value, password.value);
     router.push("/");
   } catch (error) {
     console.error("Login failed:", error);
@@ -207,3 +210,100 @@ const handleLogin = async () => {
   border-radius: 12px;
   transition: all 0.3s ease;
 }
+
+.auth-input :deep(.v-field:hover) {
+  box-shadow: 0 4px 12px rgba(0, 67, 108, 0.1);
+}
+
+.auth-input :deep(.v-field--focused) {
+  box-shadow: 0 4px 16px rgba(0, 67, 108, 0.2);
+}
+
+.auth-alert {
+  border-radius: 12px;
+}
+
+.auth-actions {
+  padding: 0 32px 32px !important;
+}
+
+.auth-submit-btn {
+  border-radius: 12px !important;
+  height: 48px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.025em !important;
+  background: linear-gradient(135deg, #00436C 0%, #228096 100%) !important;
+  box-shadow: 0 4px 16px rgba(0, 67, 108, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.auth-submit-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 67, 108, 0.4) !important;
+}
+
+.auth-submit-btn:active {
+  transform: translateY(0);
+}
+
+.auth-divider {
+  margin: 0 32px;
+  opacity: 0.2;
+}
+
+.auth-footer {
+  padding: 24px 32px 32px !important;
+  text-align: center;
+}
+
+.auth-link {
+  color: #00436C;
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.auth-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(135deg, #00436C 0%, #228096 100%);
+  transition: width 0.3s ease;
+}
+
+.auth-link:hover::after {
+  width: 100%;
+}
+
+.auth-link:hover {
+  color: #228096;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .auth-header {
+    padding: 32px 24px 16px;
+  }
+  
+  .auth-form {
+    padding: 24px !important;
+  }
+  
+  .auth-actions {
+    padding: 0 24px 24px !important;
+  }
+  
+  .auth-footer {
+    padding: 16px 24px 24px !important;
+  }
+  
+  .auth-title {
+    font-size: 1.75rem;
+  }
+}
+</style>
