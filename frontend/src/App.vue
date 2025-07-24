@@ -658,6 +658,22 @@ onMounted(async () => {
   background-color: #ffffff !important;
 }
 
+.auth-container::before {
+  content: '';
+  position: fixed;
+  top: 60%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 110%;
+  height: 110%;
+  background: url('/blackheadedgull.png') no-repeat center center;
+  background-size: contain;
+  opacity: 0.7;
+  z-index: 0;
+  pointer-events: none;
+  background-attachment: fixed;
+}
+
 /* Responsive adjustments */
 @media (max-width: 960px) {
   .search-container {
