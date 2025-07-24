@@ -46,7 +46,7 @@
                 <p><strong>Wenn Sie den Vertrag widerrufen wollen, dann füllen Sie bitte dieses Formular aus und senden Sie es zurück:</strong></p>
                 
                 <div class="form-content">
-                  <p>An: Anton Rösler, Musterstraße 123, 60311 Frankfurt am Main, E-Mail: anton@antonroesler.com</p>
+                  <p>An: Anton Rösler, Rossäckerstr. 43, 74189 Weinsberg, E-Mail: anton@antonroesler.com</p>
                   
                   <p>Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über die Erbringung der folgenden Dienstleistung (*)</p>
                   

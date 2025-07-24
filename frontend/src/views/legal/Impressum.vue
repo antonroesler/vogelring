@@ -12,8 +12,8 @@
               <h3>Angaben gemäß § 5 TMG</h3>
               <div class="contact-info">
                 <p><strong>Anton Rösler</strong></p>
-                <p>Musterstraße 123</p>
-                <p>60311 Frankfurt am Main</p>
+                <p>Rossäckerstr. 43</p>
+                <p>74189 Weinsberg</p>
                 <p>Deutschland</p>
               </div>
             </section>
@@ -22,7 +22,6 @@
               <h3>Kontakt</h3>
               <div class="contact-info">
                 <p><strong>E-Mail:</strong> <a href="mailto:anton@antonroesler.com">anton@antonroesler.com</a></p>
-                <p><strong>Telefon:</strong> +49 (0) 123 456789</p>
               </div>
             </section>
 
@@ -30,8 +29,8 @@
               <h3>Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV</h3>
               <div class="contact-info">
                 <p>Anton Rösler</p>
-                <p>Musterstraße 123</p>
-                <p>60311 Frankfurt am Main</p>
+                <p>Rossäckerstr. 43</p>
+                <p>74189 Weinsberg</p>
               </div>
             </section>
 

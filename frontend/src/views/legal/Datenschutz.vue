@@ -58,8 +58,8 @@
               <div class="contact-info">
                 <p><strong>Die verantwortliche Stelle für die Datenverarbeitung auf dieser Website ist:</strong></p>
                 <p>Anton Rösler</p>
-                <p>Musterstraße 123</p>
-                <p>60311 Frankfurt am Main</p>
+                <p>Rossäckerstr. 43</p>
+                <p>74189 Weinsberg</p>
                 <p>E-Mail: anton@antonroesler.com</p>
               </div>
             </section>
