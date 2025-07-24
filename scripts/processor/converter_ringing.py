@@ -72,7 +72,7 @@ def convert_to_dynamo_item(row):
 def main():
     # Initialize DynamoDB client
     dynamodb = boto3.resource("dynamodb")
-    table = dynamodb.Table("vogelring")
+    table = dynamodb.Table("vogelring-dev")
 
     # Read and process CSV
     with open("/Users/anton/Desktop/tblRinging.csv") as f:

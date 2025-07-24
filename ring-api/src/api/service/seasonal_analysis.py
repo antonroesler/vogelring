@@ -1,5 +1,4 @@
-from datetime import datetime, date
-from api.models.sightings import BirdMeta, Sighting
+from datetime import datetime
 from pydantic import BaseModel, Field
 from api.db import loader
 
@@ -19,8 +18,8 @@ class SeasonalAnalysis(BaseModel):
     counts: dict[str, list[SeasonalCount]] = Field(description="Counts per species and month")
 
 
-def get_seasonal_analysis() -> SeasonalAnalysis:
-    sightings = loader.get_sightings()
+def get_seasonal_analysis(user: str) -> SeasonalAnalysis:
+    sightings = loader.get_sightings(user=user)
     year_species_counts: dict[str, dict[dict[int, int]]] = {}  # species: year: month: count
 
     # Get current date for recent counts

@@ -9,6 +9,50 @@ stack_name = "ring-api"
 cached = true
 parallel = true
 
+[dev.global.parameters]
+stack_name = "ring-api-dev"
+
+[dev.build.parameters]
+cached = true
+parallel = true
+
+[dev.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+s3_prefix = "ring-api-dev"
+region = "eu-central-1"
+disable_rollback = true
+image_repositories = []
+parameter_overrides = [
+    "Environment=dev",
+    "S3BucketName=vogelring-data-dev",
+    "DynamoTableName=vogelring-dev",
+    "CloudFrontDomain=dev.vogelring.com",
+]
+
+[prod.global.parameters]
+stack_name = "ring-api"
+
+[prod.build.parameters]
+cached = true
+parallel = true
+
+[prod.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true
+s3_prefix = "ring-api"
+region = "eu-central-1"
+disable_rollback = true
+image_repositories = []
+parameter_overrides = [
+    "Environment=prod",
+    "S3BucketName=vogelring-data",
+    "DynamoTableName=vogelring",
+    "CloudFrontDomain=vogelring.com",
+]
+
 [default.validate.parameters]
 lint = true
 

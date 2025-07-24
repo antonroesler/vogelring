@@ -8,9 +8,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def get_dashboard() -> Dashboard:
+def get_dashboard(user: str) -> Dashboard:
     logger.info("Generating dashboard data")
-    sightings: list[Sighting] = loader.get_sightings()
+    sightings: list[Sighting] = loader.get_sightings(user=user)
     today = date.today()
 
     # Sort sightings by date for efficient processing

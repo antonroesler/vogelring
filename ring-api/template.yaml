@@ -1,12 +1,39 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
-Description: ring-api
+Description: "ring-api"
 
 Parameters:
   RingApiKey:
     Type: String
-    Description: API Key for Ring API
+    Description: "API Key for Ring API"
     NoEcho: true
+  Environment:
+    Type: String
+    Description: "Environment name (dev/prod)"
+    Default: prod
+    AllowedValues:
+      - dev
+      - prod
+  S3BucketName:
+    Type: String
+    Description: "S3 bucket name for data storage"
+    Default: vogelring-data
+  DynamoTableName:
+    Type: String
+    Description: "DynamoDB table name"
+    Default: vogelring
+  CloudFrontDomain:
+    Type: String
+    Description: "CloudFront domain"
+    Default: vogelring.com
+  CloudFrontKeyPairId:
+    Type: String
+    Description: "CloudFront key pair ID"
+    Default: KTPUWAUUDMT2M
+  SSMPrivateKeyParam:
+    Type: String
+    Description: "SSM parameter for CloudFront private key"
+    Default: /vogelring/cloudfront-private-key
 
 Globals:
   Function:
@@ -40,6 +67,65 @@ Globals:
             Access-Control-Allow-Methods: "'GET,POST,PUT,DELETE,OPTIONS'"
 
 Resources:
+  # Cognito User Pool for authentication
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "${AWS::StackName}-user-pool"
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: false
+          Required: true
+      AutoVerifiedAttributes:
+        - email
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+      EmailConfiguration:
+        EmailSendingAccount: COGNITO_DEFAULT
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+      UserPoolTags:
+        Environment: !Ref Environment
+
+  # Cognito User Pool Client
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref CognitoUserPool
+      ClientName: !Sub "${AWS::StackName}-client"
+      GenerateSecret: false
+      SupportedIdentityProviders:
+        - COGNITO
+      CallbackURLs:
+        - !Sub "https://${CloudFrontDomain}/auth/callback"
+        - "http://localhost:5173/auth/callback" # For local development
+      LogoutURLs:
+        - !Sub "https://${CloudFrontDomain}/auth/logout"
+        - "http://localhost:5173/auth/logout" # For local development
+      AllowedOAuthFlows:
+        - code
+      AllowedOAuthScopes:
+        - email
+        - openid
+        - profile
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+      AccessTokenValidity: 24
+      IdTokenValidity: 24
+      RefreshTokenValidity: 30
+
   # Writer Lambda for POST, PUT, DELETE
   RingApiWriterFunction:
     Type: AWS::Serverless::Function
@@ -47,7 +133,7 @@ Resources:
       ReservedConcurrentExecutions: 1
       Handler: api.app.lambda_handler
       CodeUri: src
-      Description: Ring API Writer Lambda function (POST, PUT, DELETE)
+      Description: "Ring API Writer Lambda function"
       Architectures:
         - x86_64
       Tracing: Active
@@ -72,29 +158,39 @@ Resources:
           POWERTOOLS_SERVICE_NAME: PowertoolsRingApi
           POWERTOOLS_METRICS_NAMESPACE: Powertools
           LOG_LEVEL: INFO
-          BUCKET: vogelring-data
+          BUCKET: !Ref S3BucketName
           SIGHTINGS_FILE: sightings.pkl
           API_KEY: !Ref RingApiKey
-          CLOUDFRONT_DOMAIN: vogelring.com
-          CLOUDFRONT_KEY_PAIR_ID: KTPUWAUUDMT2M
-          CLOUDFRONT_PRIVATE_KEY_PARAM_NAME: /vogelring/cloudfront-private-key
+          CLOUDFRONT_DOMAIN: !Ref CloudFrontDomain
+          CLOUDFRONT_KEY_PAIR_ID: !Ref CloudFrontKeyPairId
+          CLOUDFRONT_PRIVATE_KEY_PARAM_NAME: !Ref SSMPrivateKeyParam
+          ENVIRONMENT: !Ref Environment
+          USER_POOL_ID: !Ref CognitoUserPool
+          USER_POOL_CLIENT_ID: !Ref CognitoUserPoolClient
+          DYNAMO_TABLE_NAME: !Ref DynamoTableName
       Tags:
         LambdaPowertools: python
+        Environment: !Ref Environment
       Policies:
         - S3ReadPolicy:
-            BucketName: vogelring-data
+            BucketName: !Ref S3BucketName
         - S3CrudPolicy:
-            BucketName: vogelring-data
+            BucketName: !Ref S3BucketName
         - DynamoDBReadPolicy:
-            TableName: vogelring
+            TableName: !Ref DynamoTableName
         - DynamoDBCrudPolicy:
-            TableName: vogelring
+            TableName: !Ref DynamoTableName
         - Statement:
             - Effect: Allow
               Action:
                 - ssm:GetParameter
               Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/vogelring/cloudfront-private-key"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${SSMPrivateKeyParam}"
+            - Effect: Allow
+              Action:
+                - cognito-idp:GetUser
+                - cognito-idp:ListUsers
+              Resource: !GetAtt CognitoUserPool.Arn
 
   # Reader Lambda for GET requests
   RingApiReaderFunction:
@@ -103,7 +199,7 @@ Resources:
       ReservedConcurrentExecutions: 3
       Handler: api.app.lambda_handler
       CodeUri: src
-      Description: Ring API Reader Lambda function (GET only)
+      Description: "Ring API Reader Lambda function"
       Architectures:
         - x86_64
       Tracing: Active
@@ -123,25 +219,40 @@ Resources:
           POWERTOOLS_SERVICE_NAME: PowertoolsRingApi
           POWERTOOLS_METRICS_NAMESPACE: Powertools
           LOG_LEVEL: INFO
-          BUCKET: vogelring-data
+          BUCKET: !Ref S3BucketName
           SIGHTINGS_FILE: sightings.pkl
           API_KEY: !Ref RingApiKey
-          CLOUDFRONT_DOMAIN: vogelring.com
-          CLOUDFRONT_KEY_PAIR_ID: KTPUWAUUDMT2M
-          CLOUDFRONT_PRIVATE_KEY_PARAM_NAME: /vogelring/cloudfront-private-key
+          CLOUDFRONT_DOMAIN: !Ref CloudFrontDomain
+          CLOUDFRONT_KEY_PAIR_ID: !Ref CloudFrontKeyPairId
+          CLOUDFRONT_PRIVATE_KEY_PARAM_NAME: !Ref SSMPrivateKeyParam
+          ENVIRONMENT: !Ref Environment
+          USER_POOL_ID: !Ref CognitoUserPool
+          USER_POOL_CLIENT_ID: !Ref CognitoUserPoolClient
+          DYNAMO_TABLE_NAME: !Ref DynamoTableName
       Tags:
         LambdaPowertools: python
+        Environment: !Ref Environment
       Policies:
         - S3ReadPolicy:
-            BucketName: vogelring-data
+            BucketName: !Ref S3BucketName
         - DynamoDBReadPolicy:
-            TableName: vogelring
+            TableName: !Ref DynamoTableName
         - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+              Resource:
+                - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoTableName}"
             - Effect: Allow
               Action:
                 - ssm:GetParameter
               Resource:
-                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/vogelring/cloudfront-private-key"
+                - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${SSMPrivateKeyParam}"
+            - Effect: Allow
+              Action:
+                - cognito-idp:GetUser
+                - cognito-idp:ListUsers
+              Resource: !GetAtt CognitoUserPool.Arn
 
   ApplicationResourceGroup:
     Type: AWS::ResourceGroups::Group
@@ -158,14 +269,44 @@ Resources:
       AutoConfigurationEnabled: "true"
 
 Outputs:
+  Environment:
+    Description: "Environment name"
+    Value: !Ref Environment
+
+  S3BucketName:
+    Description: "S3 bucket name"
+    Value: !Ref S3BucketName
+
   RingApi:
-    Description: API Gateway endpoint URL for Prod environment for Health API
+    Description: "API Gateway endpoint URL for health check"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/health"
 
   RingApiWriterFunction:
-    Description: Ring API Writer Lambda Function ARN
+    Description: "Ring API Writer Lambda Function ARN"
     Value: !GetAtt RingApiWriterFunction.Arn
 
   RingApiReaderFunction:
-    Description: Ring API Reader Lambda Function ARN
+    Description: "Ring API Reader Lambda Function ARN"
     Value: !GetAtt RingApiReaderFunction.Arn
+
+  ApiGatewayUrl:
+    Description: "API Gateway URL"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiGatewayUrl"
+
+  CognitoUserPoolId:
+    Description: "Cognito User Pool ID"
+    Value: !Ref CognitoUserPool
+    Export:
+      Name: !Sub "${AWS::StackName}-UserPoolId"
+
+  CognitoUserPoolClientId:
+    Description: "Cognito User Pool Client ID"
+    Value: !Ref CognitoUserPoolClient
+    Export:
+      Name: !Sub "${AWS::StackName}-UserPoolClientId"
+
+  CognitoUserPoolArn:
+    Description: "Cognito User Pool ARN"
+    Value: !GetAtt CognitoUserPool.Arn
