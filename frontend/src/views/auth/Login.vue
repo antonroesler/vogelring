@@ -133,22 +133,22 @@ const handleLogin = async () => {
 <style scoped>
 .auth-container {
   min-height: 100vh;
-  background: #ffffff;
+  background: white;
   position: relative;
   overflow: hidden;
 }
 
 .auth-container::before {
   content: '';
-  position: absolute;
+  position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 95%;
-  height: 95%;
+  width: 90%;
+  height: 90%;
   background: url('/blackheadedgull.png') no-repeat center center;
   background-size: contain;
-  opacity: 0.4;
+  opacity: 1;
   z-index: 0;
   pointer-events: none;
 }
