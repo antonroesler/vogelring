@@ -4,6 +4,7 @@ from jwt.algorithms import RSAAlgorithm
 from aws_lambda_powertools import Logger
 from typing import Optional, Dict, Any
 from functools import lru_cache
+import os
 
 logger = Logger()
 
@@ -66,17 +67,27 @@ def verify_jwt_token(token: str, user_pool_id: str, client_id: str, region: str)
         return None
 
 
-def get_user_id_from_token(token: str, user_pool_id: str, client_id: str, region: str) -> Optional[str]:
+def get_user_id_from_token(
+    token: str, user_pool_id: str | None = None, client_id: str | None = None, region: str | None = None
+) -> Optional[str]:
     """Extract user ID from JWT token"""
+    user_pool_id = user_pool_id or os.environ["USER_POOL_ID"]
+    client_id = client_id or os.environ["USER_POOL_CLIENT_ID"]
+    region = region or os.environ.get("AWS_REGION", "eu-central-1")
     claims = verify_jwt_token(token, user_pool_id, client_id, region)
     if claims:
         return claims.get("sub")  # 'sub' is the user ID in Cognito
     return None
 
 
-def get_user_context_from_token(token: str, user_pool_id: str, client_id: str, region: str) -> Optional[Dict[str, Any]]:
+def get_user_context_from_token(
+    token: str, user_pool_id: str | None = None, client_id: str | None = None, region: str | None = None
+) -> Optional[Dict[str, Any]]:
     """Extract full user context from JWT token"""
     claims = verify_jwt_token(token, user_pool_id, client_id, region)
+    user_pool_id = user_pool_id or os.environ["USER_POOL_ID"]
+    client_id = client_id or os.environ["USER_POOL_CLIENT_ID"]
+    region = region or os.environ.get("AWS_REGION", "eu-central-1")
     if claims:
         return {
             "user_id": claims.get("sub"),

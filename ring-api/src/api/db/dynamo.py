@@ -1,3 +1,4 @@
+import os
 import boto3
 from boto3.dynamodb.conditions import Key
 from api.models.ringing import Ringing
@@ -13,6 +14,10 @@ def get_dynamodb_client():
     if client is None:
         client = boto3.resource("dynamodb")
     return client
+
+
+def get_table_name():
+    return os.environ.get("DYNAMO_TABLE_NAME", "vogelring")
 
 
 def convert_dynamo_item(item: dict) -> Ringing | FamilyTreeEntry:
@@ -34,19 +39,19 @@ def convert_ringing_to_dynamo_item(ringing: Ringing) -> dict:
 
 def put_ringing(ringing: Ringing) -> None:
     """Put a Ringing item into DynamoDB."""
-    table = get_dynamodb_client().Table("vogelring")
+    table = get_dynamodb_client().Table(get_table_name())
     item = convert_ringing_to_dynamo_item(ringing)
     table.put_item(Item=item)
 
 
 def delete_ringing(ring: str) -> None:
     """Delete a Ringing item from DynamoDB using its ring number."""
-    table = get_dynamodb_client().Table("vogelring")
+    table = get_dynamodb_client().Table(get_table_name())
     table.delete_item(Key={"ring": ring})
 
 
 def get_ringing_by_ring(ring: str) -> Ringing | None:
-    table = get_dynamodb_client().Table("vogelring")
+    table = get_dynamodb_client().Table(get_table_name())
 
     response = table.query(KeyConditionExpression=Key("ring").eq(ring))
 
@@ -65,7 +70,7 @@ def convert_family_tree_entry_to_dynamo_item(family_tree_entry: FamilyTreeEntry)
 
 
 def get_family_tree_entry_by_ring(ring: str) -> FamilyTreeEntry | None:
-    table = get_dynamodb_client().Table("vogelring")
+    table = get_dynamodb_client().Table(get_table_name())
     response = table.query(KeyConditionExpression=Key("ring").eq(ring + FT_SUFFIX))
     if len(response["Items"]) == 0:
         return None
@@ -73,12 +78,12 @@ def get_family_tree_entry_by_ring(ring: str) -> FamilyTreeEntry | None:
 
 
 def delete_family_tree_entry(ring: str) -> None:
-    table = get_dynamodb_client().Table("vogelring")
+    table = get_dynamodb_client().Table(get_table_name())
     table.delete_item(Key={"ring": ring + FT_SUFFIX})
 
 
 def put_family_tree_entry(family_tree_entry: FamilyTreeEntry) -> None:
-    table = get_dynamodb_client().Table("vogelring")
+    table = get_dynamodb_client().Table(get_table_name())
     item = convert_family_tree_entry_to_dynamo_item(family_tree_entry)
     table.put_item(Item=item)
 

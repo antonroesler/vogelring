@@ -2,7 +2,7 @@ import json
 import pytest
 from datetime import date
 from api.app import app
-from api.models.sightings import Sighting, BirdMeta
+from api.models.sightings import Sighting
 
 
 class DateJSONEncoder(json.JSONEncoder):

@@ -1,22 +1,28 @@
 from api.db import loader
-from api.models.sightings import Sighting, BirdMeta
+from api.models.sightings import Sighting
 from api.models.responses import FriendResponse, AnalyticsBirdMeta, SeenStatus
 from api.service.get_bird import get_bird_by_ring
 from collections import defaultdict
 
 
-def get_all_sightings_from_ring(ring: str) -> list[Sighting]:
-    return sorted([sighting for sighting in loader.get_sightings() if sighting.ring == ring], key=lambda x: x.date)
+def get_all_sightings_from_ring(ring: str, user: str) -> list[Sighting]:
+    return sorted(
+        [sighting for sighting in loader.get_sightings(user=user) if sighting.ring == ring], key=lambda x: x.date
+    )
 
 
-def get_friends_from_ring(ring: str, min_shared_sightings: int = 2) -> FriendResponse:
-    sightings = get_all_sightings_from_ring(ring)
+def get_friends_from_ring(
+    ring: str,
+    user: str,
+    min_shared_sightings: int = 2,
+) -> FriendResponse:
+    sightings = get_all_sightings_from_ring(ring, user)
     place_dates = [(sighting.place, sighting.date) for sighting in sightings]
     seen_together = []
     # Get all other sightings that were one the same date and same place for any place date in place_dates
     friends = defaultdict(list)
 
-    for sighting in loader.get_sightings():
+    for sighting in loader.get_sightings(user=user):
         if (sighting.place, sighting.date) in place_dates and sighting.ring != ring and sighting.ring is not None:
             friends[sighting.ring].append(sighting.place)
             seen_together.append(sighting.id)
@@ -25,7 +31,9 @@ def get_friends_from_ring(ring: str, min_shared_sightings: int = 2) -> FriendRes
     filtered_friends = {k: v for k, v in friends.items() if len(v) >= min_shared_sightings}
     top_friends = sorted(filtered_friends.items(), key=lambda x: len(x[1]), reverse=True)[:10]
     friends = [
-        AnalyticsBirdMeta(**get_bird_by_ring(t_ring).model_dump(), count=len(friends[t_ring]), places=list(set(places)))
+        AnalyticsBirdMeta(
+            **get_bird_by_ring(t_ring, user=user).model_dump(), count=len(friends[t_ring]), places=list(set(places))
+        )
         for t_ring, places in top_friends
     ]
     bird = get_bird_by_ring(ring)

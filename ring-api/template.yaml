@@ -167,6 +167,7 @@ Resources:
           ENVIRONMENT: !Ref Environment
           USER_POOL_ID: !Ref CognitoUserPool
           USER_POOL_CLIENT_ID: !Ref CognitoUserPoolClient
+          DYNAMO_TABLE_NAME: !Ref DynamoTableName
       Tags:
         LambdaPowertools: python
         Environment: !Ref Environment
@@ -227,6 +228,7 @@ Resources:
           ENVIRONMENT: !Ref Environment
           USER_POOL_ID: !Ref CognitoUserPool
           USER_POOL_CLIENT_ID: !Ref CognitoUserPoolClient
+          DYNAMO_TABLE_NAME: !Ref DynamoTableName
       Tags:
         LambdaPowertools: python
         Environment: !Ref Environment
@@ -236,6 +238,11 @@ Resources:
         - DynamoDBReadPolicy:
             TableName: !Ref DynamoTableName
         - Statement:
+            - Effect: Allow
+              Action:
+                - dynamodb:Query
+              Resource:
+                - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoTableName}"
             - Effect: Allow
               Action:
                 - ssm:GetParameter
