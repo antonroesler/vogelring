@@ -12,8 +12,11 @@
               <h3>§ 1 Geltungsbereich</h3>
               <p>
                 Diese Allgemeinen Geschäftsbedingungen (nachfolgend „AGB") gelten für alle Leistungen, die über die 
+                )
                 Website vogelring.com (nachfolgend „Website") angeboten werden. Betreiber der Website ist Anton Rösler 
+                )
                 (nachfolgend „Anbieter").
+                )
               </p>
             </section>
 
