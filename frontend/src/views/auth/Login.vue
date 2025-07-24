@@ -133,7 +133,7 @@ const handleLogin = async () => {
 <style scoped>
 .auth-container {
   min-height: 100vh;
-  background: white;
+  background: #ffffff;
   position: relative;
   overflow: hidden;
 }
@@ -151,6 +151,7 @@ const handleLogin = async () => {
   opacity: 1;
   z-index: 0;
   pointer-events: none;
+  background-attachment: fixed;
 }
 
 .auth-card-wrapper {
