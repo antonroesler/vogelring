@@ -3,7 +3,7 @@
     <v-app-bar flat class="app-header">
       <!-- Left section -->
       <v-app-bar-title class="app-title">
-        <div class="d-flex align-center">
+        <div class="d-flex align-center" style="cursor: pointer" @click="navigateToHome">
           <v-icon icon="mdi-bird" size="32" class="logo-icon me-3"></v-icon>
           <div>
             <span class="title-text">Vogelring</span>
@@ -313,6 +313,15 @@ const navigateToBird = (bird: BirdSuggestion) => {
   router.push(`/birds/${bird.ring}`);
   selectedBird.value = null;
   searchQuery.value = '';
+};
+
+// Navigate to home
+const navigateToHome = () => {
+  if (authStore.isAuthenticated) {
+    router.push('/');
+  } else {
+    router.push('/auth/login');
+  }
 };
 
 // Handle user logout

@@ -1,5 +1,16 @@
 <template>
   <v-container class="legal-page">
+    <div class="back-button-container">
+      <v-btn
+        variant="text"
+        color="primary"
+        @click="$router.back()"
+        class="back-btn"
+      >
+        <v-icon icon="mdi-arrow-left" class="me-2"></v-icon>
+        Zurück
+      </v-btn>
+    </div>
     <v-row justify="center">
       <v-col cols="12" md="8">
         <v-card class="legal-card">
@@ -202,6 +213,20 @@
 
 .contact-info p:last-child {
   margin-bottom: 0;
+}
+
+.back-button-container {
+  margin-bottom: 16px;
+}
+
+.back-btn {
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+}
+
+.back-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 67, 108, 0.2);
 }
 
 /* Responsive adjustments */
