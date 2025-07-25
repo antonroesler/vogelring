@@ -83,7 +83,7 @@ export const useSightingsStore = defineStore('sightings', {
     async createSighting(sighting: Partial<Sighting>) {
       try {
         const newSighting = await api.createSighting(sighting);
-        this.sightings.push(newSighting);
+        this.sightings.unshift(newSighting);
         return newSighting;
       } catch (error) {
         console.error('Error creating sighting:', error);
