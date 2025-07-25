@@ -320,8 +320,8 @@
         type="submit"
         :loading="loading"
         size="large"
-        variant="elevated"
-        class="px-8"
+        variant="elevated" 
+        class="px-8 submit-btn"
         :prepend-icon="isNewEntry ? 'mdi-content-save' : undefined"
       >
         Speichern
@@ -647,6 +647,26 @@ const longitude = computed({
 </script>
 
 <style scoped>
+/* Enhanced submit button */
+.submit-btn {
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.025em !important;
+  background: linear-gradient(135deg, #00436C 0%, #228096 100%) !important;
+  box-shadow: 0 4px 16px rgba(0, 67, 108, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.submit-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 67, 108, 0.4) !important;
+}
+
+.submit-btn:active {
+  transform: translateY(0);
+}
+
 .v-expansion-panels {
   box-shadow: none !important;
   background: transparent !important;
@@ -692,6 +712,12 @@ const longitude = computed({
 :deep(.v-field) {
   margin-bottom: 0 !important;
   padding-bottom: 0 !important;
+  transition: all 0.3s ease;
+}
+
+:deep(.v-field:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 67, 108, 0.1) !important;
 }
 
 :deep(.v-input) {
@@ -707,6 +733,8 @@ const longitude = computed({
   font-size: 0.875rem;
   text-transform: none;
   letter-spacing: normal;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
 }
 
 /* Remove default button styles */
@@ -717,5 +745,6 @@ const longitude = computed({
 :deep(.extra-fields-btn.v-btn--variant-text:hover) {
   opacity: 1;
   background: transparent;
+  transform: translateY(-1px);
 }
 </style>

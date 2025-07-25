@@ -149,6 +149,31 @@ const router = createRouter({
       name: 'ringing',
       component: () => import('./views/Ringing.vue'),
       meta: { requiresAuth: true }
+    },
+    // Legal pages (public)
+    {
+      path: '/impressum',
+      name: 'impressum',
+      component: () => import('./views/legal/Impressum.vue'),
+      meta: { requiresAuth: false }
+    },
+    {
+      path: '/datenschutz',
+      name: 'datenschutz',
+      component: () => import('./views/legal/Datenschutz.vue'),
+      meta: { requiresAuth: false }
+    },
+    {
+      path: '/agb',
+      name: 'agb',
+      component: () => import('./views/legal/AGB.vue'),
+      meta: { requiresAuth: false }
+    },
+    {
+      path: '/widerruf',
+      name: 'widerruf',
+      component: () => import('./views/legal/Widerruf.vue'),
+      meta: { requiresAuth: false }
     }
   ]
 })

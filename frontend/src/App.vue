@@ -1,16 +1,21 @@
 <template>
   <v-app>
-    <v-app-bar flat color="primary">
+    <v-app-bar flat class="app-header">
       <!-- Left section -->
-      <v-app-bar-title class="text-white">
-        Vogelring 
-        <span class="text-caption ms-2" v-if="version">v{{ version }}</span>
+      <v-app-bar-title class="app-title">
+        <div class="d-flex align-center" style="cursor: pointer" @click="navigateToHome">
+          <v-icon icon="mdi-bird" size="32" class="logo-icon me-3"></v-icon>
+          <div>
+            <span class="title-text">Vogelring</span>
+            <span class="version-text" v-if="version">v{{ version }}</span>
+          </div>
+        </div>
       </v-app-bar-title>
 
       <v-spacer></v-spacer>
 
       <!-- Center section with search -->
-      <div class="search-container">
+      <div class="search-container" v-if="authStore.isAuthenticated">
         <v-autocomplete
           v-model="selectedBird"
           v-model:search="searchQuery"
@@ -99,23 +104,35 @@
           <v-btn 
             to="/new-entry" 
             variant="text"
-            color="white"
-          >Neuer Eintrag</v-btn>
+            class="nav-btn"
+          >
+            <v-icon icon="mdi-plus" class="me-1"></v-icon>
+            Neuer Eintrag
+          </v-btn>
           <v-btn 
             to="/entries" 
             variant="text"
-            color="white"
-          >Eintragliste</v-btn>
+            class="nav-btn"
+          >
+            <v-icon icon="mdi-format-list-bulleted" class="me-1"></v-icon>
+            Eintragliste
+          </v-btn>
           <v-btn 
             to="/ringing" 
             variant="text"
-            color="white"
-          >Beringungen</v-btn>
+            class="nav-btn"
+          >
+            <v-icon icon="mdi-ring" class="me-1"></v-icon>
+            Beringungen
+          </v-btn>
           <v-btn 
             to="/statistics" 
             variant="text"
-            color="white"
-          >Statistiken</v-btn>
+            class="nav-btn"
+          >
+            <v-icon icon="mdi-chart-line" class="me-1"></v-icon>
+            Statistiken
+          </v-btn>
           
           <!-- User menu -->
           <v-menu>
@@ -123,13 +140,13 @@
               <v-btn
                 v-bind="props"
                 variant="text"
-                color="white"
                 icon
+                class="user-menu-btn"
               >
-                <v-icon>mdi-account-circle</v-icon>
+                <v-icon size="28">mdi-account-circle</v-icon>
               </v-btn>
             </template>
-            <v-list>
+            <v-list class="user-menu">
               <v-list-item v-if="authStore.userAttributes?.email">
                 <v-list-item-title>{{ authStore.userAttributes.email }}</v-list-item-title>
                 <v-list-item-subtitle>Angemeldet</v-list-item-subtitle>
@@ -147,14 +164,18 @@
         <template v-else>
           <v-btn 
             to="/auth/login" 
-            variant="text"
-            color="white"
-          >Anmelden</v-btn>
+            variant="outlined"
+            class="auth-nav-btn login-btn"
+          >
+            Anmelden
+          </v-btn>
           <v-btn 
             to="/auth/register" 
-            variant="outlined"
-            color="white"
-          >Registrieren</v-btn>
+            variant="elevated"
+            class="auth-nav-btn register-btn"
+          >
+            Registrieren
+          </v-btn>
         </template>
       </div>
     </v-app-bar>
@@ -164,11 +185,14 @@
         <router-view :key="$route.fullPath"></router-view>
       </v-container>
     </v-main>
+
+    <Footer />
   </v-app>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
+import Footer from './components/layout/Footer.vue';
 import { api } from './api';
 import { useRouter } from 'vue-router';
 import debounce from 'lodash/debounce';
@@ -291,6 +315,15 @@ const navigateToBird = (bird: BirdSuggestion) => {
   searchQuery.value = '';
 };
 
+// Navigate to home
+const navigateToHome = () => {
+  if (authStore.isAuthenticated) {
+    router.push('/');
+  } else {
+    router.push('/auth/login');
+  }
+};
+
 // Handle user logout
 const handleLogout = async () => {
   try {
@@ -312,6 +345,173 @@ onMounted(async () => {
 </script>
 
 <style>
+/* App Header Styling */
+.app-header {
+  background: linear-gradient(135deg, #00436C 0%, #228096 100%) !important;
+  box-shadow: 0 4px 20px rgba(0, 67, 108, 0.3) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.app-title {
+  color: white !important;
+  flex-shrink: 0 !important;
+  min-width: fit-content !important;
+}
+
+.logo-icon {
+  color: white;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.title-text {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.version-text {
+  font-size: 0.75rem;
+  opacity: 0.7;
+  margin-left: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* Navigation Buttons */
+.nav-btn {
+  color: white !important;
+  text-transform: none !important;
+  font-weight: 500 !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+  margin: 0 4px !important;
+  backdrop-filter: blur(10px);
+}
+
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.nav-btn:active {
+  transform: translateY(0);
+}
+
+.nav-btn .v-icon {
+  opacity: 0.9;
+}
+
+.nav-btn:hover .v-icon {
+  opacity: 1;
+}
+
+/* Auth Navigation Buttons */
+.auth-nav-btn {
+  text-transform: none !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+  margin: 0 4px !important;
+}
+
+.login-btn {
+  color: white !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.login-btn:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  transform: translateY(-1px);
+}
+
+.register-btn {
+  background: rgba(255, 255, 255, 0.9) !important;
+  color: #00436C !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+}
+
+.register-btn:hover {
+  background: white !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* User Menu */
+.user-menu-btn {
+  color: white !important;
+  transition: all 0.3s ease !important;
+}
+
+.user-menu-btn:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  transform: scale(1.05);
+}
+
+.user-menu {
+  border-radius: 12px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* Search Container */
+.search-container {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 24px;
+}
+
+.bird-search {
+  width: 100%;
+}
+
+.bird-search .v-field {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 12px !important;
+  min-height: 40px !important;
+  height: 40px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.bird-search .v-field:hover {
+  background: white !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.bird-search .v-field--focused {
+  background: white !important;
+  box-shadow: 0 4px 20px rgba(0, 67, 108, 0.2);
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.bird-search .v-field input {
+  color: #00436C !important;
+  font-weight: 500;
+}
+
+.bird-search .v-field input::placeholder {
+  color: rgba(0, 67, 108, 0.6) !important;
+}
+
+/* Suggestion Items */
+.suggestion-item {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  margin: 2px 4px;
+}
+
+.suggestion-item:hover {
+  background: linear-gradient(135deg, rgba(0, 67, 108, 0.05) 0%, rgba(34, 128, 150, 0.05) 100%);
+  transform: translateX(4px);
+}
+
 .v-btn {
   margin-left: 8px;
   text-transform: none;
@@ -330,20 +530,28 @@ onMounted(async () => {
   border: 1px solid #DED5CA !important;
   background-color: #FFFFFF !important;
   box-shadow: none !important;
+  transition: all 0.3s ease;
+}
+
+.v-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
 }
 
 .v-text-field .v-field {
   box-shadow: none !important;
   border: 1px solid #DED5CA !important;
   border-radius: 8px !important;
+  transition: all 0.3s ease;
 }
 
 .v-text-field .v-field:hover {
   border-color: #228096 !important;
+  box-shadow: 0 2px 8px rgba(34, 128, 150, 0.1) !important;
 }
 
 .v-text-field .v-field--focused {
   border-color: #00436C !important;
+  box-shadow: 0 2px 12px rgba(0, 67, 108, 0.2) !important;
 }
 
 /* Remove underline from input fields */
@@ -356,61 +564,24 @@ onMounted(async () => {
   --v-field-border-width: 0 !important;
 }
 
-/* Updated search bar styles */
-.search-container {
-  width: 100%;
-  max-width: 400px;
-  margin: 0 24px;
-}
-
-.bird-search {
-  width: 100%;
-}
-
-.bird-search .v-field {
-  background-color: #FFFFFF !important;
-  border: 1px solid rgba(0, 67, 108, 0.1) !important;
-  border-radius: 4px !important;
-  min-height: 34px !important;
-  height: 34px !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-}
-
-.bird-search .v-field input {
-  color: #00436C !important;
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  min-height: 34px !important;
-  height: 34px !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  line-height: 34px !important;
-}
-
-.bird-search .v-field input::placeholder {
-  color: rgba(0, 67, 108, 0.5) !important;
-}
-
-.bird-search .v-field__append-inner .v-icon {
-  color: rgba(0, 0, 0, 0.6) !important;
-}
-
 /* Optional: Style the dropdown menu */
 .bird-search .v-list {
   background-color: #FFFFFF;
   border: 1px solid #DED5CA;
   color: rgba(0, 0, 0, 0.87);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
 }
 
 .bird-search .v-list-item:hover {
-  background-color: #F7F4F1;
+  background: linear-gradient(135deg, rgba(0, 67, 108, 0.05) 0%, rgba(34, 128, 150, 0.05) 100%);
 }
 
 /* Navigation buttons container */
 .navigation-buttons {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
 .bird-search .v-list-item__title strong {
@@ -434,29 +605,8 @@ onMounted(async () => {
 
 /* Adjust the field input wrapper height */
 .bird-search .v-field__input {
-  min-height: 34px !important;
+  min-height: 40px !important;
   padding: 0 12px !important;
-}
-
-/* Optional: Add a subtle hover effect */
-.bird-search .v-field:hover {
-  background-color: rgba(255, 255, 255, 0.95) !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
-}
-
-/* Add new styles for better contrast and readability */
-.v-app-bar.v-app-bar--flat {
-  background-color: #00436C !important;
-}
-
-.navigation-buttons .v-btn {
-  color: #FFFFFF !important;
-  opacity: 0.9;
-}
-
-.navigation-buttons .v-btn:hover {
-  opacity: 1;
-  background-color: rgba(255, 255, 255, 0.1) !important;
 }
 
 /* Styles for loading and no-results states */
@@ -476,23 +626,78 @@ onMounted(async () => {
   min-height: 32px;
 }
 
-/* Styles for suggestion items */
-.suggestion-item {
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  border-radius: 4px;
-  margin: 2px 0;
-}
-
-.suggestion-item:hover {
-  background-color: rgba(0, 67, 108, 0.05);
-}
-
 .suggestion-item .v-btn {
   opacity: 0.7;
+  transition: all 0.2s ease;
 }
 
 .suggestion-item:hover .v-btn {
   opacity: 1;
+  transform: scale(1.05);
+}
+
+/* Enhanced button styling */
+.v-btn {
+  transition: all 0.3s ease !important;
+}
+
+.v-btn:hover {
+  transform: translateY(-1px);
+}
+
+.v-btn:active {
+  transform: translateY(0);
+}
+
+/* Force white background for login page */
+.v-application.v-theme--light {
+  background-color: #ffffff !important;
+}
+
+.v-main {
+  background-color: #ffffff !important;
+}
+
+.auth-container::before {
+  content: '';
+  position: fixed;
+  top: 60%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 110%;
+  height: 110%;
+  background: url('/blackheadedgull.png') no-repeat center center;
+  background-size: contain;
+  opacity: 0.7;
+  z-index: 0;
+  pointer-events: none;
+  background-attachment: fixed;
+}
+
+/* Responsive adjustments */
+@media (max-width: 960px) {
+  .search-container {
+    display: none;
+  }
+  
+  .navigation-buttons {
+    gap: 4px;
+  }
+  
+  .nav-btn .v-icon {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .navigation-buttons {
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .nav-btn, .auth-nav-btn {
+    font-size: 0.875rem !important;
+    padding: 0 12px !important;
+  }
 }
 </style>

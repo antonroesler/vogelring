@@ -6,14 +6,14 @@
         variant="text"
         color="secondary"
         density="comfortable"
-        class="settings-btn"
+        class="settings-btn enhanced-btn"
         prepend-icon="mdi-cog"
       >
         Einstellungen
       </v-btn>
     </template>
 
-    <v-card>
+    <v-card class="settings-dialog">
       <v-card-title>Einstellungen: Felder zurücksetzen</v-card-title>
       <v-card-text>
         <div class="legend mb-4">
@@ -44,7 +44,7 @@
                   variant="text"
                   @click="toggleField(field.key)"
                   density="comfortable"
-                  class="field-btn"
+                  class="field-btn enhanced-field-btn"
                 >
                   <v-icon :icon="localSettings[field.key] ? 'mdi-refresh' : 'mdi-content-save'"></v-icon>
                   <v-tooltip activator="parent" location="left">
@@ -64,7 +64,7 @@
           variant="elevated"
           size="large"
           @click="saveSettings"
-          class="px-8"
+          class="px-8 save-settings-btn"
         >
           Speichern
         </v-btn>
@@ -132,6 +132,44 @@ const saveSettings = () => {
 </script>
 
 <style scoped>
+.settings-dialog {
+  border-radius: 16px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+}
+
+.enhanced-btn {
+  border-radius: 8px !important;
+  transition: all 0.3s ease !important;
+}
+
+.enhanced-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(34, 128, 150, 0.2);
+}
+
+.enhanced-field-btn {
+  transition: all 0.3s ease !important;
+}
+
+.enhanced-field-btn:hover {
+  transform: scale(1.1);
+}
+
+.save-settings-btn {
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.025em !important;
+  background: linear-gradient(135deg, #00436C 0%, #228096 100%) !important;
+  box-shadow: 0 4px 16px rgba(0, 67, 108, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.save-settings-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 67, 108, 0.4) !important;
+}
+
 .settings-btn {
   font-size: 0.875rem;
   text-transform: none;
@@ -152,6 +190,8 @@ const saveSettings = () => {
 .field-row {
   padding: 2px 0;
   min-height: 32px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
 
 .field-btn {
@@ -161,8 +201,8 @@ const saveSettings = () => {
 }
 
 .field-row:hover {
-  background-color: rgba(0, 0, 0, 0.04);
-  border-radius: 4px;
+  background: linear-gradient(135deg, rgba(0, 67, 108, 0.05) 0%, rgba(34, 128, 150, 0.05) 100%);
+  transform: translateX(4px);
 }
 
 /* Custom scrollbar styles */
@@ -176,12 +216,12 @@ const saveSettings = () => {
 }
 
 .scrollable-content::-webkit-scrollbar-thumb {
-  background: #888;
+  background: linear-gradient(135deg, #00436C 0%, #228096 100%);
   border-radius: 4px;
 }
 
 .scrollable-content::-webkit-scrollbar-thumb:hover {
-  background: #666;
+  background: linear-gradient(135deg, #228096 0%, #00436C 100%);
 }
 
 .legend {
