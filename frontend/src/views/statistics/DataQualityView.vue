@@ -11,7 +11,7 @@
             </v-card-title>
             <v-card-text>
               <v-progress-circular
-                v-if="isLoading"
+                v-if="store.loading"
                 indeterminate
                 color="primary"
                 class="ma-4"
@@ -205,7 +205,6 @@ use([
 ]);
 
 const store = useSightingsStore();
-const isLoading = ref(true);
 const showIssueDialog = ref(false);
 const selectedIssue = ref<DataQualityIssue | null>(null);
 const issueEntries = ref<Sighting[]>([]);
@@ -541,11 +540,10 @@ const handleSightingDeleted = async (id: string) => {
   }
 };
 
-onMounted(async () => {
+onMounted(() => {
   if (!store.initialized) {
-    await store.fetchSightings();
+    store.fetchSightings();
   }
-  isLoading.value = false;
 });
 </script>
 
