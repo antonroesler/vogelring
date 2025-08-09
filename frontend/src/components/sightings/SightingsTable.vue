@@ -1,4 +1,56 @@
 <template>
+  <div class="d-flex justify-end mb-2" v-if="showSettings">
+    <v-menu v-model="settingsOpen" location="bottom end" :close-on-content-click="false">
+      <template #activator="{ props: menuProps }">
+        <v-btn
+          icon="mdi-cog"
+          variant="text"
+          size="small"
+          v-bind="menuProps"
+        >
+        </v-btn>
+      </template>
+      <v-card class="pa-3" min-width="360">
+        <div class="text-subtitle-2 mb-2">Spalten und Reihenfolge</div>
+        <div class="config-list">
+          <div
+            v-for="(colKey, idx) in orderedColumnKeys"
+            :key="colKey"
+            class="config-item d-flex align-center"
+            draggable="true"
+            @dragstart="onDragStart(idx)"
+            @dragover.prevent
+            @drop="onDrop(idx)"
+          >
+            <v-icon icon="mdi-drag" class="me-2" />
+            <v-checkbox
+              :model-value="!!selectedSet[colKey]"
+              @update:modelValue="(val: boolean | null) => toggleSelected(colKey, !!val)"
+              :label="columnTitle(colKey)"
+              density="compact"
+              hide-details
+            />
+          </div>
+          <div class="text-caption text-medium-emphasis mt-1">
+            Aktionen sind immer rechts und nicht konfigurierbar
+          </div>
+        </div>
+        <v-divider class="my-2" />
+        <v-switch
+          v-model="hoverExpandEnabled"
+          :label="hoverExpandEnabled ? 'Hover-Erweiterung: An' : 'Hover-Erweiterung: Aus'"
+          :color="hoverExpandEnabled ? 'success' : 'error'"
+          density="compact"
+          hide-details
+        />
+        <v-card-actions class="px-0 pt-2">
+          <v-spacer />
+          <v-btn variant="text" @click="settingsOpen = false">Schließen</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-menu>
+  </div>
+
   <v-data-table
     :headers="headers"
     :items="sightings"
@@ -10,7 +62,7 @@
     class="elevation-0 border rounded"
     @click:row="handleRowClick"
   >
-    <template v-slot:item="{ item, index }">
+    <template v-slot:item="{ item }">
       <tr
         class="sighting-row"
         :class="{ 'expanded': expandedRow === item.id }"
@@ -19,25 +71,44 @@
         @click="onRowClick($event, item)"
         style="cursor: pointer;"
       >
-        <td>{{ formatDate(item.date) }}</td>
-        <td>{{ item.ring }}</td>
-        <td>{{ item.species }}</td>
-        <td>{{ item.place }}</td>
-        <td>{{ formatPairStatus(item.pair) }}</td>
-        <td>{{ formatStatus(item.status) }}</td>
-        <td>{{ item.melder }}</td>
-        <td>
-          <v-btn
-            :icon="item.melded ? 'mdi-check-circle' : 'mdi-circle-outline'"
-            :color="item.melded ? 'success' : 'grey'"
-            variant="text"
-            size="small"
-            :loading="loadingMeldedStates[item.id]"
-            @click.stop="toggleMelded(item)"
-            :disabled="loading"
-          ></v-btn>
+        <td v-for="col in selectedColumnsOrdered" :key="col">
+          <template v-if="col === 'date'">
+            {{ formatDate(item.date) }}
+          </template>
+          <template v-else-if="col === 'ring'">
+            {{ item.ring }}
+          </template>
+          <template v-else-if="col === 'species'">
+            {{ item.species }}
+          </template>
+          <template v-else-if="col === 'place'">
+            {{ item.place }}
+          </template>
+          <template v-else-if="col === 'pair'">
+            {{ formatPairStatus(item.pair) }}
+          </template>
+          <template v-else-if="col === 'status'">
+            {{ formatStatus(item.status) }}
+          </template>
+          <template v-else-if="col === 'melder'">
+            {{ item.melder }}
+          </template>
+          <template v-else-if="col === 'melded'">
+            <v-btn
+              :icon="item.melded ? 'mdi-check-circle' : 'mdi-circle-outline'"
+              :color="item.melded ? 'success' : 'grey'"
+              variant="text"
+              size="small"
+              :loading="loadingMeldedStates[item.id]"
+              @click.stop="toggleMelded(item)"
+              :disabled="loading"
+            />
+          </template>
+          <template v-else>
+            {{ formatField(col as string, (item as any)[col]) }}
+          </template>
         </td>
-        <td>
+        <td class="actions-cell">
           <div class="d-flex align-center justify-center">
             <v-btn
               icon="mdi-open-in-new"
@@ -46,7 +117,7 @@
               size="small"
               @click.stop="openInNewTab(item)"
               v-tooltip="'In neuem Tab öffnen'"
-            ></v-btn>
+            />
             <v-btn
               icon="mdi-delete"
               variant="text"
@@ -54,7 +125,7 @@
               size="small"
               @click.stop="confirmDelete(item)"
               v-tooltip="'Löschen'"
-            ></v-btn>
+            />
           </div>
         </td>
       </tr>
@@ -106,20 +177,30 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { format } from 'date-fns';
 import type { Sighting } from '@/types';
-import * as api from '@/api';
 import { useSightingsStore } from '@/stores/sightings';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   sightings: Sighting[];
   loading: boolean;
   useStorePagination?: boolean;
   defaultPage?: number;
   defaultItemsPerPage?: number;
-}>();
+  settingsKey?: string;
+  showSettings?: boolean;
+  defaultColumns?: string[];
+  defaultHoverExpand?: boolean;
+}>(), {
+  useStorePagination: false,
+  defaultPage: 1,
+  defaultItemsPerPage: 10,
+  showSettings: true,
+  defaultColumns: () => ['date', 'ring', 'species', 'place', 'pair', 'status', 'melder', 'melded'],
+  defaultHoverExpand: true
+});
 
 const emit = defineEmits<{
   'deleted': [id: string];
@@ -131,6 +212,39 @@ const showDeleteDialog = ref(false);
 const deleteLoading = ref(false);
 const selectedSighting = ref<Sighting | null>(null);
 const loadingMeldedStates = ref<Record<string, boolean>>({});
+const allColumnDefs = [
+  { key: 'id', title: 'ID' },
+  { key: 'date', title: 'Datum' },
+  { key: 'ring', title: 'Ring' },
+  { key: 'reading', title: 'Ablesung' },
+  { key: 'species', title: 'Spezies' },
+  { key: 'place', title: 'Ort' },
+  { key: 'area', title: 'Bereich' },
+  { key: 'habitat', title: 'Habitat' },
+  { key: 'field_fruit', title: 'Feldobst' },
+  { key: 'partner', title: 'Partner' },
+  { key: 'small_group_size', title: 'Kleine Gruppe' },
+  { key: 'large_group_size', title: 'Große Gruppe' },
+  { key: 'breed_size', title: 'Brutgröße' },
+  { key: 'family_size', title: 'Familiengröße' },
+  { key: 'pair', title: 'Paar-Status' },
+  { key: 'status', title: 'Status' },
+  { key: 'melded', title: 'Gemeldet' },
+  { key: 'age', title: 'Alter' },
+  { key: 'sex', title: 'Geschlecht' },
+  { key: 'melder', title: 'Melder' },
+  { key: 'comment', title: 'Kommentar' },
+  { key: 'lat', title: 'Breitengrad' },
+  { key: 'lon', title: 'Längengrad' },
+  { key: 'is_exact_location', title: 'Exakter Standort' },
+] as const;
+const availableColumns = allColumnDefs; // no 'actions' here
+type ColumnKey = typeof allColumnDefs[number]['key'];
+const orderedColumnKeys = ref<ColumnKey[]>([]);
+const selectedSet = ref<Record<ColumnKey, boolean>>({} as Record<ColumnKey, boolean>);
+const hoverExpandEnabled = ref<boolean>(props.defaultHoverExpand);
+const settingsOpen = ref(false);
+let dragIndex: number | null = null;
 
 const store = useSightingsStore();
 
@@ -159,23 +273,24 @@ const itemsPerPage = computed({
   }
 });
 
-const headers = [
-  { title: 'Datum', key: 'date', sortable: true },
-  { title: 'Ring', key: 'ring', sortable: true },
-  { title: 'Spezies', key: 'species', sortable: true },
-  { title: 'Ort', key: 'place', sortable: true },
-  { title: 'Paar-Status', key: 'pair', sortable: true },
-  { title: 'Status', key: 'status', sortable: true },
-  { title: 'Melder', key: 'melder', sortable: true },
-  { title: 'Gemeldet', key: 'melded', sortable: true },
-  { title: 'Aktionen', key: 'actions', sortable: false, width: '100px' }
-];
+const selectedColumnsOrdered = computed<ColumnKey[]>(() => orderedColumnKeys.value.filter(k => !!selectedSet.value[k]));
+
+const headers = computed(() => {
+  const dataHeaders = selectedColumnsOrdered.value.map(col => {
+    const def = availableColumns.find(c => c.key === col)!;
+    return { title: def.title, key: col, sortable: true };
+  });
+  return [
+    ...dataHeaders,
+    { title: 'Aktionen', key: 'actions', sortable: false, width: '100px' }
+  ];
+});
 
 const formatDate = (date?: string) => {
   return date ? format(new Date(date), 'dd.MM.yyyy') : '';
 };
 
-const formatPairStatus = (pair?: string) => {
+const formatPairStatus = (pair?: string | null) => {
   if (!pair) return '-';
   switch (pair) {
     case 'x':
@@ -189,7 +304,7 @@ const formatPairStatus = (pair?: string) => {
   }
 };
 
-const formatStatus = (status?: string) => {
+const formatStatus = (status?: string | null) => {
   if (!status) return '-';
   switch (status) {
     case 'BV':
@@ -299,10 +414,12 @@ const clearExpandTimer = () => {
 };
 
 const onRowMouseEnter = (id: string) => {
+  if (!hoverExpandEnabled.value) return;
   clearCollapseTimer();
   startExpandTimer(id);
 };
 const onRowMouseLeave = () => {
+  if (!hoverExpandEnabled.value) return;
   clearExpandTimer();
   startCollapseTimer();
 };
@@ -367,6 +484,93 @@ const formatField = (key: string, value: any) => {
   if (key === 'status') return formatStatus(value);
   if (typeof value === 'boolean') return value ? 'Ja' : 'Nein';
   return value;
+};
+
+const columnTitle = (col: ColumnKey) => availableColumns.find(c => c.key === col)?.title || col;
+const onDragStart = (index: number) => {
+  dragIndex = index;
+};
+const onDrop = (index: number) => {
+  if (dragIndex === null || dragIndex === index) return;
+  const arr = [...orderedColumnKeys.value];
+  const [moved] = arr.splice(dragIndex, 1);
+  arr.splice(index, 0, moved);
+  orderedColumnKeys.value = arr as ColumnKey[];
+  dragIndex = null;
+};
+
+// Persist and restore user settings per view
+const SETTINGS_NS = 'sightingsTableSettings:';
+
+const initDefaults = () => {
+  const defaults = (props.defaultColumns as ColumnKey[]) || [];
+  // Order: defaults first (in given order), then remaining available columns in predefined order
+  const rest = availableColumns.map(c => c.key).filter(k => !defaults.includes(k as ColumnKey)) as ColumnKey[];
+  orderedColumnKeys.value = [...defaults, ...rest] as ColumnKey[];
+  const set: Record<ColumnKey, boolean> = {} as Record<ColumnKey, boolean>;
+  orderedColumnKeys.value.forEach(k => { set[k] = defaults.includes(k); });
+  selectedSet.value = set;
+};
+
+const loadSettings = () => {
+  if (!props.settingsKey) return;
+  try {
+    const raw = localStorage.getItem(SETTINGS_NS + props.settingsKey);
+    if (!raw) { initDefaults(); return; }
+    const parsed = JSON.parse(raw);
+    // Backward compatibility: 'columns' is an ordered array of selected columns
+    const selectedFromStorage: string[] | undefined = parsed.selected || parsed.columns;
+    const orderFromStorage: string[] | undefined = parsed.order;
+
+    const allKeys = availableColumns.map(c => c.key) as ColumnKey[];
+    // Resolve order
+    if (Array.isArray(orderFromStorage) && orderFromStorage.length) {
+      const filtered = orderFromStorage.filter((k: string) => (allKeys as readonly string[]).includes(k)) as ColumnKey[];
+      const missing = allKeys.filter(k => !(filtered as readonly string[]).includes(k as unknown as string)) as ColumnKey[];
+      orderedColumnKeys.value = [...(filtered as ColumnKey[]), ...(missing as ColumnKey[])];
+    } else {
+      initDefaults();
+    }
+
+    // Resolve selection
+    const set: Record<ColumnKey, boolean> = {} as Record<ColumnKey, boolean>;
+    orderedColumnKeys.value.forEach(k => { set[k] = false; });
+    if (Array.isArray(selectedFromStorage)) {
+      selectedFromStorage.forEach((k: string) => {
+        if ((allKeys as readonly string[]).includes(k)) set[k as ColumnKey] = true;
+      });
+    } else {
+      // Fallback to defaults
+      (props.defaultColumns as ColumnKey[]).forEach(k => { set[k] = true; });
+    }
+    selectedSet.value = set;
+
+    if (typeof parsed.hoverExpand === 'boolean') {
+      hoverExpandEnabled.value = parsed.hoverExpand;
+    }
+  } catch (e) {
+    console.warn('Failed to load table settings', e);
+    initDefaults();
+  }
+};
+const persistSettings = () => {
+  if (!props.settingsKey) return;
+  try {
+    const selected = orderedColumnKeys.value.filter(k => !!selectedSet.value[k]);
+    localStorage.setItem(
+      SETTINGS_NS + props.settingsKey,
+      JSON.stringify({ order: orderedColumnKeys.value, selected, hoverExpand: hoverExpandEnabled.value })
+    );
+  } catch (e) {
+    console.warn('Failed to persist table settings', e);
+  }
+};
+
+onMounted(loadSettings);
+watch([orderedColumnKeys, selectedSet, hoverExpandEnabled, () => props.settingsKey], persistSettings, { deep: true });
+
+const toggleSelected = (key: ColumnKey, val: boolean) => {
+  selectedSet.value[key] = val;
 };
 </script>
 

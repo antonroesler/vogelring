@@ -119,6 +119,10 @@
               :use-store-pagination="false"
               :default-page="1"
               :default-items-per-page="10"
+              :show-settings="true"
+              settings-key="other-sightings"
+              :default-columns="['date','place','ring','species','status','age']"
+              :default-hover-expand="true"
               @deleted="handleSightingDeleted"
             ></sightings-table>
             <v-alert
@@ -152,7 +156,6 @@ import BirdDetails from '@/components/birds/BirdDetails.vue';
 import SightingsMap from '@/components/map/SightingsMap.vue';
 import SightingsTable from '@/components/sightings/SightingsTable.vue';
 import { useSightingsStore } from '@/stores/sightings';
-import { useTheme } from 'vuetify';
 import ShareDialog from '@/components/dialogs/ShareDialog.vue';
 import MissingRingDetails from '@/components/birds/MissingRingDetails.vue';
 
@@ -163,7 +166,6 @@ const birdDetails = ref<BirdMeta | null>(null);
 const loading = ref(false);
 const showSnackbar = ref(false);
 const store = useSightingsStore();
-const theme = useTheme();
 const ringingData = ref<Ringing | null>(null);
 const isLoadingRinging = ref(false);
 const showDeleteDialog = ref(false);
@@ -243,24 +245,7 @@ const generateStaticHTML = () => {
     });
   };
 
-  // Base maps configuration
-  const baseMaps = {
-    osm: {
-      name: 'Standard',
-      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      attribution: '© OpenStreetMap contributors'
-    },
-    cartoLight: {
-      name: 'Hell',
-      url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-      attribution: '© OpenStreetMap contributors, © CARTO'
-    },
-    cartoDark: {
-      name: 'Dunkel',
-      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-      attribution: '© OpenStreetMap contributors, © CARTO'
-    }
-  };
+  //
 
   return `<!DOCTYPE html>
 <html>
