@@ -274,7 +274,7 @@ const getCompletenessColor = (completeness: number): string => {
   return '#F44336'; // Red
 };
 
-// Async processing functions to prevent UI blocking
+// Optimized single-pass field analysis
 const processFieldAnalysis = async (): Promise<FieldAnalysis[]> => {
   const fields = [
     { field: 'species', label: 'Spezies' },
@@ -300,38 +300,154 @@ const processFieldAnalysis = async (): Promise<FieldAnalysis[]> => {
     { field: 'lon', label: 'Längengrad' }
   ];
 
-  const results: FieldAnalysis[] = [];
-  
-  // Process fields in chunks to keep UI responsive
-  for (let i = 0; i < fields.length; i++) {
-    const { field, label } = fields[i];
-    
-    const nullCount = store.sightings.filter(s => {
-      const value = (s as any)[field];
-      return value === null || value === undefined || value === '';
-    }).length;
-    
-    const totalCount = store.sightings.length;
+  // Initialize counters for all fields
+  const nullCounts: Record<string, number> = {};
+  fields.forEach(({ field }) => {
+    nullCounts[field] = 0;
+  });
+
+  const totalCount = store.sightings.length;
+  let processedCount = 0;
+
+  // Single pass through all sightings to count nulls for all fields
+  for (const sighting of store.sightings) {
+    fields.forEach(({ field }) => {
+      const value = (sighting as any)[field];
+      if (value === null || value === undefined || value === '') {
+        nullCounts[field]++;
+      }
+    });
+
+    processedCount++;
+    // Yield control every 200 sightings to keep UI responsive
+    if (processedCount % 200 === 0) {
+      await new Promise(resolve => setTimeout(resolve, 1));
+    }
+  }
+
+  // Build results from the collected counts
+  return fields.map(({ field, label }) => {
+    const nullCount = nullCounts[field];
     const completeness = totalCount > 0 ? ((totalCount - nullCount) / totalCount) * 100 : 0;
 
-    results.push({
+    return {
       field,
       label,
       nullCount,
       completeness,
       totalCount
-    });
-    
-    // Yield control back to browser every few fields to keep spinner animated
-    if (i % 5 === 0) {
-      await new Promise(resolve => setTimeout(resolve, 5));
-    }
-  }
-  
-  return results;
+    };
+  });
 };
 
+// Optimized single-pass data quality analysis
 const processDataQualityIssues = async (): Promise<DataQualityIssue[]> => {
+  // Pre-compute data needed for analysis
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+  const allRings = new Set(store.sightings.map(s => s.ring).filter(Boolean));
+  const ringSpecies = new Map<string, Set<string>>();
+  const keyToIds = new Map<string, string[]>();
+  
+  // Counters for each issue type
+  const counts = {
+    'future-dates': 0,
+    'invalid-coordinates': 0,
+    'missing-coordinates': 0,
+    'invalid-partners': 0,
+    'conflicting-species': 0,
+    'extreme-group-sizes': 0,
+    'duplicate-entries': 0
+  };
+
+  let processedCount = 0;
+
+  // Single pass through all sightings to check all conditions
+  for (const s of store.sightings) {
+    // Future dates check
+    if (s.date) {
+      const sightingDate = new Date(s.date);
+      if (sightingDate > today) {
+        counts['future-dates']++;
+      }
+    }
+
+    // Coordinates checks
+    if (!s.lat || !s.lon) {
+      counts['missing-coordinates']++;
+    } else {
+      // Invalid coordinates (outside Central Europe bounds)
+      const minLat = 47, maxLat = 55, minLon = 5, maxLon = 15;
+      if (s.lat < minLat || s.lat > maxLat || s.lon < minLon || s.lon > maxLon) {
+        counts['invalid-coordinates']++;
+      }
+    }
+
+    // Invalid partners check
+    if (s.partner) {
+      const partner = s.partner.toLowerCase();
+      if (partner !== 'ub' && partner !== 'unberingt' && !allRings.has(s.partner)) {
+        counts['invalid-partners']++;
+      }
+    }
+
+    // Collect data for conflicting species analysis
+    if (s.ring && s.species) {
+      if (!ringSpecies.has(s.ring)) {
+        ringSpecies.set(s.ring, new Set());
+      }
+      ringSpecies.get(s.ring)!.add(s.species);
+    }
+
+    // Extreme group sizes check
+    if ((s.small_group_size && s.small_group_size > 1000) ||
+        (s.large_group_size && s.large_group_size > 1000) ||
+        (s.breed_size && s.breed_size > 100) ||
+        (s.family_size && s.family_size > 100)) {
+      counts['extreme-group-sizes']++;
+    }
+
+    // Collect data for duplicates analysis
+    if (s.ring && s.date && s.place) {
+      const key = `${s.ring}-${s.date}-${s.place}`;
+      if (!keyToIds.has(key)) {
+        keyToIds.set(key, []);
+      }
+      keyToIds.get(key)!.push(s.id);
+    }
+
+    processedCount++;
+    // Yield control every 500 sightings to keep UI responsive
+    if (processedCount % 500 === 0) {
+      await new Promise(resolve => setTimeout(resolve, 1));
+    }
+  }
+
+  // Process conflicting species - count during main pass
+  const conflictingRings = new Set<string>();
+  ringSpecies.forEach((species, ring) => {
+    if (species.size > 1) {
+      conflictingRings.add(ring);
+    }
+  });
+  
+  // Count conflicting species sightings
+  for (const s of store.sightings) {
+    if (s.ring && conflictingRings.has(s.ring)) {
+      counts['conflicting-species']++;
+    }
+  }
+
+  // Process duplicates
+  const duplicateIds = new Set<string>();
+  keyToIds.forEach(ids => {
+    if (ids.length > 1) {
+      ids.forEach(id => duplicateIds.add(id));
+      counts['duplicate-entries'] += ids.length;
+    }
+  });
+
+  // Create issues with pre-calculated counts and optimized filters
   const issues: DataQualityIssue[] = [
     {
       id: 'future-dates',
@@ -339,12 +455,10 @@ const processDataQualityIssues = async (): Promise<DataQualityIssue[]> => {
       description: 'Sichtungen mit Datum in der Zukunft',
       severity: 'high',
       icon: 'mdi-calendar-alert',
-      count: 0,
+      count: counts['future-dates'],
       filter: (sightings) => sightings.filter(s => {
         if (!s.date) return false;
         const sightingDate = new Date(s.date);
-        const today = new Date();
-        today.setHours(23, 59, 59, 999); // End of today
         return sightingDate > today;
       })
     },
@@ -354,12 +468,10 @@ const processDataQualityIssues = async (): Promise<DataQualityIssue[]> => {
       description: 'Sichtungen mit Koordinaten außerhalb des erwarteten Bereichs',
       severity: 'medium',
       icon: 'mdi-map-marker-alert',
-      count: 0,
+      count: counts['invalid-coordinates'],
       filter: (sightings) => sightings.filter(s => {
         if (!s.lat || !s.lon) return false;
-        // Rough bounds for Central Europe (Germany area)
-        const minLat = 47, maxLat = 55;
-        const minLon = 5, maxLon = 15;
+        const minLat = 47, maxLat = 55, minLon = 5, maxLon = 15;
         return s.lat < minLat || s.lat > maxLat || s.lon < minLon || s.lon > maxLon;
       })
     },
@@ -369,7 +481,7 @@ const processDataQualityIssues = async (): Promise<DataQualityIssue[]> => {
       description: 'Sichtungen ohne Standortdaten',
       severity: 'medium',
       icon: 'mdi-map-marker-off',
-      count: 0,
+      count: counts['missing-coordinates'],
       filter: (sightings) => sightings.filter(s => !s.lat || !s.lon)
     },
     {
@@ -378,17 +490,13 @@ const processDataQualityIssues = async (): Promise<DataQualityIssue[]> => {
       description: 'Partner-Ringe die nicht im System existieren (außer UB/unberingt)',
       severity: 'medium',
       icon: 'mdi-account-alert',
-      count: 0,
-      filter: (sightings) => {
-        const allRings = new Set(sightings.map(s => s.ring).filter(Boolean));
-        return sightings.filter(s => {
-          if (!s.partner) return false;
-          const partner = s.partner.toLowerCase();
-          // Allow "UB", "unberingt", "Unberingt" as valid unringed partners
-          if (partner === 'ub' || partner === 'unberingt') return false;
-          return !allRings.has(s.partner);
-        });
-      }
+      count: counts['invalid-partners'],
+      filter: (sightings) => sightings.filter(s => {
+        if (!s.partner) return false;
+        const partner = s.partner.toLowerCase();
+        if (partner === 'ub' || partner === 'unberingt') return false;
+        return !allRings.has(s.partner);
+      })
     },
     {
       id: 'conflicting-species',
@@ -396,30 +504,8 @@ const processDataQualityIssues = async (): Promise<DataQualityIssue[]> => {
       description: 'Ringe mit unterschiedlichen Artenbestimmungen',
       severity: 'high',
       icon: 'mdi-bird',
-      count: 0,
-      filter: (sightings) => {
-        const ringSpecies = new Map<string, Set<string>>();
-        
-        // Group species by ring
-        sightings.forEach(s => {
-          if (s.ring && s.species) {
-            if (!ringSpecies.has(s.ring)) {
-              ringSpecies.set(s.ring, new Set());
-            }
-            ringSpecies.get(s.ring)!.add(s.species);
-          }
-        });
-        
-        // Find rings with multiple species
-        const conflictingRings = new Set<string>();
-        ringSpecies.forEach((species, ring) => {
-          if (species.size > 1) {
-            conflictingRings.add(ring);
-          }
-        });
-        
-        return sightings.filter(s => s.ring && conflictingRings.has(s.ring));
-      }
+      count: counts['conflicting-species'],
+      filter: (sightings) => sightings.filter(s => s.ring && conflictingRings.has(s.ring))
     },
     {
       id: 'extreme-group-sizes',
@@ -427,7 +513,7 @@ const processDataQualityIssues = async (): Promise<DataQualityIssue[]> => {
       description: 'Ungewöhnlich große Gruppenwerte (>1000)',
       severity: 'low',
       icon: 'mdi-account-group-outline',
-      count: 0,
+      count: counts['extreme-group-sizes'],
       filter: (sightings) => sightings.filter(s => {
         return (s.small_group_size && s.small_group_size > 1000) ||
                (s.large_group_size && s.large_group_size > 1000) ||
@@ -441,50 +527,10 @@ const processDataQualityIssues = async (): Promise<DataQualityIssue[]> => {
       description: 'Sichtungen mit identischem Ring, Datum und Ort',
       severity: 'medium',
       icon: 'mdi-content-duplicate',
-      count: 0,
-      filter: (sightings) => {
-        const seen = new Set<string>();
-        const duplicates = new Set<string>();
-        
-        sightings.forEach(s => {
-          if (s.ring && s.date && s.place) {
-            const key = `${s.ring}-${s.date}-${s.place}`;
-            if (seen.has(key)) {
-              duplicates.add(s.id);
-            } else {
-              seen.add(key);
-            }
-          }
-        });
-        
-        // Also mark the original entries as duplicates
-        sightings.forEach(s => {
-          if (s.ring && s.date && s.place) {
-            const key = `${s.ring}-${s.date}-${s.place}`;
-            const matchingEntries = sightings.filter(other => 
-              other.ring === s.ring && 
-              other.date === s.date && 
-              other.place === s.place
-            );
-            if (matchingEntries.length > 1) {
-              duplicates.add(s.id);
-            }
-          }
-        });
-        
-        return sightings.filter(s => duplicates.has(s.id));
-      }
+      count: counts['duplicate-entries'],
+      filter: (sightings) => sightings.filter(s => duplicateIds.has(s.id))
     }
   ];
-
-  // Calculate counts for each issue with yielding to keep UI responsive
-  for (let i = 0; i < issues.length; i++) {
-    const issue = issues[i];
-    issue.count = issue.filter(store.sightings).length;
-    
-    // Yield control back to browser after each issue to keep spinner animated
-    await new Promise(resolve => setTimeout(resolve, 5));
-  }
 
   return issues.sort((a, b) => b.count - a.count);
 };

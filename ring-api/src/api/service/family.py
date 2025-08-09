@@ -77,7 +77,7 @@ def add_child_relationship(
         upsert_family_tree_entry(child_entry)
 
 
-def add_partner_relationship_from_sighting(ring: str, partner_ring: str, year: int, user: str) -> None:
+def add_partner_relationship_from_sighting(ring: str, partner_ring: str, year: int, user: str | None = None) -> None:
     """
     Helper function to add partner relationship when creating/updating sightings.
     This is called automatically when a sighting with a partner is created.
