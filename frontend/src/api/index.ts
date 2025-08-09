@@ -3,7 +3,7 @@ import type { Sighting, BirdMeta, FriendResponse, Dashboard, Ringing, ShareableR
 import { useAuthStore } from '@/stores/auth';
 
 // Use dev environment API URL for now - will be configurable via env vars
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://xvc1zh25e3.execute-api.eu-central-1.amazonaws.com/Prod';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const API_KEY = import.meta.env.VITE_API_KEY; // Keep for backwards compatibility during migration
 
 const api = axios.create({

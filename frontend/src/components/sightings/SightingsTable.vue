@@ -38,13 +38,24 @@
           ></v-btn>
         </td>
         <td>
-          <v-btn
-            icon="mdi-delete"
-            variant="text"
-            color="error"
-            size="small"
-            @click.stop="confirmDelete(item)"
-          ></v-btn>
+          <div class="d-flex align-center justify-center">
+            <v-btn
+              icon="mdi-open-in-new"
+              variant="text"
+              color="primary"
+              size="small"
+              @click.stop="openInNewTab(item)"
+              v-tooltip="'In neuem Tab öffnen'"
+            ></v-btn>
+            <v-btn
+              icon="mdi-delete"
+              variant="text"
+              color="error"
+              size="small"
+              @click.stop="confirmDelete(item)"
+              v-tooltip="'Löschen'"
+            ></v-btn>
+          </div>
         </td>
       </tr>
       <tr v-if="expandedRow === item.id" class="expanded-row"
@@ -157,7 +168,7 @@ const headers = [
   { title: 'Status', key: 'status', sortable: true },
   { title: 'Melder', key: 'melder', sortable: true },
   { title: 'Gemeldet', key: 'melded', sortable: true },
-  { title: 'Aktionen', key: 'actions', sortable: false }
+  { title: 'Aktionen', key: 'actions', sortable: false, width: '100px' }
 ];
 
 const formatDate = (date?: string) => {
@@ -202,11 +213,37 @@ const handleRowClick = (event: Event, item: any) => {
     query.page = store.pagination.page.toString();
     query.perPage = store.pagination.itemsPerPage.toString();
   }
-  
-  router.push({
+
+  const url = router.resolve({
     path: `/entries/${sighting.id}`,
     query
-  });
+  }).href;
+
+  // Check if Ctrl/Cmd key is pressed to open in new tab
+  if (event instanceof MouseEvent && (event.ctrlKey || event.metaKey)) {
+    window.open(url, '_blank');
+  } else {
+    router.push({
+      path: `/entries/${sighting.id}`,
+      query
+    });
+  }
+};
+
+const openInNewTab = (sighting: Sighting) => {
+  const query: Record<string, string> = { from: 'list' };
+  
+  if (props.useStorePagination) {
+    query.page = store.pagination.page.toString();
+    query.perPage = store.pagination.itemsPerPage.toString();
+  }
+
+  const url = router.resolve({
+    path: `/entries/${sighting.id}`,
+    query
+  }).href;
+  
+  window.open(url, '_blank');
 };
 
 const confirmDelete = (item: Sighting) => {

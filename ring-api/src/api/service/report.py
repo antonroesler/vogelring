@@ -9,6 +9,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
 from api.models.report import ShareableReport
 from api import conf
+from api.utils import has_access
 
 
 logger = Logger()
@@ -47,8 +48,14 @@ def rsa_signer(message):
         raise
 
 
-def post_shareable_report(days: int, html_content: str = None) -> ShareableReport:
+def post_shareable_report(days: int, html_content: str = None, user: str | None = None) -> ShareableReport:
     """Generate pre-signed URLs for S3 upload and CloudFront distribution"""
+
+    if user is None:
+        raise ValueError("User is required")
+
+    if not has_access(user):
+        raise ValueError("User does not have access")
 
     # Get environment variables
     bucket_name = conf.BUCKET

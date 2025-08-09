@@ -11,11 +11,17 @@
             </v-card-title>
             <v-card-text>
               <v-progress-circular
-                v-if="isLoading"
+                v-if="store.loading || isProcessing"
                 indeterminate
                 color="primary"
                 class="ma-4"
               ></v-progress-circular>
+              
+              <div v-if="store.loading || isProcessing" class="text-center mt-2">
+                <div class="text-subtitle-1">
+                  {{ store.loading ? 'Lade Daten...' : 'Analysiere Datenqualität...' }}
+                </div>
+              </div>
               
               <div v-else>
                 <!-- Summary Cards -->
@@ -58,13 +64,13 @@
                 </v-row>
 
                 <!-- Field Completeness Chart -->
-                <v-chart class="chart" :option="fieldCompletenessOption" autoresize></v-chart>
+                <v-chart class="chart" :option="fieldCompletenessOptionData" autoresize></v-chart>
               </div>
             </v-card-text>
           </v-card>
         </v-col>
 
-        <!-- Data Quality Issues -->
+                        <!-- Data Quality Issues -->
         <v-col cols="12">
           <v-card>
             <v-card-title class="d-flex align-center">
@@ -74,7 +80,7 @@
             <v-card-text>
               <v-row>
                 <v-col 
-                  v-for="issue in dataQualityIssues" 
+                  v-for="issue in dataQualityIssuesData" 
                   :key="issue.id"
                   cols="12" 
                   md="6" 
@@ -121,7 +127,7 @@
             <v-card-text>
               <v-data-table
                 :headers="fieldHeaders"
-                :items="fieldAnalysis"
+                :items="fieldAnalysisData"
                 :items-per-page="15"
                 class="elevation-0"
               >
@@ -186,7 +192,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, nextTick, watch } from 'vue';
 import { useSightingsStore } from '@/stores/sightings';
 import type { Sighting } from '@/types';
 import VChart from 'vue-echarts';
@@ -205,10 +211,15 @@ use([
 ]);
 
 const store = useSightingsStore();
-const isLoading = ref(true);
+const isProcessing = ref(false);
 const showIssueDialog = ref(false);
 const selectedIssue = ref<DataQualityIssue | null>(null);
 const issueEntries = ref<Sighting[]>([]);
+
+// Convert heavy computed properties to refs for async processing
+const fieldAnalysisData = ref<FieldAnalysis[]>([]);
+const dataQualityIssuesData = ref<DataQualityIssue[]>([]);
+const fieldCompletenessOptionData = ref({});
 
 interface FieldAnalysis {
   field: string;
@@ -250,7 +261,21 @@ const noIdentification = computed(() => {
   return store.sightings.filter(s => !s.ring && !s.species).length;
 });
 
-const fieldAnalysis = computed((): FieldAnalysis[] => {
+
+
+
+
+
+
+const getCompletenessColor = (completeness: number): string => {
+  if (completeness >= 90) return '#4CAF50'; // Green
+  if (completeness >= 70) return '#FF9800'; // Orange
+  if (completeness >= 50) return '#FF5722'; // Red-orange
+  return '#F44336'; // Red
+};
+
+// Optimized single-pass field analysis
+const processFieldAnalysis = async (): Promise<FieldAnalysis[]> => {
   const fields = [
     { field: 'species', label: 'Spezies' },
     { field: 'ring', label: 'Ring' },
@@ -275,13 +300,34 @@ const fieldAnalysis = computed((): FieldAnalysis[] => {
     { field: 'lon', label: 'Längengrad' }
   ];
 
+  // Initialize counters for all fields
+  const nullCounts: Record<string, number> = {};
+  fields.forEach(({ field }) => {
+    nullCounts[field] = 0;
+  });
+
+  const totalCount = store.sightings.length;
+  let processedCount = 0;
+
+  // Single pass through all sightings to count nulls for all fields
+  for (const sighting of store.sightings) {
+    fields.forEach(({ field }) => {
+      const value = (sighting as any)[field];
+      if (value === null || value === undefined || value === '') {
+        nullCounts[field]++;
+      }
+    });
+
+    processedCount++;
+    // Yield control every 200 sightings to keep UI responsive
+    if (processedCount % 200 === 0) {
+      await new Promise(resolve => setTimeout(resolve, 1));
+    }
+  }
+
+  // Build results from the collected counts
   return fields.map(({ field, label }) => {
-    const nullCount = store.sightings.filter(s => {
-      const value = (s as any)[field];
-      return value === null || value === undefined || value === '';
-    }).length;
-    
-    const totalCount = store.sightings.length;
+    const nullCount = nullCounts[field];
     const completeness = totalCount > 0 ? ((totalCount - nullCount) / totalCount) * 100 : 0;
 
     return {
@@ -292,9 +338,116 @@ const fieldAnalysis = computed((): FieldAnalysis[] => {
       totalCount
     };
   });
-});
+};
 
-const dataQualityIssues = computed((): DataQualityIssue[] => {
+// Optimized single-pass data quality analysis
+const processDataQualityIssues = async (): Promise<DataQualityIssue[]> => {
+  // Pre-compute data needed for analysis
+  const today = new Date();
+  today.setHours(23, 59, 59, 999);
+  const allRings = new Set(store.sightings.map(s => s.ring).filter(Boolean));
+  const ringSpecies = new Map<string, Set<string>>();
+  const keyToIds = new Map<string, string[]>();
+  
+  // Counters for each issue type
+  const counts = {
+    'future-dates': 0,
+    'invalid-coordinates': 0,
+    'missing-coordinates': 0,
+    'invalid-partners': 0,
+    'conflicting-species': 0,
+    'extreme-group-sizes': 0,
+    'duplicate-entries': 0
+  };
+
+  let processedCount = 0;
+
+  // Single pass through all sightings to check all conditions
+  for (const s of store.sightings) {
+    // Future dates check
+    if (s.date) {
+      const sightingDate = new Date(s.date);
+      if (sightingDate > today) {
+        counts['future-dates']++;
+      }
+    }
+
+    // Coordinates checks
+    if (!s.lat || !s.lon) {
+      counts['missing-coordinates']++;
+    } else {
+      // Invalid coordinates (outside Central Europe bounds)
+      const minLat = 47, maxLat = 55, minLon = 5, maxLon = 15;
+      if (s.lat < minLat || s.lat > maxLat || s.lon < minLon || s.lon > maxLon) {
+        counts['invalid-coordinates']++;
+      }
+    }
+
+    // Invalid partners check
+    if (s.partner) {
+      const partner = s.partner.toLowerCase();
+      if (partner !== 'ub' && partner !== 'unberingt' && !allRings.has(s.partner)) {
+        counts['invalid-partners']++;
+      }
+    }
+
+    // Collect data for conflicting species analysis
+    if (s.ring && s.species) {
+      if (!ringSpecies.has(s.ring)) {
+        ringSpecies.set(s.ring, new Set());
+      }
+      ringSpecies.get(s.ring)!.add(s.species);
+    }
+
+    // Extreme group sizes check
+    if ((s.small_group_size && s.small_group_size > 1000) ||
+        (s.large_group_size && s.large_group_size > 1000) ||
+        (s.breed_size && s.breed_size > 100) ||
+        (s.family_size && s.family_size > 100)) {
+      counts['extreme-group-sizes']++;
+    }
+
+    // Collect data for duplicates analysis
+    if (s.ring && s.date && s.place) {
+      const key = `${s.ring}-${s.date}-${s.place}`;
+      if (!keyToIds.has(key)) {
+        keyToIds.set(key, []);
+      }
+      keyToIds.get(key)!.push(s.id);
+    }
+
+    processedCount++;
+    // Yield control every 500 sightings to keep UI responsive
+    if (processedCount % 500 === 0) {
+      await new Promise(resolve => setTimeout(resolve, 1));
+    }
+  }
+
+  // Process conflicting species - count during main pass
+  const conflictingRings = new Set<string>();
+  ringSpecies.forEach((species, ring) => {
+    if (species.size > 1) {
+      conflictingRings.add(ring);
+    }
+  });
+  
+  // Count conflicting species sightings
+  for (const s of store.sightings) {
+    if (s.ring && conflictingRings.has(s.ring)) {
+      counts['conflicting-species']++;
+    }
+  }
+
+  // Process duplicates
+  const duplicateIds = new Set<string>();
+  keyToIds.forEach(ids => {
+    if (ids.length > 1) {
+      ids.forEach(id => duplicateIds.add(id));
+      counts['duplicate-entries'] += ids.length;
+    }
+  });
+
+  // Create issues with pre-calculated counts and optimized filters
   const issues: DataQualityIssue[] = [
     {
       id: 'future-dates',
@@ -302,12 +455,10 @@ const dataQualityIssues = computed((): DataQualityIssue[] => {
       description: 'Sichtungen mit Datum in der Zukunft',
       severity: 'high',
       icon: 'mdi-calendar-alert',
-      count: 0,
+      count: counts['future-dates'],
       filter: (sightings) => sightings.filter(s => {
         if (!s.date) return false;
         const sightingDate = new Date(s.date);
-        const today = new Date();
-        today.setHours(23, 59, 59, 999); // End of today
         return sightingDate > today;
       })
     },
@@ -317,12 +468,10 @@ const dataQualityIssues = computed((): DataQualityIssue[] => {
       description: 'Sichtungen mit Koordinaten außerhalb des erwarteten Bereichs',
       severity: 'medium',
       icon: 'mdi-map-marker-alert',
-      count: 0,
+      count: counts['invalid-coordinates'],
       filter: (sightings) => sightings.filter(s => {
         if (!s.lat || !s.lon) return false;
-        // Rough bounds for Central Europe (Germany area)
-        const minLat = 47, maxLat = 55;
-        const minLon = 5, maxLon = 15;
+        const minLat = 47, maxLat = 55, minLon = 5, maxLon = 15;
         return s.lat < minLat || s.lat > maxLat || s.lon < minLon || s.lon > maxLon;
       })
     },
@@ -332,7 +481,7 @@ const dataQualityIssues = computed((): DataQualityIssue[] => {
       description: 'Sichtungen ohne Standortdaten',
       severity: 'medium',
       icon: 'mdi-map-marker-off',
-      count: 0,
+      count: counts['missing-coordinates'],
       filter: (sightings) => sightings.filter(s => !s.lat || !s.lon)
     },
     {
@@ -341,17 +490,13 @@ const dataQualityIssues = computed((): DataQualityIssue[] => {
       description: 'Partner-Ringe die nicht im System existieren (außer UB/unberingt)',
       severity: 'medium',
       icon: 'mdi-account-alert',
-      count: 0,
-      filter: (sightings) => {
-        const allRings = new Set(sightings.map(s => s.ring).filter(Boolean));
-        return sightings.filter(s => {
-          if (!s.partner) return false;
-          const partner = s.partner.toLowerCase();
-          // Allow "UB", "unberingt", "Unberingt" as valid unringed partners
-          if (partner === 'ub' || partner === 'unberingt') return false;
-          return !allRings.has(s.partner);
-        });
-      }
+      count: counts['invalid-partners'],
+      filter: (sightings) => sightings.filter(s => {
+        if (!s.partner) return false;
+        const partner = s.partner.toLowerCase();
+        if (partner === 'ub' || partner === 'unberingt') return false;
+        return !allRings.has(s.partner);
+      })
     },
     {
       id: 'conflicting-species',
@@ -359,30 +504,8 @@ const dataQualityIssues = computed((): DataQualityIssue[] => {
       description: 'Ringe mit unterschiedlichen Artenbestimmungen',
       severity: 'high',
       icon: 'mdi-bird',
-      count: 0,
-      filter: (sightings) => {
-        const ringSpecies = new Map<string, Set<string>>();
-        
-        // Group species by ring
-        sightings.forEach(s => {
-          if (s.ring && s.species) {
-            if (!ringSpecies.has(s.ring)) {
-              ringSpecies.set(s.ring, new Set());
-            }
-            ringSpecies.get(s.ring)!.add(s.species);
-          }
-        });
-        
-        // Find rings with multiple species
-        const conflictingRings = new Set<string>();
-        ringSpecies.forEach((species, ring) => {
-          if (species.size > 1) {
-            conflictingRings.add(ring);
-          }
-        });
-        
-        return sightings.filter(s => s.ring && conflictingRings.has(s.ring));
-      }
+      count: counts['conflicting-species'],
+      filter: (sightings) => sightings.filter(s => s.ring && conflictingRings.has(s.ring))
     },
     {
       id: 'extreme-group-sizes',
@@ -390,7 +513,7 @@ const dataQualityIssues = computed((): DataQualityIssue[] => {
       description: 'Ungewöhnlich große Gruppenwerte (>1000)',
       severity: 'low',
       icon: 'mdi-account-group-outline',
-      count: 0,
+      count: counts['extreme-group-sizes'],
       filter: (sightings) => sightings.filter(s => {
         return (s.small_group_size && s.small_group_size > 1000) ||
                (s.large_group_size && s.large_group_size > 1000) ||
@@ -404,52 +527,16 @@ const dataQualityIssues = computed((): DataQualityIssue[] => {
       description: 'Sichtungen mit identischem Ring, Datum und Ort',
       severity: 'medium',
       icon: 'mdi-content-duplicate',
-      count: 0,
-      filter: (sightings) => {
-        const seen = new Set<string>();
-        const duplicates = new Set<string>();
-        
-        sightings.forEach(s => {
-          if (s.ring && s.date && s.place) {
-            const key = `${s.ring}-${s.date}-${s.place}`;
-            if (seen.has(key)) {
-              duplicates.add(s.id);
-            } else {
-              seen.add(key);
-            }
-          }
-        });
-        
-        // Also mark the original entries as duplicates
-        sightings.forEach(s => {
-          if (s.ring && s.date && s.place) {
-            const key = `${s.ring}-${s.date}-${s.place}`;
-            const matchingEntries = sightings.filter(other => 
-              other.ring === s.ring && 
-              other.date === s.date && 
-              other.place === s.place
-            );
-            if (matchingEntries.length > 1) {
-              duplicates.add(s.id);
-            }
-          }
-        });
-        
-        return sightings.filter(s => duplicates.has(s.id));
-      }
+      count: counts['duplicate-entries'],
+      filter: (sightings) => sightings.filter(s => duplicateIds.has(s.id))
     }
   ];
 
-  // Calculate counts for each issue
-  issues.forEach(issue => {
-    issue.count = issue.filter(store.sightings).length;
-  });
-
   return issues.sort((a, b) => b.count - a.count);
-});
+};
 
-const fieldCompletenessOption = computed(() => {
-  const data = fieldAnalysis.value
+const processFieldCompletenessChart = async (fieldAnalysis: FieldAnalysis[]) => {
+  const data = fieldAnalysis
     .sort((a, b) => a.completeness - b.completeness)
     .slice(0, 15); // Show top 15 fields
 
@@ -499,13 +586,6 @@ const fieldCompletenessOption = computed(() => {
       barWidth: '60%'
     }]
   };
-});
-
-const getCompletenessColor = (completeness: number): string => {
-  if (completeness >= 90) return '#4CAF50'; // Green
-  if (completeness >= 70) return '#FF9800'; // Orange
-  if (completeness >= 50) return '#FF5722'; // Red-orange
-  return '#F44336'; // Red
 };
 
 const showIssueDetails = (issue: DataQualityIssue) => {
@@ -515,7 +595,7 @@ const showIssueDetails = (issue: DataQualityIssue) => {
 };
 
 const showFieldIssues = (field: string) => {
-  const fieldLabel = fieldAnalysis.value.find(f => f.field === field)?.label || field;
+  const fieldLabel = fieldAnalysisData.value.find(f => f.field === field)?.label || field;
   
   selectedIssue.value = {
     id: `field-${field}`,
@@ -541,11 +621,55 @@ const handleSightingDeleted = async (id: string) => {
   }
 };
 
+const processData = async () => {
+  isProcessing.value = true;
+  
+  try {
+    // Allow UI to update and spinner to start animating
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    
+    // Process field analysis
+    fieldAnalysisData.value = await processFieldAnalysis();
+    
+    // Yield to browser to keep spinner animated
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    
+    // Process data quality issues
+    dataQualityIssuesData.value = await processDataQualityIssues();
+    
+    // Yield to browser to keep spinner animated
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    
+    // Process chart data
+    fieldCompletenessOptionData.value = await processFieldCompletenessChart(fieldAnalysisData.value);
+    
+  } finally {
+    isProcessing.value = false;
+  }
+};
+
+// Watch for when store finishes loading to start processing
+watch(() => store.loading, async (isLoading, wasLoading) => {
+  // When loading transitions from true to false and we have data
+  if (wasLoading && !isLoading && store.sightings.length > 0 && fieldAnalysisData.value.length === 0) {
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    await processData();
+  }
+});
+
 onMounted(async () => {
   if (!store.initialized) {
     await store.fetchSightings();
   }
-  isLoading.value = false;
+  
+  // Only process data if sightings are available and not already loading
+  if (store.sightings.length > 0 && !store.loading && fieldAnalysisData.value.length === 0) {
+    // Defer processing to next tick to allow loading state to show
+    await nextTick();
+    // Use requestAnimationFrame to ensure spinner starts animating
+    await new Promise(resolve => requestAnimationFrame(resolve));
+    await processData();
+  }
 });
 </script>
 
