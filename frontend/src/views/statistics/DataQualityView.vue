@@ -178,6 +178,10 @@
               :use-store-pagination="false"
               :default-page="1"
               :default-items-per-page="10"
+               :show-settings="true"
+               :settings-key="`data-quality:${selectedIssue?.id || 'unknown'}`"
+               :default-columns="['date','ring','species','place','pair','status','melder','melded']"
+               :default-hover-expand="true"
               @deleted="handleSightingDeleted"
             ></sightings-table>
             

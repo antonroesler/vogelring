@@ -51,6 +51,10 @@
       :sightings="filteredSightings"
       :loading="store.loading"
       :use-store-pagination="true"
+      settings-key="entry-list"
+      :show-settings="true"
+      :default-columns="['date','ring','species','place','pair','status','melder','melded']"
+      :default-hover-expand="true"
       @deleted="handleSightingDeleted"
       @melded-updated="handleMeldedUpdated"
     ></sightings-table>
@@ -77,7 +81,7 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { useSightingsStore } from '@/stores/sightings';
 import SightingsFilter from '@/components/sightings/SightingsFilter.vue';
 import SightingsTable from '@/components/sightings/SightingsTable.vue';
-import type { Sighting, BirdStatus, BirdAge } from '@/types';
+import type { Sighting } from '@/types';
 import { useRouter } from 'vue-router';
 
 const store = useSightingsStore();
@@ -101,22 +105,22 @@ const filteredSightings = computed(() => {
     let matches = true;
     
     if (filters.value.species) {
-      matches = matches && sighting.species?.toLowerCase().includes(filters.value.species.toLowerCase());
+      matches = matches && !!(sighting.species && sighting.species.toLowerCase().includes(filters.value.species.toLowerCase()));
     }
     if (filters.value.ring) {
-      matches = matches && sighting.ring?.includes(filters.value.ring);
+      matches = matches && !!(sighting.ring && sighting.ring.includes(filters.value.ring));
     }
     if (filters.value.place) {
-      matches = matches && sighting.place?.toLowerCase().includes(filters.value.place.toLowerCase());
+      matches = matches && !!(sighting.place && sighting.place.toLowerCase().includes(filters.value.place.toLowerCase()));
     }
     if (filters.value.melder) {
-      matches = matches && sighting.melder?.toLowerCase().includes(filters.value.melder.toLowerCase());
+      matches = matches && !!(sighting.melder && sighting.melder.toLowerCase().includes(filters.value.melder.toLowerCase()));
     }
     if (filters.value.start_date) {
-      matches = matches && sighting.date >= filters.value.start_date;
+      matches = matches && !!sighting.date && sighting.date >= filters.value.start_date;
     }
     if (filters.value.end_date) {
-      matches = matches && sighting.date <= filters.value.end_date;
+      matches = matches && !!sighting.date && sighting.date <= filters.value.end_date;
     }
     if (filters.value.melded !== undefined) {
       matches = matches && sighting.melded === filters.value.melded;
