@@ -187,6 +187,13 @@
           </v-card-text>
         </v-card>
       </v-dialog>
+
+      <v-snackbar
+        v-model="showDeleteSnackbar"
+        color="success"
+      >
+        Sichtung erfolgreich gelöscht
+      </v-snackbar>
     </v-card-text>
   </v-card>
 </template>
@@ -215,6 +222,7 @@ const isProcessing = ref(false);
 const showIssueDialog = ref(false);
 const selectedIssue = ref<DataQualityIssue | null>(null);
 const issueEntries = ref<Sighting[]>([]);
+const showDeleteSnackbar = ref(false);
 
 // Convert heavy computed properties to refs for async processing
 const fieldAnalysisData = ref<FieldAnalysis[]>([]);
@@ -615,9 +623,17 @@ const showFieldIssues = (field: string) => {
 };
 
 const handleSightingDeleted = async (id: string) => {
-  // Refresh the current issue entries after deletion
-  if (selectedIssue.value) {
-    issueEntries.value = selectedIssue.value.filter(store.sightings);
+  try {
+    await store.deleteSighting(id);
+    showDeleteSnackbar.value = true;
+  } catch (error) {
+    console.error('Error deleting sighting:', error);
+  } finally {
+    if (selectedIssue.value) {
+      issueEntries.value = selectedIssue.value.filter(store.sightings);
+    }
+    // Refresh issue counts to keep the overview in sync
+    dataQualityIssuesData.value = await processDataQualityIssues();
   }
 };
 
