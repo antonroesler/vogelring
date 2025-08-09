@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Default to prod if no environment specified
-ENVIRONMENT=${1:-prod}
+# Default to dev if no environment specified
+ENVIRONMENT=${1:-dev}
 
 if [[ "$ENVIRONMENT" != "dev" && "$ENVIRONMENT" != "prod" ]]; then
     echo "Usage: $0 [dev|prod]"
@@ -27,7 +27,11 @@ version=$(cat ring-api/src/api/version.py | grep __version__ | awk -F'"' '{print
 version=$((version + 1))
 
 # Update version in file
-echo "__version__ = \"$version\"" > ring-api/src/api/version.py
+if [[ "$ENVIRONMENT" == "dev" ]]; then
+    echo "__version__ = \"${version}-dev\"" > ring-api/src/api/version.py
+else
+    echo "__version__ = \"$version\"" > ring-api/src/api/version.py
+fi
 
 # Bumped version
 echo "Bumped version to $version"
@@ -37,7 +41,8 @@ echo "Deploying API to $ENVIRONMENT..."
 
 cd ring-api
 sam build
-sam deploy --config-env $ENVIRONMENT --no-confirm-changeset --no-fail-on-empty-changeset --parameter-overrides RingApiKey=$RING_API_KEY
+sam deploy --config-env $ENVIRONMENT --no-confirm-changeset --no-fail-on-empty-changeset
+echo "__version__ = \"$version\"" > ring-api/src/api/version.py # override the dev suffix
 
 echo "Deploying frontend to $ENVIRONMENT..."
 cd ../frontend
@@ -49,8 +54,10 @@ export VITE_API_URL=$VITE_API_URL
 
 # Use environment-specific deployment
 if [[ "$ENVIRONMENT" == "dev" ]]; then
+    source .env.development
     npm run deploy:dev
 else
+    source .env.production
     npm run deploy:prod
 fi
 
