@@ -3,7 +3,7 @@ Pydantic models for migration scripts
 These mirror the models from the Lambda API
 """
 from pydantic import BaseModel, Field, field_validator
-from datetime import date
+from datetime import date as DateType
 from uuid import uuid4
 from enum import Enum
 from typing import Literal, Optional, List
@@ -36,7 +36,7 @@ class Ringing(BaseModel):
     ring: str
     ring_scheme: str
     species: str
-    date: date
+    date: DateType
     place: str
     lat: float
     lon: float
@@ -87,7 +87,7 @@ class Sighting(BaseModel):
     reading: Optional[str] = None
     age: Optional[BirdAge] = None
     sex: Optional[Literal["M", "W"]] = None
-    date: Optional[date] = None
+    date: Optional[DateType] = None
     large_group_size: Optional[int] = None
     small_group_size: Optional[int] = None
     partner: Optional[str] = None
