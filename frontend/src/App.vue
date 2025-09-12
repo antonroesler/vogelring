@@ -15,7 +15,7 @@
       <v-spacer></v-spacer>
 
       <!-- Center section with search -->
-      <div class="search-container" v-if="authStore.isAuthenticated">
+      <div class="search-container">
         <v-autocomplete
           v-model="selectedBird"
           v-model:search="searchQuery"
@@ -100,83 +100,38 @@
 
       <!-- Right section -->
       <div class="navigation-buttons pe-4">
-        <template v-if="authStore.isAuthenticated">
-          <v-btn 
-            to="/new-entry" 
-            variant="text"
-            class="nav-btn"
-          >
-            <v-icon icon="mdi-plus" class="me-1"></v-icon>
-            Neuer Eintrag
-          </v-btn>
-          <v-btn 
-            to="/entries" 
-            variant="text"
-            class="nav-btn"
-          >
-            <v-icon icon="mdi-format-list-bulleted" class="me-1"></v-icon>
-            Eintragliste
-          </v-btn>
-          <v-btn 
-            to="/ringing" 
-            variant="text"
-            class="nav-btn"
-          >
-            <v-icon icon="mdi-ring" class="me-1"></v-icon>
-            Beringungen
-          </v-btn>
-          <v-btn 
-            to="/statistics" 
-            variant="text"
-            class="nav-btn"
-          >
-            <v-icon icon="mdi-chart-line" class="me-1"></v-icon>
-            Statistiken
-          </v-btn>
-          
-          <!-- User menu -->
-          <v-menu>
-            <template v-slot:activator="{ props }">
-              <v-btn
-                v-bind="props"
-                variant="text"
-                icon
-                class="user-menu-btn"
-              >
-                <v-icon size="28">mdi-account-circle</v-icon>
-              </v-btn>
-            </template>
-            <v-list class="user-menu">
-              <v-list-item v-if="authStore.userAttributes?.email">
-                <v-list-item-title>{{ authStore.userAttributes.email }}</v-list-item-title>
-                <v-list-item-subtitle>Angemeldet</v-list-item-subtitle>
-              </v-list-item>
-              <v-divider />
-              <v-list-item @click="handleLogout">
-                <v-list-item-prepend>
-                  <v-icon>mdi-logout</v-icon>
-                </v-list-item-prepend>
-                <v-list-item-title>Abmelden</v-list-item-title>
-              </v-list-item>
-            </v-list>
-          </v-menu>
-        </template>
-        <template v-else>
-          <v-btn 
-            to="/auth/login" 
-            variant="outlined"
-            class="auth-nav-btn login-btn"
-          >
-            Anmelden
-          </v-btn>
-          <v-btn 
-            to="/auth/register" 
-            variant="elevated"
-            class="auth-nav-btn register-btn"
-          >
-            Registrieren
-          </v-btn>
-        </template>
+        <v-btn 
+          to="/new-entry" 
+          variant="text"
+          class="nav-btn"
+        >
+          <v-icon icon="mdi-plus" class="me-1"></v-icon>
+          Neuer Eintrag
+        </v-btn>
+        <v-btn 
+          to="/entries" 
+          variant="text"
+          class="nav-btn"
+        >
+          <v-icon icon="mdi-format-list-bulleted" class="me-1"></v-icon>
+          Eintragliste
+        </v-btn>
+        <v-btn 
+          to="/ringing" 
+          variant="text"
+          class="nav-btn"
+        >
+          <v-icon icon="mdi-ring" class="me-1"></v-icon>
+          Beringungen
+        </v-btn>
+        <v-btn 
+          to="/statistics" 
+          variant="text"
+          class="nav-btn"
+        >
+          <v-icon icon="mdi-chart-line" class="me-1"></v-icon>
+          Statistiken
+        </v-btn>
       </div>
     </v-app-bar>
 
@@ -317,29 +272,16 @@ const navigateToBird = (bird: BirdSuggestion) => {
 
 // Navigate to home
 const navigateToHome = () => {
-  if (authStore.isAuthenticated) {
-    router.push('/');
-  } else {
-    router.push('/auth/login');
-  }
-};
-
-// Handle user logout
-const handleLogout = async () => {
-  try {
-    await authStore.signOut();
-    router.push('/auth/login');
-  } catch (error) {
-    console.error('Logout failed:', error);
-  }
+  router.push('/');
 };
 
 onMounted(async () => {
   try {
-    const response = await api.get('/health');
-    version.value = response.data.version;
+    const response = await api.get('/');
+    version.value = response.data.version || 'local';
   } catch (error) {
     console.error('Failed to fetch version:', error);
+    version.value = 'local';
   }
 });
 </script>

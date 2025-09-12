@@ -18,7 +18,7 @@ const generateVersionInfo = () => {
   } catch (e) {
     // No git or not a git repository, use timestamp instead
     const timestamp = Math.floor(now.getTime() / 1000)
-    version = `${version}-${timestamp}`
+    version = `${version}-local-${timestamp}`
   }
   
   // Write version info to public directory

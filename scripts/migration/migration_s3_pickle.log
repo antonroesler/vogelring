@@ -1,0 +1,60 @@
+2025-09-12 21:35:55,304 - __main__ - INFO - Starting S3 pickle to PostgreSQL migration
+2025-09-12 21:35:55,305 - __main__ - INFO - Dry run mode: False
+2025-09-12 21:35:55,305 - __main__ - INFO - User: 
+2025-09-12 21:35:55,311 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-12 21:35:55,501 - __main__ - INFO - Connected to S3 bucket: vogelring-data
+2025-09-12 21:35:55,549 - database - INFO - Database connection successful
+2025-09-12 21:35:55,557 - database - INFO - Database tables created successfully
+2025-09-12 21:35:55,561 - __main__ - INFO - Initial PostgreSQL sightings count: 1
+2025-09-12 21:35:55,561 - __main__ - INFO - Loading sightings from S3...
+2025-09-12 21:35:55,561 - __main__ - INFO - Loading sightings from S3: vogelring-data//sightings.pkl
+2025-09-12 21:35:55,599 - __main__ - ERROR - S3 object /sightings.pkl not found in bucket vogelring-data
+2025-09-12 21:35:55,600 - __main__ - ERROR - Failed to load sightings from S3
+2025-09-12 21:37:28,855 - __main__ - INFO - Starting S3 pickle to PostgreSQL migration
+2025-09-12 21:37:28,855 - __main__ - INFO - Dry run mode: False
+2025-09-12 21:37:28,855 - __main__ - INFO - User: 
+2025-09-12 21:37:28,863 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-12 21:37:29,082 - __main__ - INFO - Connected to S3 bucket: vogelring-data
+2025-09-12 21:37:29,128 - database - INFO - Database connection successful
+2025-09-12 21:37:29,135 - database - INFO - Database tables created successfully
+2025-09-12 21:37:29,139 - __main__ - INFO - Initial PostgreSQL sightings count: 0
+2025-09-12 21:37:29,139 - __main__ - INFO - Loading sightings from S3...
+2025-09-12 21:37:29,139 - __main__ - INFO - Loading sightings from S3: vogelring-data/sightings.pkl
+2025-09-12 21:37:29,405 - __main__ - ERROR - Unexpected error loading from S3: No module named 'api'
+2025-09-12 21:37:29,405 - __main__ - ERROR - Failed to load sightings from S3
+2025-09-12 21:38:44,893 - __main__ - INFO - Starting S3 pickle to PostgreSQL migration
+2025-09-12 21:38:44,894 - __main__ - INFO - Dry run mode: False
+2025-09-12 21:38:44,894 - __main__ - INFO - User: 
+2025-09-12 21:38:44,902 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-12 21:38:45,086 - __main__ - INFO - Connected to S3 bucket: vogelring-data
+2025-09-12 21:38:45,136 - database - INFO - Database connection successful
+2025-09-12 21:38:45,144 - database - INFO - Database tables created successfully
+2025-09-12 21:38:45,148 - __main__ - INFO - Initial PostgreSQL sightings count: 0
+2025-09-12 21:38:45,148 - __main__ - INFO - Loading sightings from S3...
+2025-09-12 21:38:45,148 - __main__ - INFO - Loading sightings from S3: vogelring-data/sightings.pkl
+2025-09-12 21:38:45,380 - __main__ - ERROR - Unexpected error loading from S3: No module named 'api.models.sightings'; 'api.models' is not a package
+2025-09-12 21:38:45,380 - __main__ - ERROR - Failed to load sightings from S3
+2025-09-12 21:45:11,721 - __main__ - INFO - Starting S3 pickle to PostgreSQL migration
+2025-09-12 21:45:11,722 - __main__ - INFO - Dry run mode: False
+2025-09-12 21:45:11,722 - __main__ - INFO - User: default
+2025-09-12 21:45:11,729 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-12 21:45:11,936 - __main__ - INFO - Connected to S3 bucket: vogelring-data
+2025-09-12 21:45:11,991 - database - INFO - Database connection successful
+2025-09-12 21:45:11,999 - database - INFO - Database tables created successfully
+2025-09-12 21:45:12,004 - __main__ - INFO - Initial PostgreSQL sightings count: 0
+2025-09-12 21:45:12,004 - __main__ - INFO - Loading sightings from S3...
+2025-09-12 21:45:12,004 - __main__ - INFO - Loading sightings from S3: vogelring-data/default/sightings.pkl
+2025-09-12 21:45:12,038 - __main__ - ERROR - S3 object default/sightings.pkl not found in bucket vogelring-data
+2025-09-12 21:45:12,038 - __main__ - ERROR - Failed to load sightings from S3
+2025-09-12 21:45:44,530 - __main__ - INFO - Starting S3 pickle to PostgreSQL migration
+2025-09-12 21:45:44,530 - __main__ - INFO - Dry run mode: False
+2025-09-12 21:45:44,530 - __main__ - INFO - User: 
+2025-09-12 21:45:44,537 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-12 21:45:44,721 - __main__ - INFO - Connected to S3 bucket: vogelring-data
+2025-09-12 21:45:44,761 - database - INFO - Database connection successful
+2025-09-12 21:45:44,768 - database - INFO - Database tables created successfully
+2025-09-12 21:45:44,772 - __main__ - INFO - Initial PostgreSQL sightings count: 0
+2025-09-12 21:45:44,772 - __main__ - INFO - Loading sightings from S3...
+2025-09-12 21:45:44,772 - __main__ - INFO - Loading sightings from S3: vogelring-data/sightings.pkl
+2025-09-12 21:45:45,044 - __main__ - ERROR - Unexpected error loading from S3: No module named 'api'
+2025-09-12 21:45:45,044 - __main__ - ERROR - Failed to load sightings from S3

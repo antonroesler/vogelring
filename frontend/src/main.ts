@@ -10,7 +10,6 @@ import 'vuetify/styles'
 import 'leaflet/dist/leaflet.css'
 import { theme } from './theme'
 import BirdDetail from './views/BirdDetail.vue'
-import { useAuthStore } from './stores/auth'
 
 // Register service worker for automatic updates
 if ('serviceWorker' in navigator) {
@@ -52,50 +51,26 @@ const vuetify = createVuetify({
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    // Authentication routes (public)
-    {
-      path: '/auth/login',
-      name: 'login',
-      component: () => import('./views/auth/Login.vue'),
-      meta: { requiresAuth: false }
-    },
-    {
-      path: '/auth/register',
-      name: 'register',
-      component: () => import('./views/auth/Register.vue'),
-      meta: { requiresAuth: false }
-    },
-    {
-      path: '/auth/confirm',
-      name: 'confirm-signup',
-      component: () => import('./views/auth/ConfirmSignUp.vue'),
-      meta: { requiresAuth: false }
-    },
-    // Protected routes (require authentication)
+    // Main application routes (no authentication required - handled by Cloudflare Zero Trust)
     {
       path: '/',
-      redirect: '/new-entry',
-      meta: { requiresAuth: true }
+      redirect: '/new-entry'
     },
     {
       path: '/new-entry',
-      component: () => import('./views/NewEntry.vue'),
-      meta: { requiresAuth: true }
+      component: () => import('./views/NewEntry.vue')
     },
     {
       path: '/entries',
-      component: () => import('./views/EntryList.vue'),
-      meta: { requiresAuth: true }
+      component: () => import('./views/EntryList.vue')
     },
     {
       path: '/entries/:id',
-      component: () => import('./views/EntryDetail.vue'),
-      meta: { requiresAuth: true }
+      component: () => import('./views/EntryDetail.vue')
     },
     {
       path: '/statistics',
       component: () => import('./views/Statistics.vue'),
-      meta: { requiresAuth: true },
       children: [
         {
           path: '',
@@ -104,116 +79,73 @@ const router = createRouter({
         {
           path: 'dashboard',
           name: 'statistics-dashboard',
-          component: () => import('./views/statistics/DashboardView.vue'),
-          meta: { requiresAuth: true }
+          component: () => import('./views/statistics/DashboardView.vue')
         },
         {
           path: 'friends',
           name: 'statistics-friends',
-          component: () => import('./views/statistics/FriendsView.vue'),
-          meta: { requiresAuth: true }
+          component: () => import('./views/statistics/FriendsView.vue')
         },
         {
           path: 'radius',
           name: 'statistics-radius',
-          component: () => import('./views/statistics/RadiusView.vue'),
-          meta: { requiresAuth: true }
+          component: () => import('./views/statistics/RadiusView.vue')
         },
         {
           path: 'seasonal',
           name: 'statistics-seasonal',
-          component: () => import('./views/statistics/SeasonalAnalysisView.vue'),
-          meta: { requiresAuth: true }
+          component: () => import('./views/statistics/SeasonalAnalysisView.vue')
         },
         {
           path: 'data-quality',
           name: 'statistics-data-quality',
-          component: () => import('./views/statistics/DataQualityView.vue'),
-          meta: { requiresAuth: true }
+          component: () => import('./views/statistics/DataQualityView.vue')
         }
       ]
     },
     {
       path: '/birds/:ring',
-      component: BirdDetail,
-      meta: { requiresAuth: true }
+      component: BirdDetail
     },
     {
       path: '/birds/:ring/environment-analysis',
       name: 'environment-analysis',
-      component: () => import('./views/EnvironmentAnalysis.vue'),
-      meta: { requiresAuth: true }
+      component: () => import('./views/EnvironmentAnalysis.vue')
     },
     {
       path: '/ringing',
       name: 'ringing',
-      component: () => import('./views/Ringing.vue'),
-      meta: { requiresAuth: true }
+      component: () => import('./views/Ringing.vue')
     },
-    // Legal pages (public)
+    // Legal pages
     {
       path: '/impressum',
       name: 'impressum',
-      component: () => import('./views/legal/Impressum.vue'),
-      meta: { requiresAuth: false }
+      component: () => import('./views/legal/Impressum.vue')
     },
     {
       path: '/datenschutz',
       name: 'datenschutz',
-      component: () => import('./views/legal/Datenschutz.vue'),
-      meta: { requiresAuth: false }
+      component: () => import('./views/legal/Datenschutz.vue')
     },
     {
       path: '/agb',
       name: 'agb',
-      component: () => import('./views/legal/AGB.vue'),
-      meta: { requiresAuth: false }
+      component: () => import('./views/legal/AGB.vue')
     },
     {
       path: '/widerruf',
       name: 'widerruf',
-      component: () => import('./views/legal/Widerruf.vue'),
-      meta: { requiresAuth: false }
+      component: () => import('./views/legal/Widerruf.vue')
     }
   ]
-})
-
-// Add route guards for authentication
-router.beforeEach(async (to, from, next) => {
-  const authStore = useAuthStore()
-  
-  // Check if route requires authentication
-  const requiresAuth = to.meta.requiresAuth !== false
-  
-  if (requiresAuth) {
-    // Try to get current user
-    const user = await authStore.getCurrentUser()
-    
-    if (!user) {
-      // User is not authenticated, redirect to login
-      console.log('User not authenticated, redirecting to login')
-      next('/auth/login')
-      return
-    }
-  }
-  
-  // User is authenticated or route doesn't require auth
-  next()
 })
 
 const pinia = createPinia()
 const app = createApp(App)
 
 app.use(vuetify)
-app.use(pinia) // Use pinia before router so stores are available in route guards
+app.use(pinia)
 app.use(router)
-
-// Initialize authentication state
-const authStore = useAuthStore()
-authStore.getCurrentUser().then(() => {
-  console.log('Authentication state initialized')
-}).catch(error => {
-  console.log('Failed to initialize auth state:', error)
-})
 
 app.mount('#app')

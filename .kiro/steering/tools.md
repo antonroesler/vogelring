@@ -1,0 +1,1 @@
+Use context7 whenever you need access to any type of documentation. This tool will give you access to all the latest code and library docs out there. You can also use the fetch tool to search the internet for information you require.

@@ -1,0 +1,27 @@
+{
+  "thresholds": {
+    "cpu_percent": 85,
+    "memory_percent": 90,
+    "disk_percent": 95,
+    "temperature_celsius": 75,
+    "response_time_ms": 5000
+  },
+  "cooldown_minutes": 30,
+  "email": {
+    "enabled": false,
+    "smtp_server": "smtp.gmail.com",
+    "smtp_port": 587,
+    "username": "your-email@gmail.com",
+    "password": "your-app-password",
+    "from_email": "vogelring@yourdomain.com",
+    "to_emails": ["admin@yourdomain.com"]
+  },
+  "webhook": {
+    "enabled": false,
+    "url": "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK",
+    "timeout": 10
+  },
+  "log_file": "./logs/vogelring_alerts.log",
+  "state_file": "./logs/vogelring_alerts_state.json",
+  "log_level": "INFO"
+}
