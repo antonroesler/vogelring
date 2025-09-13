@@ -128,15 +128,34 @@ fi
 echo -e "${BLUE}🛑 Stopping services...${NC}"
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" down
 
-# Step 4: Build updated images
-echo -e "${BLUE}🔨 Building updated images...${NC}"
+# Step 4: Build frontend assets
+echo -e "${BLUE}🎨 Building frontend assets...${NC}"
+if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
+    cd frontend
+    if [ -f "package-lock.json" ]; then
+        echo -e "   Installing frontend dependencies..."
+        npm ci --silent
+    else
+        echo -e "   Installing frontend dependencies..."
+        npm install --silent
+    fi
+    echo -e "   Building frontend..."
+    npm run build
+    cd ..
+    echo -e "${GREEN}✅ Frontend build completed${NC}"
+else
+    echo -e "${YELLOW}⚠️  Frontend directory not found, skipping frontend build${NC}"
+fi
+
+# Step 5: Build updated Docker images
+echo -e "${BLUE}🔨 Building updated Docker images...${NC}"
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build --no-cache
 
-# Step 5: Start services
+# Step 6: Start services
 echo -e "${BLUE}🚀 Starting services...${NC}"
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d
 
-# Step 6: Wait for services to be healthy
+# Step 7: Wait for services to be healthy
 echo -e "${BLUE}⏳ Waiting for services to be healthy...${NC}"
 TIMEOUT=120
 COUNTER=0
@@ -162,11 +181,11 @@ if [ $COUNTER -ge $TIMEOUT ]; then
     echo -e "   docker compose -f $COMPOSE_FILE --env-file $ENV_FILE logs"
 fi
 
-# Step 7: Display service status
+# Step 8: Display service status
 echo -e "${BLUE}📊 Final service status:${NC}"
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" ps
 
-# Step 8: Test API endpoint (if available)
+# Step 9: Test API endpoint (if available)
 if [ "$COMPOSE_FILE" = "docker-compose.prod.yml" ]; then
     API_URL="http://localhost:8000"
 else
@@ -183,7 +202,7 @@ else
     echo -e "   Check API logs: docker compose -f $COMPOSE_FILE --env-file $ENV_FILE logs api"
 fi
 
-# Step 9: Clean up old Docker images
+# Step 10: Clean up old Docker images
 echo -e "${BLUE}🧹 Cleaning up old Docker images...${NC}"
 docker image prune -f > /dev/null 2>&1 || true
 
