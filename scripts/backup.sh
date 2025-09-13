@@ -31,16 +31,10 @@ gzip "$BACKUP_DIR/vogelring_${TIMESTAMP}.sql"
 
 # Create a backup of the entire data directory (excluding backups)
 echo "📁 Creating data directory backup..."
-if sudo tar -czf "$BACKUP_DIR/data_${TIMESTAMP}.tar.gz" \
+tar -czf "$BACKUP_DIR/data_${TIMESTAMP}.tar.gz" \
     --exclude="$BACKUP_DIR" \
     --exclude="*.log" \
-    "${DATA_DIR:-./data}" 2>/dev/null; then
-    echo "✅ Data directory backup completed"
-else
-    echo "⚠️  Data directory backup failed (permissions), continuing with database backup only"
-    # Remove the failed backup file if it exists
-    rm -f "$BACKUP_DIR/data_${TIMESTAMP}.tar.gz" 2>/dev/null || true
-fi
+    "${DATA_DIR:-./data}"
 
 # Clean up old backups (keep last 7 days)
 echo "🧹 Cleaning up old backups..."
@@ -49,19 +43,13 @@ find "$BACKUP_DIR" -name "data_*.tar.gz" -mtime +7 -delete
 
 # Display backup information
 BACKUP_SIZE=$(du -h "$BACKUP_DIR/vogelring_${TIMESTAMP}.sql.gz" | cut -f1)
+DATA_BACKUP_SIZE=$(du -h "$BACKUP_DIR/data_${TIMESTAMP}.tar.gz" | cut -f1)
 
 echo ""
 echo "✅ Backup completed successfully!"
 echo "📊 Backup Information:"
 echo "   Database backup: vogelring_${TIMESTAMP}.sql.gz ($BACKUP_SIZE)"
-
-if [ -f "$BACKUP_DIR/data_${TIMESTAMP}.tar.gz" ]; then
-    DATA_BACKUP_SIZE=$(du -h "$BACKUP_DIR/data_${TIMESTAMP}.tar.gz" | cut -f1)
-    echo "   Data backup: data_${TIMESTAMP}.tar.gz ($DATA_BACKUP_SIZE)"
-else
-    echo "   Data backup: Not created (permissions issue)"
-fi
-
+echo "   Data backup: data_${TIMESTAMP}.tar.gz ($DATA_BACKUP_SIZE)"
 echo "   Location: $BACKUP_DIR"
 echo ""
 echo "📋 Available backups:"
