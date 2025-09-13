@@ -104,11 +104,18 @@ if [ "$BACKUP_BEFORE_DEPLOY" = "true" ]; then
         if [ -f "./scripts/backup.sh" ]; then
             # Set DATA_DIR if using production
             if [ "$COMPOSE_FILE" = "docker-compose.prod.yml" ]; then
-                DATA_DIR=/mnt/ssd/data/vogelring ./scripts/backup.sh
+                if DATA_DIR=/mnt/ssd/data/vogelring ./scripts/backup.sh; then
+                    echo -e "${GREEN}✅ Backup completed${NC}"
+                else
+                    echo -e "${YELLOW}⚠️  Backup failed, continuing with deployment${NC}"
+                fi
             else
-                ./scripts/backup.sh
+                if ./scripts/backup.sh; then
+                    echo -e "${GREEN}✅ Backup completed${NC}"
+                else
+                    echo -e "${YELLOW}⚠️  Backup failed, continuing with deployment${NC}"
+                fi
             fi
-            echo -e "${GREEN}✅ Backup completed${NC}"
         else
             echo -e "${YELLOW}⚠️  Backup script not found, skipping backup${NC}"
         fi
