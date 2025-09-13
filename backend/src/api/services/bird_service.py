@@ -3,7 +3,7 @@ Bird service layer for bird-centric operations (bird meta by ring)
 """
 
 import logging
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from sqlalchemy.orm import Session
 
@@ -94,7 +94,7 @@ class BirdService:
             )
 
         # Get partners from family tree (placeholder for now)
-        partners: list[dict] = []
+        partners: List[Dict[str, Any]] = []
 
         return {
             "ring": ring,
@@ -108,3 +108,105 @@ class BirdService:
             "sightings": sighting_dicts,
             "partners": partners,
         }
+
+    def get_bird_suggestions_by_partial_reading(
+        self, partial_reading: str
+    ) -> List[Dict[str, Any]]:
+        """Return a list of bird suggestions by partial ring reading.
+        Partial reading can be only front, back, outer or middle reading."""
+
+        # Normalize partial reading (replace ... and … with *)
+        partial_reading = partial_reading.replace("...", "*").replace("…", "*")
+
+        # Get all sightings from the database
+        all_sightings = self.sighting_repository.get_all()
+
+        suggestions = {}
+
+        for sighting in all_sightings:
+            if len(suggestions) >= 30:  # Limit to 30 suggestions
+                break
+
+            if sighting.ring and self._is_suggestion(partial_reading, sighting.ring):
+                if sighting.ring not in suggestions:
+                    suggestions[sighting.ring] = {
+                        "ring": sighting.ring,
+                        "species": [sighting.species],
+                        "sighting_count": 1,
+                        "last_seen": sighting.date,
+                        "first_seen": sighting.date,
+                    }
+                else:
+                    suggestions[sighting.ring]["sighting_count"] += 1
+                    suggestions[sighting.ring]["species"].append(sighting.species)
+                    suggestions[sighting.ring]["last_seen"] = self._max_or_none(
+                        suggestions[sighting.ring]["last_seen"], sighting.date
+                    )
+                    suggestions[sighting.ring]["first_seen"] = self._min_or_none(
+                        suggestions[sighting.ring]["first_seen"], sighting.date
+                    )
+
+        # Convert to the expected format
+        suggestion_birds = []
+        for suggestion in suggestions.values():
+            # Find most common species
+            from collections import Counter
+
+            species_counter = Counter(suggestion["species"])
+            most_common_species = (
+                species_counter.most_common(1)[0][0] if species_counter else None
+            )
+
+            suggestion_birds.append(
+                {
+                    "ring": suggestion["ring"],
+                    "species": most_common_species,
+                    "sighting_count": suggestion["sighting_count"],
+                    "last_seen": suggestion["last_seen"].isoformat()
+                    if suggestion["last_seen"]
+                    else None,
+                    "first_seen": suggestion["first_seen"].isoformat()
+                    if suggestion["first_seen"]
+                    else None,
+                }
+            )
+
+        # Sort by sighting count descending
+        return sorted(suggestion_birds, key=lambda x: x["sighting_count"], reverse=True)
+
+    def _is_suggestion(self, partial_reading: str, ring: str) -> bool:
+        """Check if a ring matches the partial reading pattern"""
+        # Case 1: Partial reading is missing both outer endings *8043*
+        if partial_reading.startswith("*") and partial_reading.endswith("*"):
+            if partial_reading[1:-1] in ring:
+                return True
+        # Case 2: Partial reading is missing ending 280*
+        elif partial_reading.endswith("*"):
+            if ring.startswith(partial_reading[:-1]):
+                return True
+        # Case 3: Partial reading is missing starting *35
+        elif partial_reading.startswith("*"):
+            if ring.endswith(partial_reading[1:]):
+                return True
+        # Case 4: Partial reading is missing middle 28*35
+        elif "*" in partial_reading:
+            start, end = partial_reading.split("*", 1)  # Split only on first *
+            if ring.startswith(start) and ring.endswith(end):
+                return True
+        return False
+
+    def _max_or_none(self, a, b):
+        """Return the maximum of two values, handling None values"""
+        if a is None:
+            return b
+        if b is None:
+            return a
+        return max(a, b)
+
+    def _min_or_none(self, a, b):
+        """Return the minimum of two values, handling None values"""
+        if a is None:
+            return b
+        if b is None:
+            return a
+        return min(a, b)

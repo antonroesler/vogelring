@@ -117,27 +117,6 @@ const router = createRouter({
       name: 'ringing',
       component: () => import('./views/Ringing.vue')
     },
-    // Legal pages
-    {
-      path: '/impressum',
-      name: 'impressum',
-      component: () => import('./views/legal/Impressum.vue')
-    },
-    {
-      path: '/datenschutz',
-      name: 'datenschutz',
-      component: () => import('./views/legal/Datenschutz.vue')
-    },
-    {
-      path: '/agb',
-      name: 'agb',
-      component: () => import('./views/legal/AGB.vue')
-    },
-    {
-      path: '/widerruf',
-      name: 'widerruf',
-      component: () => import('./views/legal/Widerruf.vue')
-    }
   ]
 })
 

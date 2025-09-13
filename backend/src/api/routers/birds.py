@@ -56,7 +56,8 @@ async def get_bird_suggestions_by_partial_reading(
     if not any(c in partial_reading for c in ["*", "…", "..."]):
         partial_reading = f"*{partial_reading}*"
 
-    # TODO: Implement bird suggestions logic
-    return {
-        "message": f"Get bird suggestions for: {partial_reading} - to be implemented"
-    }
+    # Get bird suggestions using the service
+    service = BirdService(db)
+    suggestions = service.get_bird_suggestions_by_partial_reading(partial_reading)
+
+    return suggestions
