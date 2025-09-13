@@ -53,6 +53,8 @@ services:
       # Ensure uv can write its cache (fixes permission errors)
       UV_CACHE_DIR: /tmp/uv-cache
       XDG_CACHE_HOME: /tmp
+      # Prevent uv from modifying uv.lock at runtime
+      UV_FROZEN: "1"
       # FastAPI configuration
       WORKERS: 1
       MAX_REQUESTS: 1000
