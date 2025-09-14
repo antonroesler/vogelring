@@ -10,15 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### ⚠ BREAKING CHANGES
 
 - Vogelring läuft jetzt auf einem privaten Server
-- Nutzung einer SQL Datenbank für ein deutlich schnelleres Erlebnis
+- Nutzung einer SQL Datenbank für ein deutlich schnelleres Erlebnis beim Laden, Erstellen und Löschen von Daten
+- Authentifizeirung über Cloudflare Zero Trust
 
 ### ✨ Features
 
 - Neue Analytics Platform für bessere Analyse Möglichkeiten
+- Das ausklappen der Zeilen kann über den Einstellungspunkt Hover-Erweiterung ausgeschalten werden
+- Bessere Sortierung von Duplikaten
+- Changelog für Versionen eingeführt
 
 ### 🐛 Bug Fixes
 
-- update label for Paar Status to Familien Status [#22](https://github.com/antonroesler/vogelring/issues/22) ([#30](https://github.com/antonroesler/vogelring/issues/30)) ([7959755](https://github.com/antonroesler/vogelring/commit/795975557c1e5856b57b5b8b95e61b6533a087ff))
+- Änderung Paar Status zu Familien Status
+- Problem beim Löschen von Duplikaten behoben
+
+### 🔧 Miscellaneous
+
+- Footer entfernt
 
 ## [1.0.0] - 2025-09-14
 
