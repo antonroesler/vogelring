@@ -1,7 +1,7 @@
 {
   "packages": {
     ".": {
-      "release-type": "simple",
+      "release-type": "python",
       "package-name": "vogelring",
       "version-file": "backend/pyproject.toml",
       "bump-minor-pre-major": true,
