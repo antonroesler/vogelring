@@ -227,7 +227,7 @@ const allColumnDefs = [
   { key: 'large_group_size', title: 'Große Gruppe' },
   { key: 'breed_size', title: 'Brutgröße' },
   { key: 'family_size', title: 'Familiengröße' },
-  { key: 'pair', title: 'Paar-Status' },
+  { key: 'pair', title: 'Familien Status' },
   { key: 'status', title: 'Status' },
   { key: 'melded', title: 'Gemeldet' },
   { key: 'age', title: 'Alter' },
