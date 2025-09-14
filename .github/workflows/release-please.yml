@@ -35,12 +35,12 @@ jobs:
       - name: Sync version to backend pyproject.toml
         if: ${{ steps.release.outputs.pr }}
         run: |
-          # Extract version from PR title (format: "chore: release X.Y.Z")
-          PR_NUMBER="${{ steps.release.outputs.pr }}"
-          echo "Release PR created: #$PR_NUMBER"
+          # Parse PR JSON and extract number and title
+          PR_JSON='${{ steps.release.outputs.pr }}'
+          PR_NUMBER=$(echo "$PR_JSON" | jq -r '.number')
+          PR_TITLE=$(echo "$PR_JSON" | jq -r '.title')
 
-          # Get PR title using GitHub API
-          PR_TITLE=$(gh pr view $PR_NUMBER --json title --jq '.title')
+          echo "Release PR created: #$PR_NUMBER"
           echo "PR Title: $PR_TITLE"
 
           # Extract version from title using regex
@@ -65,7 +65,10 @@ jobs:
             git config user.email "github-actions[bot]@users.noreply.github.com"
             git add backend/pyproject.toml
             git commit -m "chore: sync version $VERSION to backend/pyproject.toml"
-            git push origin "release-please--branches--master"
+            # Get the release branch name from the PR JSON
+            BRANCH_NAME=$(echo "$PR_JSON" | jq -r '.headBranchName')
+            echo "Pushing to branch: $BRANCH_NAME"
+            git push origin "$BRANCH_NAME"
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
