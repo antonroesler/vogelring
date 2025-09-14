@@ -197,7 +197,7 @@
         <v-select
           v-model="localSighting.pair"
           :items="pairItems"
-          label="Paar-Status"
+          label="Familien Status"
           density="comfortable"
           clearable
         ></v-select>

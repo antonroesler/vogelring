@@ -302,7 +302,7 @@ const processFieldAnalysis = async (): Promise<FieldAnalysis[]> => {
     { field: 'large_group_size', label: 'Große Gruppe' },
     { field: 'breed_size', label: 'Brutgröße' },
     { field: 'family_size', label: 'Familiengröße' },
-    { field: 'pair', label: 'Paar-Status' },
+    { field: 'pair', label: 'Familien Status' },
     { field: 'status', label: 'Status' },
     { field: 'age', label: 'Alter' },
     { field: 'sex', label: 'Geschlecht' },
