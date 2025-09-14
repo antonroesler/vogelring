@@ -436,6 +436,85 @@ class RingingRepository(BaseRepository):
                 'latest': date_range[1]
             }
         }
+    
+    def get_entry_list_ringings(self, filters: Dict[str, Any], limit: Optional[int] = None, offset: Optional[int] = None) -> List[Ringing]:
+        """Get ringings for entry list filtered to target species"""
+        # Target species codes and names
+        target_species_codes = ['01660', '01610', '01520', '01700', '01670']
+        target_species_names = ['Kanadagans', 'Graugans', 'Höckerschwan', 'Nilgans', 'Weißwangengans']
+        
+        # Start with base query filtering to target species
+        query = self.db.query(Ringing).filter(
+            or_(
+                Ringing.species.in_(target_species_codes),
+                Ringing.species.in_(target_species_names)
+            )
+        )
+        
+        # Apply additional filters
+        if filters.get('species'):
+            query = query.filter(func.lower(Ringing.species).like(f"%{filters['species'].lower()}%"))
+        
+        if filters.get('ring'):
+            query = query.filter(func.lower(Ringing.ring).like(f"%{filters['ring'].lower()}%"))
+        
+        if filters.get('place'):
+            query = query.filter(func.lower(Ringing.place).like(f"%{filters['place'].lower()}%"))
+        
+        if filters.get('ringer'):
+            query = query.filter(func.lower(Ringing.ringer).like(f"%{filters['ringer'].lower()}%"))
+        
+        if filters.get('start_date'):
+            query = query.filter(Ringing.date >= filters['start_date'])
+        
+        if filters.get('end_date'):
+            query = query.filter(Ringing.date <= filters['end_date'])
+        
+        # Order by date (newest first)
+        query = query.order_by(desc(Ringing.date), desc(Ringing.created_at))
+        
+        # Apply pagination
+        if offset:
+            query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
+            
+        return query.all()
+    
+    def get_entry_list_ringings_count(self, filters: Dict[str, Any]) -> int:
+        """Get count of ringings for entry list filtered to target species"""
+        # Target species codes and names
+        target_species_codes = ['01660', '01610', '01520', '01700', '01670']
+        target_species_names = ['Kanadagans', 'Graugans', 'Höckerschwan', 'Nilgans', 'Weißwangengans']
+        
+        # Start with base query filtering to target species
+        query = self.db.query(Ringing).filter(
+            or_(
+                Ringing.species.in_(target_species_codes),
+                Ringing.species.in_(target_species_names)
+            )
+        )
+        
+        # Apply additional filters
+        if filters.get('species'):
+            query = query.filter(func.lower(Ringing.species).like(f"%{filters['species'].lower()}%"))
+        
+        if filters.get('ring'):
+            query = query.filter(func.lower(Ringing.ring).like(f"%{filters['ring'].lower()}%"))
+        
+        if filters.get('place'):
+            query = query.filter(func.lower(Ringing.place).like(f"%{filters['place'].lower()}%"))
+        
+        if filters.get('ringer'):
+            query = query.filter(func.lower(Ringing.ringer).like(f"%{filters['ringer'].lower()}%"))
+        
+        if filters.get('start_date'):
+            query = query.filter(Ringing.date >= filters['start_date'])
+        
+        if filters.get('end_date'):
+            query = query.filter(Ringing.date <= filters['end_date'])
+        
+        return query.count()
 
 
 class FamilyTreeRepository(BaseRepository):

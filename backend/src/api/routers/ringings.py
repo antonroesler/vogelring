@@ -121,6 +121,46 @@ async def get_ringings(
     }
 
 
+@router.get("/ringings/entry-list")
+async def get_ringings_entry_list(
+    page: int = Query(1, ge=1, description="Page number"),
+    per_page: int = Query(100, ge=1, le=10000, description="Items per page"),
+    start_date: DateType | None = Query(None, description="Start date filter"),
+    end_date: DateType | None = Query(None, description="End date filter"),
+    species: str | None = Query(None, description="Species filter"),
+    place: str | None = Query(None, description="Place filter"),
+    ring: str | None = Query(None, description="Ring filter"),
+    ringer: str | None = Query(None, description="Ringer filter"),
+    db: Session = Depends(get_db)
+):
+    """Get ringings for entry list with server-side filtering for specific species"""
+    service = RingingService(db)
+    
+    # Calculate offset
+    offset = (page - 1) * per_page
+    
+    # Build filters with species filtering for target species
+    filters = {}
+    if start_date:
+        filters['start_date'] = start_date
+    if end_date:
+        filters['end_date'] = end_date
+    if species:
+        filters['species'] = species
+    if place:
+        filters['place'] = place
+    if ring:
+        filters['ring'] = ring
+    if ringer:
+        filters['ringer'] = ringer
+    
+    # Get filtered ringings for target species
+    ringings = service.get_entry_list_ringings(filters, limit=per_page, offset=offset)
+    total = service.get_entry_list_ringings_count(filters)
+    
+    return ringings  # Return just the array for compatibility with sightings API
+
+
 @router.get("/ringing/{ring}")
 async def get_ringing_by_ring(
     ring: str,

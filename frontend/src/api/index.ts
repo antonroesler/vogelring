@@ -258,3 +258,31 @@ export const addChildRelationship = async (parentRing: string, childRing: string
   console.log('Added child relationship:', response.data);
   return response.data;
 };
+
+export const getRingingEntryList = async (params?: {
+  page?: number;
+  per_page?: number;
+  start_date?: string;
+  end_date?: string;
+  species?: string;
+  place?: string;
+  ring?: string;
+  ringer?: string;
+}) => {
+  console.log('Fetching ringing entry list with params:', params);
+  try {
+    const response = await api.get<Ringing[]>('/ringings/entry-list', { params });
+    console.log('Received ringing entry list:', response.data);
+    return response.data;
+  } catch (error) {
+    console.error('Error in getRingingEntryList:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('Axios error details:', {
+        response: error.response,
+        request: error.request,
+        message: error.message
+      });
+    }
+    throw error;
+  }
+};

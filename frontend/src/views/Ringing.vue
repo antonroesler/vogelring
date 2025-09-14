@@ -3,6 +3,7 @@
     <v-tabs v-model="activeTab" color="primary">
       <v-tab value="search">Beringung suchen</v-tab>
       <v-tab value="add">Neue Beringung</v-tab>
+      <v-tab value="list">Eintragliste</v-tab>
     </v-tabs>
 
     <v-window v-model="activeTab" class="mt-4">
@@ -303,6 +304,11 @@
           </v-card-text>
         </v-card>
       </v-window-item>
+
+      <!-- Entry List Tab -->
+      <v-window-item value="list">
+        <ringing-entry-list />
+      </v-window-item>
     </v-window>
 
     <!-- Delete Confirmation Dialog -->
@@ -346,6 +352,7 @@ import { format } from 'date-fns';
 import type { Ringing } from '@/types';
 import * as api from '@/api';
 import LeafletMap from '@/components/map/LeafletMap.vue';
+import RingingEntryList from '@/views/RingingEntryList.vue';
 
 const activeTab = ref('search');
 const searchRing = ref('');
