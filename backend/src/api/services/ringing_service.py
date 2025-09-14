@@ -103,3 +103,11 @@ class RingingService:
     def get_statistics(self) -> Dict[str, Any]:
         """Get basic statistics about ringings"""
         return self.repository.get_statistics()
+    
+    def get_entry_list_ringings(self, filters: Dict[str, Any], limit: Optional[int] = None, offset: Optional[int] = None) -> List[RingingDB]:
+        """Get ringings for entry list filtered to target species"""
+        return self.repository.get_entry_list_ringings(filters, limit=limit, offset=offset)
+    
+    def get_entry_list_ringings_count(self, filters: Dict[str, Any]) -> int:
+        """Get count of ringings for entry list filtered to target species"""
+        return self.repository.get_entry_list_ringings_count(filters)
