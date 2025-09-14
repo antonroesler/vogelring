@@ -9,4 +9,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Features
 
-- Initial release of Vogelring
+- Ursprünlicher Release Vogelring auf AWS
