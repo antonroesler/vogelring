@@ -1,7 +1,7 @@
 """
 Bird service layer for bird-centric operations (bird meta by ring)
 """
-
+from collections import Counter
 import logging
 from typing import Dict, Any, List
 
@@ -39,16 +39,15 @@ class BirdService:
                 "partners": [],
             }
 
-        # Determine species (prefer ringing data, fallback to most common in sightings)
+        # Determine species (prefer most common in sightings, fallback to ringing data)
         species = None
-        if ringing:
-            species = ringing.species
-        elif sightings:
-            from collections import Counter
-
+        if len(sightings) > 0:
             species_counts = Counter(s.species for s in sightings if s.species)
             if species_counts:
                 species = species_counts.most_common(1)[0][0]
+        
+        if not species and ringing:
+            species = ringing.species
 
         # Calculate dates
         sighting_dates = [s.date for s in sightings if s.date]
@@ -63,7 +62,6 @@ class BirdService:
                 last_seen = ringing.date
 
         # Other species identifications from sightings
-        from collections import Counter
 
         other_species = Counter(
             s.species for s in sightings if s.species and s.species != species
