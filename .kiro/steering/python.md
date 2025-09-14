@@ -1,1 +1,0 @@
-This is a uv based python project. Use uv to install packages and manage the project. 

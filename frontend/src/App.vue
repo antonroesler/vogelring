@@ -100,6 +100,47 @@
 
       <!-- Right section -->
       <div class="navigation-buttons pe-4">
+        <!-- Version/Changelog Menu -->
+        <v-menu offset-y>
+          <template v-slot:activator="{ props }">
+            <v-btn
+              v-bind="props"
+              variant="text"
+              class="nav-btn"
+              size="small"
+            >
+              <v-icon size="small" class="me-1">mdi-information-outline</v-icon>
+              <span class="version-text">v{{ versionStore.currentVersion }}</span>
+              <v-icon size="small" class="ms-1">mdi-chevron-down</v-icon>
+            </v-btn>
+          </template>
+          <v-list density="compact" min-width="200">
+            <v-list-item @click="versionStore.showChangelog()">
+              <template v-slot:prepend>
+                <v-icon>mdi-update</v-icon>
+              </template>
+              <v-list-item-title>What's New</v-list-item-title>
+              <v-list-item-subtitle>View changelog</v-list-item-subtitle>
+            </v-list-item>
+            <v-list-item>
+              <template v-slot:prepend>
+                <v-icon>mdi-information</v-icon>
+              </template>
+              <v-list-item-title>Version Info</v-list-item-title>
+              <v-list-item-subtitle>Backend: v{{ versionStore.currentVersion }}</v-list-item-subtitle>
+            </v-list-item>
+            <v-divider></v-divider>
+            <v-list-item 
+              v-if="versionStore.changelogDisabled"
+              @click="versionStore.enableChangelog()"
+            >
+              <template v-slot:prepend>
+                <v-icon>mdi-bell</v-icon>
+              </template>
+              <v-list-item-title>Enable Update Notifications</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
         <v-btn 
           to="/new-entry" 
           variant="text"
@@ -141,6 +182,15 @@
       </v-container>
     </v-main>
 
+    <!-- Changelog Dialog -->
+    <ChangelogDialog
+      v-model="versionStore.showChangelogDialog"
+      :releases="versionStore.changelogData.releases"
+      :latest-version="versionStore.currentVersion"
+      @dismiss="versionStore.dismissChangelog"
+      @mark-as-read="versionStore.markVersionAsSeen"
+    />
+
   </v-app>
 </template>
 
@@ -150,12 +200,15 @@ import { api } from './api';
 import { useRouter } from 'vue-router';
 import debounce from 'lodash/debounce';
 import { SuggestionBird } from './types';
+import { useVersionStore } from './stores/version';
+import ChangelogDialog from './components/dialogs/ChangelogDialog.vue';
 
 
 // Use the SuggestionBird type directly instead of redefining it
 type BirdSuggestion = SuggestionBird;
 
 const router = useRouter();
+const versionStore = useVersionStore();
 const version = ref<string>();
 const searchQuery = ref('');
 const suggestions = ref<BirdSuggestion[]>([]);
@@ -256,6 +309,9 @@ onMounted(async () => {
     console.error('Failed to fetch version:', error);
     version.value = 'local';
   }
+  
+  // Initialize version store to check for new versions and show changelog
+  await versionStore.initialize();
 });
 </script>
 
@@ -525,6 +581,18 @@ onMounted(async () => {
   background-color: #ffffff !important;
 }
 
+/* Version menu styling */
+.v-menu .v-list {
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
+}
+
+.v-menu .v-list-item:hover {
+  background: linear-gradient(135deg, rgba(0, 67, 108, 0.05) 0%, rgba(34, 128, 150, 0.05) 100%) !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 960px) {
   .search-container {
@@ -537,6 +605,11 @@ onMounted(async () => {
   
   .nav-btn .v-icon {
     display: none;
+  }
+  
+  /* Keep version menu visible on mobile */
+  .nav-btn .version-text {
+    display: inline !important;
   }
 }
 

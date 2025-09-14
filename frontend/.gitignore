@@ -27,5 +27,6 @@ dist-ssr
 .env
 .env.local
 
-# Auto-generated version file
+# Auto-generated files
 public/version.json
+public/changelog.json
