@@ -6,7 +6,7 @@ import path from 'path'
  * and convert them to a structured format for the frontend
  */
 function extractChangelog() {
-  const changelogPath = path.resolve('../backend/CHANGELOG.md')
+  const changelogPath = path.resolve('../CHANGELOG.md')
   
   if (!fs.existsSync(changelogPath)) {
     console.warn('Backend CHANGELOG.md not found, skipping changelog extraction')

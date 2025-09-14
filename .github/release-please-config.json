@@ -1,12 +1,11 @@
 {
   "packages": {
     ".": {
-      "release-type": "python",
+      "release-type": "simple",
       "package-name": "vogelring",
-      "version-file": "backend/pyproject.toml",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
-      "changelog-path": "backend/CHANGELOG.md",
+      "changelog-path": "CHANGELOG.md",
       "changelog-sections": [
         {"type": "feat", "section": "✨ Features"},
         {"type": "fix", "section": "🐛 Bug Fixes"},
@@ -18,13 +17,6 @@
         {"type": "test", "section": "🧪 Tests", "hidden": false},
         {"type": "build", "section": "🔨 Build System", "hidden": false},
         {"type": "ci", "section": "👷 Continuous Integration", "hidden": false}
-      ],
-      "extra-files": [
-        {
-          "type": "generic",
-          "path": "backend/src/utils/version.py",
-          "glob": false
-        }
       ]
     }
   },
