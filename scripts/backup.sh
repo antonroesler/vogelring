@@ -29,12 +29,39 @@ docker exec "$DB_CONTAINER" pg_dump -U "$DB_USER" -d "$DB_NAME" --clean --if-exi
 echo "🗜️  Compressing backup..."
 gzip "$BACKUP_DIR/vogelring_${TIMESTAMP}.sql"
 
+# Copy backup to shared directory for n8n access (if running on Pi)
+if [ -d "/mnt/ssd/data/shared/vogelring-backups" ]; then
+    echo "📋 Copying backup to shared directory for n8n..."
+    cp "$BACKUP_DIR/vogelring_${TIMESTAMP}.sql.gz" "/mnt/ssd/data/shared/vogelring-backups/"
+fi
+
 # Create a backup of the entire data directory (excluding backups)
+# Note: Using sudo to access Docker volume directories owned by container users
 echo "📁 Creating data directory backup..."
-tar -czf "$BACKUP_DIR/data_${TIMESTAMP}.tar.gz" \
+sudo tar -czf "$BACKUP_DIR/data_${TIMESTAMP}.tar.gz" \
     --exclude="$BACKUP_DIR" \
     --exclude="*.log" \
+    --exclude="*/nginx_cache/*" \
+    --exclude="*/postgres/pg_*" \
+    --exclude="*/postgres/base/*" \
+    --exclude="*/postgres/global/*" \
+    --exclude="*/postgres/pg_logical/*" \
+    --exclude="*/postgres/pg_multixact/*" \
+    --exclude="*/postgres/pg_notify/*" \
+    --exclude="*/postgres/pg_replslot/*" \
+    --exclude="*/postgres/pg_serial/*" \
+    --exclude="*/postgres/pg_snapshots/*" \
+    --exclude="*/postgres/pg_stat/*" \
+    --exclude="*/postgres/pg_stat_tmp/*" \
+    --exclude="*/postgres/pg_subtrans/*" \
+    --exclude="*/postgres/pg_tblspc/*" \
+    --exclude="*/postgres/pg_twophase/*" \
+    --exclude="*/postgres/pg_wal/*" \
+    --exclude="*/postgres/pg_xact/*" \
     "${DATA_DIR:-./data}"
+
+# Fix ownership of the backup file (make it accessible to the current user)
+sudo chown "$(id -u):$(id -g)" "$BACKUP_DIR/data_${TIMESTAMP}.tar.gz"
 
 # Clean up old backups (keep last 7 days)
 echo "🧹 Cleaning up old backups..."
