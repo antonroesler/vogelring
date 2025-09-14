@@ -271,9 +271,12 @@ const topBirdsChartOption = computed(() => {
 
 const handleChartClick = (params: any) => {
   if (params.componentType === 'series' && radiusStats.value?.topBirds) {
-    const bird = radiusStats.value.topBirds[params.dataIndex];
+    // Use the sorted birds array to get the correct bird for the clicked index
+    const sortedBirds = [...radiusStats.value.topBirds].sort((a, b) => a.count - b.count);
+    const bird = sortedBirds[params.dataIndex];
     if (bird?.ring) {
-      router.push(`/birds/${bird.ring}`);
+      // Open in new tab
+      window.open(`/birds/${bird.ring}`, '_blank');
     }
   }
 };
