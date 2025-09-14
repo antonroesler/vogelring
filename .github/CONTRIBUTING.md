@@ -32,29 +32,33 @@ This project uses [Conventional Commits](https://www.conventionalcommits.org/) t
 
 ### Scopes
 
-For backend changes, use the `backend` scope:
-- `feat(backend): add new bird species endpoint`
-- `fix(backend): resolve database connection issue`
+Scopes are optional since Vogelring is deployed as a single application:
+
+- `feat: add new bird species endpoint`
+- `fix: resolve database connection issue`
+- `docs: update API documentation`
 
 ### Examples
 
 ```
-feat(backend): add bird migration tracking
-fix(backend): resolve authentication token validation
+feat: add bird migration tracking
+fix: resolve authentication token validation
 docs: update API documentation
-chore(backend): update dependencies
+chore: update dependencies
 ```
 
 ### Breaking Changes
 
-To indicate a breaking change, add `!` after the type/scope:
+To indicate a breaking change, add `!` after the type:
+
 ```
-feat(backend)!: change API response format
+feat!: change API response format
 ```
 
 Or include `BREAKING CHANGE:` in the footer:
+
 ```
-feat(backend): add new authentication system
+feat: add new authentication system
 
 BREAKING CHANGE: API now requires authentication headers
 ```
@@ -64,6 +68,7 @@ BREAKING CHANGE: API now requires authentication headers
 Releases are automated using [Release Please](https://github.com/googleapis/release-please):
 
 1. When you merge a PR with conventional commits to `main`, Release Please will:
+
    - Create or update a release PR with the new version and changelog
    - The version bump follows semantic versioning based on commit types
 
