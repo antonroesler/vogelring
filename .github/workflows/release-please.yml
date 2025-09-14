@@ -3,7 +3,7 @@ name: Release Please
 on:
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 permissions:
@@ -31,7 +31,7 @@ jobs:
         if: ${{ steps.release.outputs.release_created }}
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install uv
         if: ${{ steps.release.outputs.release_created }}
