@@ -46,7 +46,7 @@ export const useSightingsStore = defineStore('sightings', {
         if (index !== -1) {
           this.sightings[index] = { ...this.sightings[index], ...response };
         }
-        
+             
         return response;
       } catch (error) {
         console.error('Error updating sighting:', error);
