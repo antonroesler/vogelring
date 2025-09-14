@@ -86,6 +86,10 @@ const saveSighting = async (newSighting: Partial<Sighting>) => {
       preservedSighting.is_exact_location = newSighting.is_exact_location;
     }
 
+    // Always reset Ring and Ablesung (reading) fields regardless of settings
+    preservedSighting.ring = undefined;
+    preservedSighting.reading = undefined;
+
     preservedSighting.melded = false;
     sighting.value = preservedSighting;
   } catch (error) {

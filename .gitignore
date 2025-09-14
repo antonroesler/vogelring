@@ -242,11 +242,11 @@ $RECYCLE.BIN/
 
 */build/*
 
-# End of https://www.gitignore.io/api/osx,linux,python,windows,pycharm,visualstudiocode
-
 .aws-sam
 data
 
 bolt.in
 scripts/user.py
 notes.md
+server-info/
+*.sql

@@ -15,7 +15,7 @@
       <v-spacer></v-spacer>
 
       <!-- Center section with search -->
-      <div class="search-container" v-if="authStore.isAuthenticated">
+      <div class="search-container">
         <v-autocomplete
           v-model="selectedBird"
           v-model:search="searchQuery"
@@ -100,83 +100,38 @@
 
       <!-- Right section -->
       <div class="navigation-buttons pe-4">
-        <template v-if="authStore.isAuthenticated">
-          <v-btn 
-            to="/new-entry" 
-            variant="text"
-            class="nav-btn"
-          >
-            <v-icon icon="mdi-plus" class="me-1"></v-icon>
-            Neuer Eintrag
-          </v-btn>
-          <v-btn 
-            to="/entries" 
-            variant="text"
-            class="nav-btn"
-          >
-            <v-icon icon="mdi-format-list-bulleted" class="me-1"></v-icon>
-            Eintragliste
-          </v-btn>
-          <v-btn 
-            to="/ringing" 
-            variant="text"
-            class="nav-btn"
-          >
-            <v-icon icon="mdi-ring" class="me-1"></v-icon>
-            Beringungen
-          </v-btn>
-          <v-btn 
-            to="/statistics" 
-            variant="text"
-            class="nav-btn"
-          >
-            <v-icon icon="mdi-chart-line" class="me-1"></v-icon>
-            Statistiken
-          </v-btn>
-          
-          <!-- User menu -->
-          <v-menu>
-            <template v-slot:activator="{ props }">
-              <v-btn
-                v-bind="props"
-                variant="text"
-                icon
-                class="user-menu-btn"
-              >
-                <v-icon size="28">mdi-account-circle</v-icon>
-              </v-btn>
-            </template>
-            <v-list class="user-menu">
-              <v-list-item v-if="authStore.userAttributes?.email">
-                <v-list-item-title>{{ authStore.userAttributes.email }}</v-list-item-title>
-                <v-list-item-subtitle>Angemeldet</v-list-item-subtitle>
-              </v-list-item>
-              <v-divider />
-              <v-list-item @click="handleLogout">
-                <v-list-item-prepend>
-                  <v-icon>mdi-logout</v-icon>
-                </v-list-item-prepend>
-                <v-list-item-title>Abmelden</v-list-item-title>
-              </v-list-item>
-            </v-list>
-          </v-menu>
-        </template>
-        <template v-else>
-          <v-btn 
-            to="/auth/login" 
-            variant="outlined"
-            class="auth-nav-btn login-btn"
-          >
-            Anmelden
-          </v-btn>
-          <v-btn 
-            to="/auth/register" 
-            variant="elevated"
-            class="auth-nav-btn register-btn"
-          >
-            Registrieren
-          </v-btn>
-        </template>
+        <v-btn 
+          to="/new-entry" 
+          variant="text"
+          class="nav-btn"
+        >
+          <v-icon icon="mdi-plus" class="me-1"></v-icon>
+          Neuer Eintrag
+        </v-btn>
+        <v-btn 
+          to="/entries" 
+          variant="text"
+          class="nav-btn"
+        >
+          <v-icon icon="mdi-format-list-bulleted" class="me-1"></v-icon>
+          Eintragliste
+        </v-btn>
+        <v-btn 
+          to="/ringing" 
+          variant="text"
+          class="nav-btn"
+        >
+          <v-icon icon="mdi-ring" class="me-1"></v-icon>
+          Beringungen
+        </v-btn>
+        <v-btn 
+          to="/statistics" 
+          variant="text"
+          class="nav-btn"
+        >
+          <v-icon icon="mdi-chart-line" class="me-1"></v-icon>
+          Statistiken
+        </v-btn>
       </div>
     </v-app-bar>
 
@@ -186,41 +141,21 @@
       </v-container>
     </v-main>
 
-    <Footer />
   </v-app>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import Footer from './components/layout/Footer.vue';
 import { api } from './api';
 import { useRouter } from 'vue-router';
 import debounce from 'lodash/debounce';
 import { SuggestionBird } from './types';
-import { useAuthStore } from './stores/auth';
 
-interface Sighting {
-  id: string;
-  excel_id: number;
-  species: string;
-  ring: string;
-  reading: string;
-  date: string;
-  place: string;
-  group_size: number | null;
-  comment: string | null;
-  melder: string;
-  melded: boolean;
-  lat: number;
-  lon: number;
-  habitat: string;
-}
 
 // Use the SuggestionBird type directly instead of redefining it
 type BirdSuggestion = SuggestionBird;
 
 const router = useRouter();
-const authStore = useAuthStore();
 const version = ref<string>();
 const searchQuery = ref('');
 const suggestions = ref<BirdSuggestion[]>([]);
@@ -245,13 +180,6 @@ const formatDate = (date: string | null) => {
   return new Date(date).toLocaleDateString('de-DE');
 };
 
-// Format the autocomplete item text for display
-const formatBirdInfo = (item: SuggestionBird) => {
-  return {
-    title: `${item.ring} - ${item.species}`,
-    subtitle: `${item.sighting_count} Sichtung${item.sighting_count !== 1 ? 'en' : ''} | Letzte Sichtung: ${formatDate(item.last_seen)}`
-  };
-};
 
 // Debounced search function
 const debouncedSearch = debounce(async (query: string) => {
@@ -317,29 +245,16 @@ const navigateToBird = (bird: BirdSuggestion) => {
 
 // Navigate to home
 const navigateToHome = () => {
-  if (authStore.isAuthenticated) {
-    router.push('/');
-  } else {
-    router.push('/auth/login');
-  }
-};
-
-// Handle user logout
-const handleLogout = async () => {
-  try {
-    await authStore.signOut();
-    router.push('/auth/login');
-  } catch (error) {
-    console.error('Logout failed:', error);
-  }
+  router.push('/');
 };
 
 onMounted(async () => {
   try {
-    const response = await api.get('/health');
-    version.value = response.data.version;
+    const response = await api.get('/');
+    version.value = response.data.version || 'local';
   } catch (error) {
     console.error('Failed to fetch version:', error);
+    version.value = 'local';
   }
 });
 </script>
@@ -407,54 +322,6 @@ onMounted(async () => {
   opacity: 1;
 }
 
-/* Auth Navigation Buttons */
-.auth-nav-btn {
-  text-transform: none !important;
-  font-weight: 600 !important;
-  border-radius: 8px !important;
-  transition: all 0.3s ease !important;
-  margin: 0 4px !important;
-}
-
-.login-btn {
-  color: white !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
-}
-
-.login-btn:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-  border-color: rgba(255, 255, 255, 0.5) !important;
-  transform: translateY(-1px);
-}
-
-.register-btn {
-  background: rgba(255, 255, 255, 0.9) !important;
-  color: #00436C !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
-}
-
-.register-btn:hover {
-  background: white !important;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
-}
-
-/* User Menu */
-.user-menu-btn {
-  color: white !important;
-  transition: all 0.3s ease !important;
-}
-
-.user-menu-btn:hover {
-  background: rgba(255, 255, 255, 0.15) !important;
-  transform: scale(1.05);
-}
-
-.user-menu {
-  border-radius: 12px !important;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
 
 /* Search Container */
 .search-container {
@@ -649,29 +516,13 @@ onMounted(async () => {
   transform: translateY(0);
 }
 
-/* Force white background for login page */
+/* Application background */
 .v-application.v-theme--light {
   background-color: #ffffff !important;
 }
 
 .v-main {
   background-color: #ffffff !important;
-}
-
-.auth-container::before {
-  content: '';
-  position: fixed;
-  top: 60%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 110%;
-  height: 110%;
-  background: url('/blackheadedgull.png') no-repeat center center;
-  background-size: contain;
-  opacity: 0.7;
-  z-index: 0;
-  pointer-events: none;
-  background-attachment: fixed;
 }
 
 /* Responsive adjustments */
@@ -695,7 +546,7 @@ onMounted(async () => {
     gap: 2px;
   }
   
-  .nav-btn, .auth-nav-btn {
+  .nav-btn {
     font-size: 0.875rem !important;
     padding: 0 12px !important;
   }

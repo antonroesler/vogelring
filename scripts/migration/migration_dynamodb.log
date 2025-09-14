@@ -1,0 +1,396 @@
+2025-09-12 21:32:32,551 - __main__ - INFO - ================================================================================
+2025-09-12 21:32:32,551 - __main__ - INFO - STARTING COMPLETE VOGELRING MIGRATION
+2025-09-12 21:32:32,551 - __main__ - INFO - ================================================================================
+2025-09-12 21:32:32,551 - __main__ - INFO - Start time: 2025-09-12 21:32:32.551685
+2025-09-12 21:32:32,551 - __main__ - INFO - Dry run mode: True
+2025-09-12 21:32:32,551 - __main__ - INFO - User: default
+2025-09-12 21:32:32,590 - database - INFO - Database connection successful
+2025-09-12 21:32:32,598 - __main__ - INFO - Initial PostgreSQL counts:
+2025-09-12 21:32:32,598 - __main__ - INFO -   Ringings: 0
+2025-09-12 21:32:32,598 - __main__ - INFO -   Family tree entries: 0
+2025-09-12 21:32:32,598 - __main__ - INFO -   Sightings: 1
+2025-09-12 21:32:32,598 - __main__ - INFO - 
+============================================================
+2025-09-12 21:32:32,599 - __main__ - INFO - STEP 1: MIGRATING DYNAMODB DATA
+2025-09-12 21:32:32,599 - __main__ - INFO - ============================================================
+2025-09-12 21:32:32,599 - migrate_dynamodb - INFO - Starting DynamoDB to PostgreSQL migration
+2025-09-12 21:32:32,599 - migrate_dynamodb - INFO - Dry run mode: True
+2025-09-12 21:32:32,614 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-12 21:32:32,771 - migrate_dynamodb - INFO - Connected to DynamoDB table: vogelring
+2025-09-12 21:32:32,774 - database - INFO - Database connection successful
+2025-09-12 21:32:32,778 - migrate_dynamodb - INFO - Initial PostgreSQL counts - Ringings: 0, Family entries: 0
+2025-09-12 21:32:32,778 - migrate_dynamodb - INFO - Scanning DynamoDB for ringing records...
+2025-09-12 21:32:33,282 - migrate_dynamodb - INFO - Found 6058 ringing records in DynamoDB
+2025-09-12 21:32:33,282 - migrate_dynamodb - INFO - DRY RUN: Would migrate 6058 ringing records
+2025-09-12 21:32:33,282 - migrate_dynamodb - INFO - Scanning DynamoDB for family tree entries...
+2025-09-12 21:32:33,387 - migrate_dynamodb - INFO - Found 470 family tree entries in DynamoDB
+2025-09-12 21:32:33,387 - migrate_dynamodb - INFO - DRY RUN: Would migrate 470 family tree entries
+2025-09-12 21:32:33,393 - migrate_dynamodb - INFO - Final PostgreSQL counts - Ringings: 0, Family entries: 0
+2025-09-12 21:32:33,393 - migrate_dynamodb - INFO - Migration Statistics:
+2025-09-12 21:32:33,393 - migrate_dynamodb - INFO -   Ringings processed: 0
+2025-09-12 21:32:33,393 - migrate_dynamodb - INFO -   Ringings migrated: 0
+2025-09-12 21:32:33,393 - migrate_dynamodb - INFO -   Family entries processed: 0
+2025-09-12 21:32:33,393 - migrate_dynamodb - INFO -   Family entries migrated: 0
+2025-09-12 21:32:33,393 - migrate_dynamodb - INFO -   Errors: 0
+2025-09-12 21:32:33,393 - migrate_dynamodb - INFO - DynamoDB migration completed successfully
+2025-09-12 21:32:33,395 - __main__ - INFO - DynamoDB migration completed successfully
+2025-09-12 21:32:33,395 - __main__ - INFO - 
+============================================================
+2025-09-12 21:32:33,395 - __main__ - INFO - STEP 2: MIGRATING S3 PICKLE DATA
+2025-09-12 21:32:33,395 - __main__ - INFO - ============================================================
+2025-09-12 21:32:33,395 - migrate_s3_pickle - INFO - Starting S3 pickle to PostgreSQL migration
+2025-09-12 21:32:33,395 - migrate_s3_pickle - INFO - Dry run mode: True
+2025-09-12 21:32:33,395 - migrate_s3_pickle - INFO - User: default
+2025-09-12 21:32:33,561 - migrate_s3_pickle - INFO - Connected to S3 bucket: vogelring-data
+2025-09-12 21:32:33,564 - database - INFO - Database connection successful
+2025-09-12 21:32:33,567 - migrate_s3_pickle - INFO - Initial PostgreSQL sightings count: 1
+2025-09-12 21:32:33,567 - migrate_s3_pickle - INFO - Loading sightings from S3...
+2025-09-12 21:32:33,567 - migrate_s3_pickle - INFO - Loading sightings from S3: vogelring-data/default/sightings.pkl
+2025-09-12 21:32:33,602 - migrate_s3_pickle - ERROR - S3 object default/sightings.pkl not found in bucket vogelring-data
+2025-09-12 21:32:33,602 - migrate_s3_pickle - ERROR - Failed to load sightings from S3
+2025-09-12 21:32:33,602 - __main__ - ERROR - S3 pickle migration failed
+2025-09-12 21:32:33,602 - __main__ - INFO - 
+================================================================================
+2025-09-12 21:32:33,602 - __main__ - INFO - MIGRATION SUMMARY
+2025-09-12 21:32:33,602 - __main__ - INFO - ================================================================================
+2025-09-12 21:32:33,609 - __main__ - INFO - Final PostgreSQL counts:
+2025-09-12 21:32:33,610 - __main__ - INFO -   Ringings: 0 (added: 0)
+2025-09-12 21:32:33,610 - __main__ - INFO -   Family tree entries: 0 (added: 0)
+2025-09-12 21:32:33,610 - __main__ - INFO -   Sightings: 1 (added: 0)
+2025-09-12 21:32:33,610 - __main__ - INFO - 
+Migration duration: 0:00:01.050938
+2025-09-12 21:32:33,610 - __main__ - INFO - End time: 2025-09-12 21:32:33.602623
+2025-09-12 21:32:33,610 - __main__ - ERROR - ❌ MIGRATION COMPLETED WITH ERRORS
+2025-09-12 21:32:33,610 - __main__ - INFO - 
+Combined Statistics:
+2025-09-12 21:32:33,610 - __main__ - INFO -   Total records processed: 0
+2025-09-12 21:32:33,610 - __main__ - INFO -   Total records migrated: 0
+2025-09-12 21:32:33,610 - __main__ - INFO -   Total errors: 0
+2025-09-12 21:32:33,610 - __main__ - INFO - ================================================================================
+2025-09-12 21:34:12,797 - __main__ - INFO - ================================================================================
+2025-09-12 21:34:12,798 - __main__ - INFO - STARTING COMPLETE VOGELRING MIGRATION
+2025-09-12 21:34:12,798 - __main__ - INFO - ================================================================================
+2025-09-12 21:34:12,798 - __main__ - INFO - Start time: 2025-09-12 21:34:12.797831
+2025-09-12 21:34:12,798 - __main__ - INFO - Dry run mode: True
+2025-09-12 21:34:12,798 - __main__ - INFO - User: default
+2025-09-12 21:34:12,832 - database - INFO - Database connection successful
+2025-09-12 21:34:12,841 - __main__ - INFO - Initial PostgreSQL counts:
+2025-09-12 21:34:12,842 - __main__ - INFO -   Ringings: 0
+2025-09-12 21:34:12,842 - __main__ - INFO -   Family tree entries: 0
+2025-09-12 21:34:12,842 - __main__ - INFO -   Sightings: 1
+2025-09-12 21:34:12,842 - __main__ - INFO - 
+============================================================
+2025-09-12 21:34:12,842 - __main__ - INFO - STEP 1: MIGRATING DYNAMODB DATA
+2025-09-12 21:34:12,842 - __main__ - INFO - ============================================================
+2025-09-12 21:34:12,842 - migrate_dynamodb - INFO - Starting DynamoDB to PostgreSQL migration
+2025-09-12 21:34:12,842 - migrate_dynamodb - INFO - Dry run mode: True
+2025-09-12 21:34:12,863 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-12 21:34:13,052 - migrate_dynamodb - INFO - Connected to DynamoDB table: vogelring
+2025-09-12 21:34:13,055 - database - INFO - Database connection successful
+2025-09-12 21:34:13,059 - migrate_dynamodb - INFO - Initial PostgreSQL counts - Ringings: 0, Family entries: 0
+2025-09-12 21:34:13,059 - migrate_dynamodb - INFO - Scanning DynamoDB for ringing records...
+2025-09-12 21:34:13,600 - migrate_dynamodb - INFO - Found 6058 ringing records in DynamoDB
+2025-09-12 21:34:13,600 - migrate_dynamodb - INFO - DRY RUN: Would migrate 6058 ringing records
+2025-09-12 21:34:13,600 - migrate_dynamodb - INFO - Scanning DynamoDB for family tree entries...
+2025-09-12 21:34:13,716 - migrate_dynamodb - INFO - Found 470 family tree entries in DynamoDB
+2025-09-12 21:34:13,716 - migrate_dynamodb - INFO - DRY RUN: Would migrate 470 family tree entries
+2025-09-12 21:34:13,722 - migrate_dynamodb - INFO - Final PostgreSQL counts - Ringings: 0, Family entries: 0
+2025-09-12 21:34:13,722 - migrate_dynamodb - INFO - Migration Statistics:
+2025-09-12 21:34:13,722 - migrate_dynamodb - INFO -   Ringings processed: 0
+2025-09-12 21:34:13,722 - migrate_dynamodb - INFO -   Ringings migrated: 0
+2025-09-12 21:34:13,722 - migrate_dynamodb - INFO -   Family entries processed: 0
+2025-09-12 21:34:13,722 - migrate_dynamodb - INFO -   Family entries migrated: 0
+2025-09-12 21:34:13,722 - migrate_dynamodb - INFO -   Errors: 0
+2025-09-12 21:34:13,722 - migrate_dynamodb - INFO - DynamoDB migration completed successfully
+2025-09-12 21:34:13,725 - __main__ - INFO - DynamoDB migration completed successfully
+2025-09-12 21:34:13,725 - __main__ - INFO - 
+============================================================
+2025-09-12 21:34:13,725 - __main__ - INFO - STEP 2: MIGRATING S3 PICKLE DATA
+2025-09-12 21:34:13,725 - __main__ - INFO - ============================================================
+2025-09-12 21:34:13,725 - migrate_s3_pickle - INFO - Starting S3 pickle to PostgreSQL migration
+2025-09-12 21:34:13,725 - migrate_s3_pickle - INFO - Dry run mode: True
+2025-09-12 21:34:13,725 - migrate_s3_pickle - INFO - User: default
+2025-09-12 21:34:13,905 - migrate_s3_pickle - INFO - Connected to S3 bucket: vogelring-data
+2025-09-12 21:34:13,907 - database - INFO - Database connection successful
+2025-09-12 21:34:13,911 - migrate_s3_pickle - INFO - Initial PostgreSQL sightings count: 1
+2025-09-12 21:34:13,911 - migrate_s3_pickle - INFO - Loading sightings from S3...
+2025-09-12 21:34:13,911 - migrate_s3_pickle - INFO - Loading sightings from S3: vogelring-data/default/sightings.pkl
+2025-09-12 21:34:13,943 - migrate_s3_pickle - ERROR - S3 object default/sightings.pkl not found in bucket vogelring-data
+2025-09-12 21:34:13,943 - migrate_s3_pickle - ERROR - Failed to load sightings from S3
+2025-09-12 21:34:13,943 - __main__ - ERROR - S3 pickle migration failed
+2025-09-12 21:34:13,943 - __main__ - INFO - 
+================================================================================
+2025-09-12 21:34:13,943 - __main__ - INFO - MIGRATION SUMMARY
+2025-09-12 21:34:13,943 - __main__ - INFO - ================================================================================
+2025-09-12 21:34:13,951 - __main__ - INFO - Final PostgreSQL counts:
+2025-09-12 21:34:13,952 - __main__ - INFO -   Ringings: 0 (added: 0)
+2025-09-12 21:34:13,952 - __main__ - INFO -   Family tree entries: 0 (added: 0)
+2025-09-12 21:34:13,952 - __main__ - INFO -   Sightings: 1 (added: 0)
+2025-09-12 21:34:13,952 - __main__ - INFO - 
+Migration duration: 0:00:01.146096
+2025-09-12 21:34:13,952 - __main__ - INFO - End time: 2025-09-12 21:34:13.943927
+2025-09-12 21:34:13,952 - __main__ - ERROR - ❌ MIGRATION COMPLETED WITH ERRORS
+2025-09-12 21:34:13,952 - __main__ - INFO - 
+Combined Statistics:
+2025-09-12 21:34:13,952 - __main__ - INFO -   Total records processed: 0
+2025-09-12 21:34:13,952 - __main__ - INFO -   Total records migrated: 0
+2025-09-12 21:34:13,952 - __main__ - INFO -   Total errors: 0
+2025-09-12 21:34:13,952 - __main__ - INFO - ================================================================================
+2025-09-12 21:35:11,757 - __main__ - INFO - ================================================================================
+2025-09-12 21:35:11,757 - __main__ - INFO - STARTING COMPLETE VOGELRING MIGRATION
+2025-09-12 21:35:11,757 - __main__ - INFO - ================================================================================
+2025-09-12 21:35:11,757 - __main__ - INFO - Start time: 2025-09-12 21:35:11.757469
+2025-09-12 21:35:11,757 - __main__ - INFO - Dry run mode: False
+2025-09-12 21:35:11,757 - __main__ - INFO - User: default
+2025-09-12 21:35:11,792 - database - INFO - Database connection successful
+2025-09-12 21:35:11,803 - __main__ - INFO - Initial PostgreSQL counts:
+2025-09-12 21:35:11,803 - __main__ - INFO -   Ringings: 0
+2025-09-12 21:35:11,803 - __main__ - INFO -   Family tree entries: 0
+2025-09-12 21:35:11,803 - __main__ - INFO -   Sightings: 1
+2025-09-12 21:35:11,803 - __main__ - INFO - 
+============================================================
+2025-09-12 21:35:11,803 - __main__ - INFO - STEP 1: MIGRATING DYNAMODB DATA
+2025-09-12 21:35:11,803 - __main__ - INFO - ============================================================
+2025-09-12 21:35:11,803 - migrate_dynamodb - INFO - Starting DynamoDB to PostgreSQL migration
+2025-09-12 21:35:11,803 - migrate_dynamodb - INFO - Dry run mode: False
+2025-09-12 21:35:11,817 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-12 21:35:11,985 - migrate_dynamodb - INFO - Connected to DynamoDB table: vogelring
+2025-09-12 21:35:11,992 - database - INFO - Database connection successful
+2025-09-12 21:35:12,001 - database - INFO - Database tables created successfully
+2025-09-12 21:35:12,004 - migrate_dynamodb - INFO - Initial PostgreSQL counts - Ringings: 0, Family entries: 0
+2025-09-12 21:35:12,004 - migrate_dynamodb - INFO - Scanning DynamoDB for ringing records...
+2025-09-12 21:35:12,562 - migrate_dynamodb - INFO - Found 6058 ringing records in DynamoDB
+2025-09-12 21:35:12,969 - database - ERROR - Database session error: (psycopg2.errors.NotNullViolation) null value in column "id" of relation "ringings" violates not-null constraint
+DETAIL:  Failing row contains (null, 4452197, DEW, 07570, 2021-06-29, Frankfurt, Harheim Nord*[DEED, 5818], 50.190560, 8.686830, 0337, 0, 1, null, 2025-09-12 19:35:12.567877, 2025-09-12 19:35:12.567877).
+
+[SQL: INSERT INTO ringings (ring, ring_scheme, species, date, place, lat, lon, ringer, sex, age, status) VALUES (%(ring__0)s, %(ring_scheme__0)s, %(species__0)s, %(date__0)s, %(place__0)s, %(lat__0)s, %(lon__0)s, %(ringer__0)s, %(sex__0)s, %(age__0)s, %(st ... 176610 characters truncated ... )s, %(age__999)s, %(status__999)s) RETURNING ringings.created_at, ringings.updated_at, ringings.ring]
+[parameters: {'place__0': 'Frankfurt, Harheim Nord*[DEED, 5818]', 'sex__0': 0, 'lon__0': 8.68683, 'ring__0': '4452197', 'ring_scheme__0': 'DEW', 'ringer__0': '0337', 'age__0': 1, 'species__0': '07570', 'date__0': datetime.date(2021, 6, 29), 'lat__0': 50.19056, 'status__0': None, 'place__1': 'Offenbach, Carl-Ulrich-Brücke*[DEED, 5818]', 'sex__1': 0, 'lon__1': 8.75778, 'ring__1': '280705', 'ring_scheme__1': 'DEW', 'ringer__1': '0337', 'age__1': 3, 'species__1': '01610', 'date__1': datetime.date(2018, 8, 17), 'lat__1': 50.11167, 'status__1': None, 'place__2': 'Wiesbaden-Biebrich, Rheinuferl*[DEED, 5915]', 'sex__2': 0, 'lon__2': 8.235, 'ring__2': '5241405', 'ring_scheme__2': 'DEW', 'ringer__2': '0337', 'age__2': 6, 'species__2': '05820', 'date__2': datetime.date(2012, 2, 7), 'lat__2': 50.03639, 'status__2': None, 'place__3': 'Frankfurt, Sindlingen*[DEED, 5917]', 'sex__3': 0, 'lon__3': 8.51425, 'ring__3': '4432123', 'ring_scheme__3': 'DEW', 'ringer__3': '0337', 'age__3': 1, 'species__3': '07570', 'date__3': datetime.date(2017, 5, 14), 'lat__3': 50.06898, 'status__3': None, 'place__4': 'Offenbach, EVO*[DEED, 5818]', 'sex__4': 0, 'lon__4': 8.74361, 'ring__4': '3406353', 'ring_scheme__4': 'DEW', 'ringer__4': '0337' ... 10900 parameters truncated ... 'ringer__995': '0337', 'age__995': 1, 'species__995': '05926', 'date__995': datetime.date(2019, 6, 25), 'lat__995': 50.11417, 'status__995': None, 'place__996': 'Frankfurt, Griesheim-Staustufe*[DEED, 5917]', 'sex__996': 0, 'lon__996': 8.59556, 'ring__996': 'E11259', 'ring_scheme__996': 'DEW', 'ringer__996': '0337', 'age__996': 1, 'species__996': '01700', 'date__996': datetime.date(2021, 6, 2), 'lat__996': 50.08861, 'status__996': None, 'place__997': 'Hanau, Bärensee*[DEED, 5819]', 'sex__997': 1, 'lon__997': 8.95396, 'ring__997': '123297', 'ring_scheme__997': 'DEW', 'ringer__997': '0337', 'age__997': 8, 'species__997': '01520', 'date__997': datetime.date(2025, 1, 5), 'lat__997': 50.1527, 'status__997': None, 'place__998': 'Frankfurt, Griesheim, Klärwerk*(DEED 5917)', 'sex__998': 1, 'lon__998': 8.62694, 'ring__998': '5441104', 'ring_scheme__998': 'DEW', 'ringer__998': '0337', 'age__998': 5, 'species__998': '05820', 'date__998': datetime.date(2018, 2, 23), 'lat__998': 50.08917, 'status__998': None, 'place__999': 'Frankfurt, Posthof*[DEED, 5817]', 'sex__999': 0, 'lon__999': 8.6545, 'ring__999': 'N107274', 'ring_scheme__999': 'DEW', 'ringer__999': '0337', 'age__999': 1, 'species__999': '05926', 'date__999': datetime.date(2016, 6, 5), 'lat__999': 50.10503, 'status__999': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2025-09-12 21:35:12,970 - migrate_dynamodb - ERROR - Error migrating ringings: (psycopg2.errors.NotNullViolation) null value in column "id" of relation "ringings" violates not-null constraint
+DETAIL:  Failing row contains (null, 4452197, DEW, 07570, 2021-06-29, Frankfurt, Harheim Nord*[DEED, 5818], 50.190560, 8.686830, 0337, 0, 1, null, 2025-09-12 19:35:12.567877, 2025-09-12 19:35:12.567877).
+
+[SQL: INSERT INTO ringings (ring, ring_scheme, species, date, place, lat, lon, ringer, sex, age, status) VALUES (%(ring__0)s, %(ring_scheme__0)s, %(species__0)s, %(date__0)s, %(place__0)s, %(lat__0)s, %(lon__0)s, %(ringer__0)s, %(sex__0)s, %(age__0)s, %(st ... 176610 characters truncated ... )s, %(age__999)s, %(status__999)s) RETURNING ringings.created_at, ringings.updated_at, ringings.ring]
+[parameters: {'place__0': 'Frankfurt, Harheim Nord*[DEED, 5818]', 'sex__0': 0, 'lon__0': 8.68683, 'ring__0': '4452197', 'ring_scheme__0': 'DEW', 'ringer__0': '0337', 'age__0': 1, 'species__0': '07570', 'date__0': datetime.date(2021, 6, 29), 'lat__0': 50.19056, 'status__0': None, 'place__1': 'Offenbach, Carl-Ulrich-Brücke*[DEED, 5818]', 'sex__1': 0, 'lon__1': 8.75778, 'ring__1': '280705', 'ring_scheme__1': 'DEW', 'ringer__1': '0337', 'age__1': 3, 'species__1': '01610', 'date__1': datetime.date(2018, 8, 17), 'lat__1': 50.11167, 'status__1': None, 'place__2': 'Wiesbaden-Biebrich, Rheinuferl*[DEED, 5915]', 'sex__2': 0, 'lon__2': 8.235, 'ring__2': '5241405', 'ring_scheme__2': 'DEW', 'ringer__2': '0337', 'age__2': 6, 'species__2': '05820', 'date__2': datetime.date(2012, 2, 7), 'lat__2': 50.03639, 'status__2': None, 'place__3': 'Frankfurt, Sindlingen*[DEED, 5917]', 'sex__3': 0, 'lon__3': 8.51425, 'ring__3': '4432123', 'ring_scheme__3': 'DEW', 'ringer__3': '0337', 'age__3': 1, 'species__3': '07570', 'date__3': datetime.date(2017, 5, 14), 'lat__3': 50.06898, 'status__3': None, 'place__4': 'Offenbach, EVO*[DEED, 5818]', 'sex__4': 0, 'lon__4': 8.74361, 'ring__4': '3406353', 'ring_scheme__4': 'DEW', 'ringer__4': '0337' ... 10900 parameters truncated ... 'ringer__995': '0337', 'age__995': 1, 'species__995': '05926', 'date__995': datetime.date(2019, 6, 25), 'lat__995': 50.11417, 'status__995': None, 'place__996': 'Frankfurt, Griesheim-Staustufe*[DEED, 5917]', 'sex__996': 0, 'lon__996': 8.59556, 'ring__996': 'E11259', 'ring_scheme__996': 'DEW', 'ringer__996': '0337', 'age__996': 1, 'species__996': '01700', 'date__996': datetime.date(2021, 6, 2), 'lat__996': 50.08861, 'status__996': None, 'place__997': 'Hanau, Bärensee*[DEED, 5819]', 'sex__997': 1, 'lon__997': 8.95396, 'ring__997': '123297', 'ring_scheme__997': 'DEW', 'ringer__997': '0337', 'age__997': 8, 'species__997': '01520', 'date__997': datetime.date(2025, 1, 5), 'lat__997': 50.1527, 'status__997': None, 'place__998': 'Frankfurt, Griesheim, Klärwerk*(DEED 5917)', 'sex__998': 1, 'lon__998': 8.62694, 'ring__998': '5441104', 'ring_scheme__998': 'DEW', 'ringer__998': '0337', 'age__998': 5, 'species__998': '05820', 'date__998': datetime.date(2018, 2, 23), 'lat__998': 50.08917, 'status__998': None, 'place__999': 'Frankfurt, Posthof*[DEED, 5817]', 'sex__999': 0, 'lon__999': 8.6545, 'ring__999': 'N107274', 'ring_scheme__999': 'DEW', 'ringer__999': '0337', 'age__999': 1, 'species__999': '05926', 'date__999': datetime.date(2016, 6, 5), 'lat__999': 50.10503, 'status__999': None}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2025-09-12 21:35:12,970 - migrate_dynamodb - INFO - Scanning DynamoDB for family tree entries...
+2025-09-12 21:35:13,086 - migrate_dynamodb - INFO - Found 470 family tree entries in DynamoDB
+2025-09-12 21:35:13,283 - database - ERROR - Database session error: (psycopg2.errors.NotNullViolation) null value in column "id" of relation "family_tree_entries" violates not-null constraint
+DETAIL:  Failing row contains (null, 278961, [{"ring": "2789(2)3", "year": 2019}], [], [], 2025-09-12 19:35:13.088343, 2025-09-12 19:35:13.088343).
+
+[SQL: INSERT INTO family_tree_entries (ring, partners, children, parents) VALUES (%(ring__0)s, %(partners__0)s::JSON, %(children__0)s::JSON, %(parents__0)s::JSON), (%(ring__1)s, %(partners__1)s::JSON, %(children__1)s::JSON, %(parents__1)s::JSON), (%(ring__ ... 42152 characters truncated ... ) RETURNING family_tree_entries.created_at, family_tree_entries.updated_at, family_tree_entries.ring]
+[parameters: {'ring__0': '278961', 'partners__0': '[{"ring": "2789(2)3", "year": 2019}]', 'parents__0': '[]', 'children__0': '[]', 'ring__1': '2000587', 'partners__1': '[{"ring": "unberingt", "year": 2025}]', 'parents__1': '[]', 'children__1': '[]', 'ring__2': '278972', 'partners__2': '[{"ring": "278910", "year": 2019}]', 'parents__2': '[]', 'children__2': '[]', 'ring__3': '278903', 'partners__3': '[{"ring": "278939", "year": 2019}]', 'parents__3': '[]', 'children__3': '[]', 'ring__4': '122211', 'partners__4': '[{"ring": "117612", "year": 2019}]', 'parents__4': '[]', 'children__4': '[]', 'ring__5': '281923', 'partners__5': '[{"ring": "290339", "year": 2019}]', 'parents__5': '[]', 'children__5': '[]', 'ring__6': 'E09971', 'partners__6': '[{"ring": "ub", "year": 2020}]', 'parents__6': '[]', 'children__6': '[]', 'ring__7': '281934', 'partners__7': '[{"ring": "278943", "year": 2022}]', 'parents__7': '[]', 'children__7': '[]', 'ring__8': '…934', 'partners__8': '[{"ring": "278932", "year": 2019}]', 'parents__8': '[]', 'children__8': '[]', 'ring__9': 'E09973', 'partners__9': '[{"ring": "E11131", "year": 2024}]', 'parents__9': '[]', 'children__9': '[]', 'ring__10': '120998', 'partners__10': '[{"ring": "122286", "year": 2021}]', 'parents__10': '[]', 'children__10': '[]', 'ring__11': '281411', 'partners__11': '[{"ring": "281403", "year": 2024}, {"ring": "281403", "year": 2023}, {"ring": "281403", "year": 2022}]', 'parents__11': '[]', 'children__11': '[]', 'ring__12': 'E11266', 'partners__12': '[{"ring": "E11329", "year": 2023}, {"ring": "ub", "year": 2025}, {"ring": "ub", "year": 2024}]' ... 1780 parameters truncated ... 'parents__457': '[]', 'children__457': '[]', 'ring__458': 'E09741', 'partners__458': '[{"ring": "E09998", "year": 2020}]', 'parents__458': '[]', 'children__458': '[]', 'ring__459': '274833', 'partners__459': '[{"ring": "ub", "year": 2023}, {"ring": "ub", "year": 2021}]', 'parents__459': '[]', 'children__459': '[]', 'ring__460': '279000', 'partners__460': '[{"ring": "278932", "year": 2022}, {"ring": "278932", "year": 2021}, {"ring": "...932", "year": 2025}, {"ring": "278973", "year": 2019}, {"ring": "27 ... (42 characters truncated) ... year": 2021}, {"ring": "278932", "year": 2025}, {"ring": "278932", "year": 2024}, {"ring": "278982", "year": 2025}, {"ring": "278932", "year": 2023}]', 'parents__460': '[]', 'children__460': '[]', 'ring__461': '278995', 'partners__461': '[{"ring": "ub", "year": 2021}, {"ring": "281906", "year": 2025}]', 'parents__461': '[]', 'children__461': '[]', 'ring__462': '283146', 'partners__462': '[{"ring": "283104", "year": 2025}, {"ring": "283103", "year": 2025}]', 'parents__462': '[]', 'children__462': '[]', 'ring__463': '290398', 'partners__463': '[{"ring": "282321", "year": 2021}, {"ring": "282321", "year": 2025}, {"ring": "282321", "year": 2024}, {"ring": "beringt", "year": 2025}]', 'parents__463': '[]', 'children__463': '[]', 'ring__464': '282373', 'partners__464': '[{"ring": "ub", "year": 2023}]', 'parents__464': '[]', 'children__464': '[]', 'ring__465': '278906', 'partners__465': '[{"ring": "278963", "year": 2018}, {"ring": "\\u2026963", "year": 2018}]', 'parents__465': '[]', 'children__465': '[]', 'ring__466': '28310..', 'partners__466': '[{"ring": "281448", "year": 2021}]', 'parents__466': '[]', 'children__466': '[]', 'ring__467': '122288', 'partners__467': '[{"ring": "ub", "year": 2020}]', 'parents__467': '[]', 'children__467': '[]', 'ring__468': '2000542', 'partners__468': '[{"ring": "281946", "year": 2024}]', 'parents__468': '[]', 'children__468': '[]', 'ring__469': '283103', 'partners__469': '[{"ring": "283146", "year": 2025}]', 'parents__469': '[]', 'children__469': '[]'}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2025-09-12 21:35:13,283 - migrate_dynamodb - ERROR - Error migrating family tree entries: (psycopg2.errors.NotNullViolation) null value in column "id" of relation "family_tree_entries" violates not-null constraint
+DETAIL:  Failing row contains (null, 278961, [{"ring": "2789(2)3", "year": 2019}], [], [], 2025-09-12 19:35:13.088343, 2025-09-12 19:35:13.088343).
+
+[SQL: INSERT INTO family_tree_entries (ring, partners, children, parents) VALUES (%(ring__0)s, %(partners__0)s::JSON, %(children__0)s::JSON, %(parents__0)s::JSON), (%(ring__1)s, %(partners__1)s::JSON, %(children__1)s::JSON, %(parents__1)s::JSON), (%(ring__ ... 42152 characters truncated ... ) RETURNING family_tree_entries.created_at, family_tree_entries.updated_at, family_tree_entries.ring]
+[parameters: {'ring__0': '278961', 'partners__0': '[{"ring": "2789(2)3", "year": 2019}]', 'parents__0': '[]', 'children__0': '[]', 'ring__1': '2000587', 'partners__1': '[{"ring": "unberingt", "year": 2025}]', 'parents__1': '[]', 'children__1': '[]', 'ring__2': '278972', 'partners__2': '[{"ring": "278910", "year": 2019}]', 'parents__2': '[]', 'children__2': '[]', 'ring__3': '278903', 'partners__3': '[{"ring": "278939", "year": 2019}]', 'parents__3': '[]', 'children__3': '[]', 'ring__4': '122211', 'partners__4': '[{"ring": "117612", "year": 2019}]', 'parents__4': '[]', 'children__4': '[]', 'ring__5': '281923', 'partners__5': '[{"ring": "290339", "year": 2019}]', 'parents__5': '[]', 'children__5': '[]', 'ring__6': 'E09971', 'partners__6': '[{"ring": "ub", "year": 2020}]', 'parents__6': '[]', 'children__6': '[]', 'ring__7': '281934', 'partners__7': '[{"ring": "278943", "year": 2022}]', 'parents__7': '[]', 'children__7': '[]', 'ring__8': '…934', 'partners__8': '[{"ring": "278932", "year": 2019}]', 'parents__8': '[]', 'children__8': '[]', 'ring__9': 'E09973', 'partners__9': '[{"ring": "E11131", "year": 2024}]', 'parents__9': '[]', 'children__9': '[]', 'ring__10': '120998', 'partners__10': '[{"ring": "122286", "year": 2021}]', 'parents__10': '[]', 'children__10': '[]', 'ring__11': '281411', 'partners__11': '[{"ring": "281403", "year": 2024}, {"ring": "281403", "year": 2023}, {"ring": "281403", "year": 2022}]', 'parents__11': '[]', 'children__11': '[]', 'ring__12': 'E11266', 'partners__12': '[{"ring": "E11329", "year": 2023}, {"ring": "ub", "year": 2025}, {"ring": "ub", "year": 2024}]' ... 1780 parameters truncated ... 'parents__457': '[]', 'children__457': '[]', 'ring__458': 'E09741', 'partners__458': '[{"ring": "E09998", "year": 2020}]', 'parents__458': '[]', 'children__458': '[]', 'ring__459': '274833', 'partners__459': '[{"ring": "ub", "year": 2023}, {"ring": "ub", "year": 2021}]', 'parents__459': '[]', 'children__459': '[]', 'ring__460': '279000', 'partners__460': '[{"ring": "278932", "year": 2022}, {"ring": "278932", "year": 2021}, {"ring": "...932", "year": 2025}, {"ring": "278973", "year": 2019}, {"ring": "27 ... (42 characters truncated) ... year": 2021}, {"ring": "278932", "year": 2025}, {"ring": "278932", "year": 2024}, {"ring": "278982", "year": 2025}, {"ring": "278932", "year": 2023}]', 'parents__460': '[]', 'children__460': '[]', 'ring__461': '278995', 'partners__461': '[{"ring": "ub", "year": 2021}, {"ring": "281906", "year": 2025}]', 'parents__461': '[]', 'children__461': '[]', 'ring__462': '283146', 'partners__462': '[{"ring": "283104", "year": 2025}, {"ring": "283103", "year": 2025}]', 'parents__462': '[]', 'children__462': '[]', 'ring__463': '290398', 'partners__463': '[{"ring": "282321", "year": 2021}, {"ring": "282321", "year": 2025}, {"ring": "282321", "year": 2024}, {"ring": "beringt", "year": 2025}]', 'parents__463': '[]', 'children__463': '[]', 'ring__464': '282373', 'partners__464': '[{"ring": "ub", "year": 2023}]', 'parents__464': '[]', 'children__464': '[]', 'ring__465': '278906', 'partners__465': '[{"ring": "278963", "year": 2018}, {"ring": "\\u2026963", "year": 2018}]', 'parents__465': '[]', 'children__465': '[]', 'ring__466': '28310..', 'partners__466': '[{"ring": "281448", "year": 2021}]', 'parents__466': '[]', 'children__466': '[]', 'ring__467': '122288', 'partners__467': '[{"ring": "ub", "year": 2020}]', 'parents__467': '[]', 'children__467': '[]', 'ring__468': '2000542', 'partners__468': '[{"ring": "281946", "year": 2024}]', 'parents__468': '[]', 'children__468': '[]', 'ring__469': '283103', 'partners__469': '[{"ring": "283146", "year": 2025}]', 'parents__469': '[]', 'children__469': '[]'}]
+(Background on this error at: https://sqlalche.me/e/20/gkpj)
+2025-09-12 21:35:13,284 - migrate_dynamodb - INFO - Final PostgreSQL counts - Ringings: 0, Family entries: 0
+2025-09-12 21:35:13,284 - migrate_dynamodb - INFO - Migration Statistics:
+2025-09-12 21:35:13,284 - migrate_dynamodb - INFO -   Ringings processed: 1000
+2025-09-12 21:35:13,284 - migrate_dynamodb - INFO -   Ringings migrated: 1000
+2025-09-12 21:35:13,284 - migrate_dynamodb - INFO -   Family entries processed: 470
+2025-09-12 21:35:13,284 - migrate_dynamodb - INFO -   Family entries migrated: 470
+2025-09-12 21:35:13,284 - migrate_dynamodb - INFO -   Errors: 2
+2025-09-12 21:35:13,284 - migrate_dynamodb - INFO - Validating data integrity...
+2025-09-12 21:35:13,287 - migrate_dynamodb - INFO - Data integrity validation passed
+2025-09-12 21:35:13,287 - migrate_dynamodb - ERROR - DynamoDB migration completed with 2 errors
+2025-09-12 21:35:13,287 - __main__ - ERROR - DynamoDB migration failed
+2025-09-12 21:35:13,287 - __main__ - INFO - 
+============================================================
+2025-09-12 21:35:13,287 - __main__ - INFO - STEP 2: MIGRATING S3 PICKLE DATA
+2025-09-12 21:35:13,287 - __main__ - INFO - ============================================================
+2025-09-12 21:35:13,287 - migrate_s3_pickle - INFO - Starting S3 pickle to PostgreSQL migration
+2025-09-12 21:35:13,287 - migrate_s3_pickle - INFO - Dry run mode: False
+2025-09-12 21:35:13,287 - migrate_s3_pickle - INFO - User: default
+2025-09-12 21:35:13,462 - migrate_s3_pickle - INFO - Connected to S3 bucket: vogelring-data
+2025-09-12 21:35:13,464 - database - INFO - Database connection successful
+2025-09-12 21:35:13,468 - database - INFO - Database tables created successfully
+2025-09-12 21:35:13,469 - migrate_s3_pickle - INFO - Initial PostgreSQL sightings count: 1
+2025-09-12 21:35:13,469 - migrate_s3_pickle - INFO - Loading sightings from S3...
+2025-09-12 21:35:13,469 - migrate_s3_pickle - INFO - Loading sightings from S3: vogelring-data/default/sightings.pkl
+2025-09-12 21:35:13,507 - migrate_s3_pickle - ERROR - S3 object default/sightings.pkl not found in bucket vogelring-data
+2025-09-12 21:35:13,508 - migrate_s3_pickle - ERROR - Failed to load sightings from S3
+2025-09-12 21:35:13,508 - __main__ - ERROR - S3 pickle migration failed
+2025-09-12 21:35:13,508 - __main__ - INFO - 
+================================================================================
+2025-09-12 21:35:13,508 - __main__ - INFO - MIGRATION SUMMARY
+2025-09-12 21:35:13,508 - __main__ - INFO - ================================================================================
+2025-09-12 21:35:13,514 - __main__ - INFO - Final PostgreSQL counts:
+2025-09-12 21:35:13,514 - __main__ - INFO -   Ringings: 0 (added: 0)
+2025-09-12 21:35:13,514 - __main__ - INFO -   Family tree entries: 0 (added: 0)
+2025-09-12 21:35:13,514 - __main__ - INFO -   Sightings: 1 (added: 0)
+2025-09-12 21:35:13,514 - __main__ - INFO - 
+Migration duration: 0:00:01.750613
+2025-09-12 21:35:13,515 - __main__ - INFO - End time: 2025-09-12 21:35:13.508082
+2025-09-12 21:35:13,515 - __main__ - ERROR - ❌ MIGRATION COMPLETED WITH ERRORS
+2025-09-12 21:35:13,515 - __main__ - INFO - 
+Combined Statistics:
+2025-09-12 21:35:13,515 - __main__ - INFO -   Total records processed: 1470
+2025-09-12 21:35:13,515 - __main__ - INFO -   Total records migrated: 1470
+2025-09-12 21:35:13,515 - __main__ - INFO -   Total errors: 2
+2025-09-12 21:35:13,515 - __main__ - INFO - ================================================================================
+2025-09-12 21:36:40,834 - __main__ - WARNING - Truncating ALL tables before migration...
+2025-09-12 21:36:40,873 - database - INFO - Database connection successful
+2025-09-12 21:36:40,905 - database - INFO - Table sightings truncated successfully
+2025-09-12 21:36:40,910 - database - INFO - Table family_tree_entries truncated successfully
+2025-09-12 21:36:40,921 - database - INFO - Table ringings truncated successfully
+2025-09-12 21:36:40,921 - __main__ - INFO - All tables truncated successfully
+2025-09-12 21:36:40,921 - __main__ - INFO - ================================================================================
+2025-09-12 21:36:40,921 - __main__ - INFO - STARTING COMPLETE VOGELRING MIGRATION
+2025-09-12 21:36:40,921 - __main__ - INFO - ================================================================================
+2025-09-12 21:36:40,921 - __main__ - INFO - Start time: 2025-09-12 21:36:40.921915
+2025-09-12 21:36:40,921 - __main__ - INFO - Dry run mode: False
+2025-09-12 21:36:40,921 - __main__ - INFO - User: default
+2025-09-12 21:36:40,922 - database - INFO - Database connection successful
+2025-09-12 21:36:40,927 - __main__ - INFO - Initial PostgreSQL counts:
+2025-09-12 21:36:40,927 - __main__ - INFO -   Ringings: 0
+2025-09-12 21:36:40,927 - __main__ - INFO -   Family tree entries: 0
+2025-09-12 21:36:40,927 - __main__ - INFO -   Sightings: 0
+2025-09-12 21:36:40,927 - __main__ - INFO - 
+============================================================
+2025-09-12 21:36:40,927 - __main__ - INFO - STEP 1: MIGRATING DYNAMODB DATA
+2025-09-12 21:36:40,927 - __main__ - INFO - ============================================================
+2025-09-12 21:36:40,927 - migrate_dynamodb - INFO - Starting DynamoDB to PostgreSQL migration
+2025-09-12 21:36:40,927 - migrate_dynamodb - INFO - Dry run mode: False
+2025-09-12 21:36:40,950 - botocore.credentials - INFO - Found credentials in shared credentials file: ~/.aws/credentials
+2025-09-12 21:36:41,129 - migrate_dynamodb - INFO - Connected to DynamoDB table: vogelring
+2025-09-12 21:36:41,132 - database - INFO - Database connection successful
+2025-09-12 21:36:41,143 - database - INFO - Database tables created successfully
+2025-09-12 21:36:41,148 - migrate_dynamodb - INFO - Initial PostgreSQL counts - Ringings: 0, Family entries: 0
+2025-09-12 21:36:41,148 - migrate_dynamodb - INFO - Scanning DynamoDB for ringing records...
+2025-09-12 21:36:41,652 - migrate_dynamodb - INFO - Found 6058 ringing records in DynamoDB
+2025-09-12 21:36:42,108 - migrate_dynamodb - INFO - Migrated 1000/6058 ringings
+2025-09-12 21:36:42,424 - migrate_dynamodb - ERROR - Error converting DynamoDB item to Ringing: 9 validation errors for Ringing
+ring_scheme
+  Field required [type=missing, input_value={'ring': 'anton0#ft'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+species
+  Field required [type=missing, input_value={'ring': 'anton0#ft'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+date
+  Field required [type=missing, input_value={'ring': 'anton0#ft'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+place
+  Field required [type=missing, input_value={'ring': 'anton0#ft'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+lat
+  Field required [type=missing, input_value={'ring': 'anton0#ft'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+lon
+  Field required [type=missing, input_value={'ring': 'anton0#ft'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+ringer
+  Field required [type=missing, input_value={'ring': 'anton0#ft'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+sex
+  Field required [type=missing, input_value={'ring': 'anton0#ft'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+age
+  Field required [type=missing, input_value={'ring': 'anton0#ft'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+2025-09-12 21:36:42,424 - migrate_dynamodb - ERROR - Item data: {"ring": "anton0#ft"}
+2025-09-12 21:36:42,518 - migrate_dynamodb - INFO - Migrated 2000/6058 ringings
+2025-09-12 21:36:42,554 - migrate_dynamodb - ERROR - Error converting DynamoDB item to Ringing: 6 validation errors for Ringing
+date
+  Field required [type=missing, input_value={'ring_scheme': 'DEW', 's...anton0', 'place': 'FFM'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+lat
+  Field required [type=missing, input_value={'ring_scheme': 'DEW', 's...anton0', 'place': 'FFM'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+lon
+  Field required [type=missing, input_value={'ring_scheme': 'DEW', 's...anton0', 'place': 'FFM'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+ringer
+  Field required [type=missing, input_value={'ring_scheme': 'DEW', 's...anton0', 'place': 'FFM'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+sex
+  Field required [type=missing, input_value={'ring_scheme': 'DEW', 's...anton0', 'place': 'FFM'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+age
+  Field required [type=missing, input_value={'ring_scheme': 'DEW', 's...anton0', 'place': 'FFM'}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+2025-09-12 21:36:42,554 - migrate_dynamodb - ERROR - Item data: {"ring_scheme": "DEW", "species": "01610", "ring": "anton0", "place": "FFM"}
+2025-09-12 21:36:42,944 - migrate_dynamodb - INFO - Migrated 3000/6058 ringings
+2025-09-12 21:36:43,394 - migrate_dynamodb - INFO - Migrated 4000/6058 ringings
+2025-09-12 21:36:43,812 - migrate_dynamodb - INFO - Migrated 5000/6058 ringings
+2025-09-12 21:36:43,920 - migrate_dynamodb - ERROR - Error converting DynamoDB item to Ringing: 9 validation errors for Ringing
+ring_scheme
+  Field required [type=missing, input_value={'ring': 'anton1', 'test': Decimal('0')}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+species
+  Field required [type=missing, input_value={'ring': 'anton1', 'test': Decimal('0')}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+date
+  Field required [type=missing, input_value={'ring': 'anton1', 'test': Decimal('0')}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+place
+  Field required [type=missing, input_value={'ring': 'anton1', 'test': Decimal('0')}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+lat
+  Field required [type=missing, input_value={'ring': 'anton1', 'test': Decimal('0')}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+lon
+  Field required [type=missing, input_value={'ring': 'anton1', 'test': Decimal('0')}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+ringer
+  Field required [type=missing, input_value={'ring': 'anton1', 'test': Decimal('0')}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+sex
+  Field required [type=missing, input_value={'ring': 'anton1', 'test': Decimal('0')}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+age
+  Field required [type=missing, input_value={'ring': 'anton1', 'test': Decimal('0')}, input_type=dict]
+    For further information visit https://errors.pydantic.dev/2.11/v/missing
+2025-09-12 21:36:43,920 - migrate_dynamodb - ERROR - Item data: {"ring": "anton1", "test": "0"}
+2025-09-12 21:36:44,279 - migrate_dynamodb - INFO - Migrated 6000/6058 ringings
+2025-09-12 21:36:44,347 - migrate_dynamodb - INFO - Successfully migrated 6055 ringing records
+2025-09-12 21:36:44,347 - migrate_dynamodb - INFO - Scanning DynamoDB for family tree entries...
+2025-09-12 21:36:44,522 - migrate_dynamodb - INFO - Found 470 family tree entries in DynamoDB
+2025-09-12 21:36:44,737 - migrate_dynamodb - INFO - Successfully migrated 470 family tree entries
+2025-09-12 21:36:44,739 - migrate_dynamodb - INFO - Final PostgreSQL counts - Ringings: 6055, Family entries: 470
+2025-09-12 21:36:44,740 - migrate_dynamodb - INFO - Migration Statistics:
+2025-09-12 21:36:44,740 - migrate_dynamodb - INFO -   Ringings processed: 6058
+2025-09-12 21:36:44,740 - migrate_dynamodb - INFO -   Ringings migrated: 6055
+2025-09-12 21:36:44,740 - migrate_dynamodb - INFO -   Family entries processed: 470
+2025-09-12 21:36:44,740 - migrate_dynamodb - INFO -   Family entries migrated: 470
+2025-09-12 21:36:44,740 - migrate_dynamodb - INFO -   Errors: 3
+2025-09-12 21:36:44,740 - migrate_dynamodb - INFO - Validating data integrity...
+2025-09-12 21:36:44,744 - migrate_dynamodb - INFO - Data integrity validation passed
+2025-09-12 21:36:44,744 - migrate_dynamodb - ERROR - DynamoDB migration completed with 3 errors
+2025-09-12 21:36:44,747 - __main__ - ERROR - DynamoDB migration failed
+2025-09-12 21:36:44,747 - __main__ - INFO - 
+============================================================
+2025-09-12 21:36:44,747 - __main__ - INFO - STEP 2: MIGRATING S3 PICKLE DATA
+2025-09-12 21:36:44,747 - __main__ - INFO - ============================================================
+2025-09-12 21:36:44,747 - migrate_s3_pickle - INFO - Starting S3 pickle to PostgreSQL migration
+2025-09-12 21:36:44,747 - migrate_s3_pickle - INFO - Dry run mode: False
+2025-09-12 21:36:44,747 - migrate_s3_pickle - INFO - User: default
+2025-09-12 21:36:44,908 - migrate_s3_pickle - INFO - Connected to S3 bucket: vogelring-data
+2025-09-12 21:36:44,910 - database - INFO - Database connection successful
+2025-09-12 21:36:44,915 - database - INFO - Database tables created successfully
+2025-09-12 21:36:44,917 - migrate_s3_pickle - INFO - Initial PostgreSQL sightings count: 0
+2025-09-12 21:36:44,917 - migrate_s3_pickle - INFO - Loading sightings from S3...
+2025-09-12 21:36:44,917 - migrate_s3_pickle - INFO - Loading sightings from S3: vogelring-data/default/sightings.pkl
+2025-09-12 21:36:44,950 - migrate_s3_pickle - ERROR - S3 object default/sightings.pkl not found in bucket vogelring-data
+2025-09-12 21:36:44,950 - migrate_s3_pickle - ERROR - Failed to load sightings from S3
+2025-09-12 21:36:44,950 - __main__ - ERROR - S3 pickle migration failed
+2025-09-12 21:36:44,950 - __main__ - INFO - 
+================================================================================
+2025-09-12 21:36:44,950 - __main__ - INFO - MIGRATION SUMMARY
+2025-09-12 21:36:44,950 - __main__ - INFO - ================================================================================
+2025-09-12 21:36:44,958 - __main__ - INFO - Final PostgreSQL counts:
+2025-09-12 21:36:44,958 - __main__ - INFO -   Ringings: 6055 (added: 6055)
+2025-09-12 21:36:44,958 - __main__ - INFO -   Family tree entries: 470 (added: 470)
+2025-09-12 21:36:44,958 - __main__ - INFO -   Sightings: 0 (added: 0)
+2025-09-12 21:36:44,958 - __main__ - INFO - 
+Migration duration: 0:00:04.028898
+2025-09-12 21:36:44,958 - __main__ - INFO - End time: 2025-09-12 21:36:44.950813
+2025-09-12 21:36:44,958 - __main__ - ERROR - ❌ MIGRATION COMPLETED WITH ERRORS
+2025-09-12 21:36:44,958 - __main__ - INFO - 
+Combined Statistics:
+2025-09-12 21:36:44,958 - __main__ - INFO -   Total records processed: 6528
+2025-09-12 21:36:44,958 - __main__ - INFO -   Total records migrated: 6525
+2025-09-12 21:36:44,958 - __main__ - INFO -   Total errors: 3
+2025-09-12 21:36:44,958 - __main__ - INFO - ================================================================================

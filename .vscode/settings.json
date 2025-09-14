@@ -1,3 +1,6 @@
 {
-    "python.analysis.extraPaths": ["ring-api/src"]
+    "python.analysis.extraPaths": [
+        "ring-api/src"
+    ],
+    "kiroAgent.configureMCP": "Enabled"
 } 

@@ -1,0 +1,38 @@
+CSV Header:
+id;excel_id;species;ring;reading;date;place;area;sex;age;breed_size;family_size;pair;small_group_size;large_group_size;partner;status;habitat;field_fruit;comment;melder;melded;lat;lon;is_exact_location;ringing_ring_scheme;ringing_species;ringing_date;ringing_place;ringing_lat;ringing_lon;ringing_ringer;ringing_sex;ringing_age;ringing_status
+
+- id: not relevant for users, but relevant for hyperlinks to sighting entries: link to https://vogelring.com/entries/<id>
+- excel_id: fully irrelevant
+- species: Species of bird, currently about 10 different species exist
+- ring: the ring number (alpha numeric) on the ring on the birds leg
+- reading: what the observer actually read, this might be 123...H, but the ring will be set to 12387H, because the observer knows that bird, and there are no other rings that could be it
+- date: date of the sighting, format 2020-06-30 (YYYY-MM-DD)
+- place: name of the place, e.g. "Ostpark, Frankfurt"
+- area: specific sub place e.g. "große Wiese Ost"
+- sex: M / W
+- age: age code (ad = adult, dj = diesjährig/juvenile, vj = vorjährig, juv = juvenile)
+- breed_size: number of young in the brood (if applicable)
+- family_size: number of individuals in the family group
+- pair: pair/family relation during sighting (x = paired, F = family, S = school)
+- small_group_size: count of birds in a small nearby group
+- large_group_size: count of birds in a larger flock
+- partner: partner's ring (for known pairs)
+- status: breeding/status code (BV = Brutvogel, MG = Mausergast, NB = Nichtbrüter, RV = Reviervogel)
+- habitat: habitat type of the sighting location
+- field_fruit: crop/field type (if on agricultural land)
+- comment: free-text notes
+- melder: observer/reporter name
+- melded: whether the sighting was reported to the ring center (true/false)
+- lat: latitude in decimal degrees (WGS84)
+- lon: longitude in decimal degrees (WGS84)
+- is_exact_location: coordinates are exact (true) or approximate (false)
+- ringing_ring_scheme: ringing scheme code used at ringing
+- ringing_species: species recorded at ringing (may differ from later sightings)
+- ringing_date: date of ringing, format 2020-06-30 (YYYY-MM-DD)
+- ringing_place: place name recorded at ringing
+- ringing_lat: latitude at ringing in decimal degrees (WGS84)
+- ringing_lon: longitude at ringing in decimal degrees (WGS84)
+- ringing_ringer: ringer identifier/name
+- ringing_sex: sex recorded at ringing (codes: 1 = Männlich, 2 = Weiblich, 0 = Unbekannt)
+- ringing_age: age recorded at ringing (codes: 1 = Nestling / nicht voll flugfähiges Küken, 2 = Fängling, 3 = diesjährig, 4 = nicht diesjährig, 5 = vorjährig, 6 = älter als vorjährig, 7 = im 3. Kalenderjahr, 8 = über 3 Jahre alt, 9 = im 4. Kalenderjahr, 10 = über 4 Jahre alt, 11 = im 5. Kalenderjahr, 12 = über 5 Jahre alt)
+- ringing_status: status at ringing, if available (same codes as status)
