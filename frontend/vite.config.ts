@@ -3,13 +3,18 @@ import vue from '@vitejs/plugin-vue'
 import path from 'path'
 import fs from 'fs'
 import { execSync } from 'child_process'
+import { extractChangelog, getLatestVersion } from './scripts/extract-changelog.js'
 
-// Generate a version string based on current date/time and git commit if available
+// Generate a version string and extract changelog data
 const generateVersionInfo = () => {
   const now = new Date()
   const buildTime = now.toISOString()
   
-  let version = process.env.npm_package_version || '1.0.0'
+  // Extract changelog data
+  const changelog = extractChangelog()
+  const backendVersion = getLatestVersion(changelog)
+  
+  let version = process.env.npm_package_version || backendVersion || '1.0.0'
   
   // Try to get git commit hash
   try {
@@ -24,7 +29,8 @@ const generateVersionInfo = () => {
   // Write version info to public directory
   const versionInfo = {
     version,
-    buildTime
+    buildTime,
+    backendVersion
   }
   
   // Ensure public directory exists
@@ -33,10 +39,12 @@ const generateVersionInfo = () => {
   }
   
   fs.writeFileSync('./public/version.json', JSON.stringify(versionInfo, null, 2))
+  fs.writeFileSync('./public/changelog.json', JSON.stringify(changelog, null, 2))
   
   return {
     version,
-    buildTime
+    buildTime,
+    backendVersion
   }
 }
 
@@ -63,6 +71,7 @@ export default defineConfig({
   },
   define: {
     __APP_VERSION__: JSON.stringify(versionInfo.version),
+    __BACKEND_VERSION__: JSON.stringify(versionInfo.backendVersion),
     global: 'window'
   }
 })
