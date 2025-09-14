@@ -600,9 +600,33 @@ const processFieldCompletenessChart = async (fieldAnalysis: FieldAnalysis[]) => 
   };
 };
 
+// Helper function to sort duplicate entries by date first, then by ring
+const sortDuplicateEntries = (entries: Sighting[]) => {
+  return entries.sort((a, b) => {
+    // First sort by date
+    const dateA = a.date ? new Date(a.date).getTime() : 0;
+    const dateB = b.date ? new Date(b.date).getTime() : 0;
+    if (dateA !== dateB) {
+      return dateA - dateB;
+    }
+    
+    // Then sort by ring
+    const ringA = a.ring || '';
+    const ringB = b.ring || '';
+    return ringA.localeCompare(ringB);
+  });
+};
+
 const showIssueDetails = (issue: DataQualityIssue) => {
   selectedIssue.value = issue;
-  issueEntries.value = issue.filter(store.sightings);
+  let filteredEntries = issue.filter(store.sightings);
+  
+  // Apply custom sorting for duplicate entries
+  if (issue.id === 'duplicate-entries') {
+    filteredEntries = sortDuplicateEntries(filteredEntries);
+  }
+  
+  issueEntries.value = filteredEntries;
   showIssueDialog.value = true;
 };
 
@@ -634,7 +658,14 @@ const handleSightingDeleted = async (id: string) => {
     console.error('Error deleting sighting:', error);
   } finally {
     if (selectedIssue.value) {
-      issueEntries.value = selectedIssue.value.filter(store.sightings);
+      let filteredEntries = selectedIssue.value.filter(store.sightings);
+      
+      // Apply custom sorting for duplicate entries
+      if (selectedIssue.value.id === 'duplicate-entries') {
+        filteredEntries = sortDuplicateEntries(filteredEntries);
+      }
+      
+      issueEntries.value = filteredEntries;
     }
     // Refresh issue counts to keep the overview in sync
     dataQualityIssuesData.value = await processDataQualityIssues();
