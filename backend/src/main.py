@@ -11,6 +11,7 @@ from .api.routers import sightings, ringings, analytics, birds, places, species,
 from .database.connection import engine, get_db, create_tables, check_connection
 from .database.models import Base
 from .utils.logging_config import setup_logging, get_log_level_from_env, get_log_file_from_env, setup_request_logging
+from .utils.version import get_package_version
 
 # Setup logging configuration
 setup_logging(
@@ -31,7 +32,7 @@ if not os.getenv("TESTING", False):
 app = FastAPI(
     title="Vogelring API",
     description="Bird tracking and ringing management API",
-    version="1.0.0",
+    version=get_package_version(),
     docs_url="/swagger",
     redoc_url="/redoc"
 )
@@ -67,12 +68,12 @@ setup_request_logging(app, enable=os.getenv("ENABLE_REQUEST_LOGGING", "true").lo
 @app.get("/")
 async def root():
     """Root endpoint"""
-    return {"message": "Vogelring API", "version": "1.0.0"}
+    return {"message": "Vogelring API", "version": get_package_version()}
 
 @app.get("/api/")
 async def api_root():
     """API root endpoint for frontend compatibility"""
-    return {"message": "Vogelring API", "version": "1.0.0", "status": "running"}
+    return {"message": "Vogelring API", "version": get_package_version(), "status": "running"}
 
 # Cache invalidation endpoint (for compatibility)
 @app.get("/api/cache/invalidate")
