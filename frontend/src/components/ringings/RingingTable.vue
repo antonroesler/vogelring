@@ -96,7 +96,6 @@
       v-model:items-per-page="itemsPerPage"
       :items-per-page-options="[10, 25, 50, 100]"
       class="elevation-0 border rounded"
-      @click:row="handleRowClick"
     >
       <template v-slot:item="{ item }">
         <tr
@@ -385,9 +384,7 @@ const formatField = (_field: string, value: any): string => {
   return value.toString();
 };
 
-const handleRowClick = (event: Event, item: any) => {
-  const ringing = item.item;
-  
+const handleRowClick = (event: Event, ringing: Ringing) => {
   // Check if Ctrl/Cmd key is pressed to open in new tab
   if (event instanceof MouseEvent && (event.ctrlKey || event.metaKey)) {
     const url = `/birds/${ringing.ring}`;
@@ -397,8 +394,8 @@ const handleRowClick = (event: Event, item: any) => {
   }
 };
 
-const onRowClick = (event: MouseEvent, item: any) => {
-  handleRowClick(event, item);
+const onRowClick = (event: MouseEvent, ringing: Ringing) => {
+  handleRowClick(event, ringing);
 };
 
 const openInNewTab = (ringing: Ringing) => {
