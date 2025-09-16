@@ -350,9 +350,11 @@
 import { ref, reactive, watch, computed, onMounted } from 'vue';
 import { format } from 'date-fns';
 import type { Ringing } from '@/types';
+import { BirdStatus } from '@/types';
 import * as api from '@/api';
 import LeafletMap from '@/components/map/LeafletMap.vue';
 import RingingEntryList from '@/views/RingingEntryList.vue';
+import { getRingingAgeOptions, formatRingingAge } from '@/utils/ageMapping';
 
 const activeTab = ref('search');
 const searchRing = ref('');
@@ -500,12 +502,7 @@ watch(() => newRinging.ring, async (newValue) => {
   }
 });
 
-const ageOptions = [
-  { text: 'Nestling (1)', value: 1 },
-  { text: 'Flügge (2)', value: 2 },
-  { text: 'Juvenil (3)', value: 3 },
-  { text: 'Adult (4)', value: 4 }
-];
+const ageOptions = getRingingAgeOptions(true);
 
 const sexOptions = [
   { text: 'Männlich (1)', value: 1 },
@@ -531,8 +528,7 @@ const formatDate = (date: string) => {
 };
 
 const formatAge = (age: number) => {
-  const option = ageOptions.find(opt => opt.value === age);
-  return option ? option.text : `Code ${age}`;
+  return formatRingingAge(age, true);
 };
 
 const formatSex = (sex: number) => {
@@ -615,11 +611,16 @@ const submitForm = async () => {
   isSubmitting.value = true;
   try {
     // First, create or update the ringing
+    const ringingData = {
+      ...newRinging,
+      status: newRinging.status as BirdStatus | undefined
+    };
+    
     if (isUpdateMode.value) {
-      await api.updateRinging(newRinging);
+      await api.updateRinging(ringingData);
       showNotification('Beringung wurde erfolgreich aktualisiert.');
     } else {
-      await api.createRinging(newRinging);
+      await api.createRinging(ringingData);
       showNotification('Beringung wurde erfolgreich erstellt.');
     }
 

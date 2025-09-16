@@ -357,7 +357,7 @@ import BirdSuggestions from '@/components/birds/BirdSuggestions.vue';
 import MissingRingDialog from '@/components/dialogs/MissingRingDialog.vue';
 import MissingSpeciesDialog from '@/components/dialogs/MissingSpeciesDialog.vue';
 import { api } from '@/api';
-import { cleanSightingData, toNumberOrNull, createNumericInputHandler } from '@/utils/formValidation';
+import { cleanSightingData, toNumberOrNull } from '@/utils/formValidation';
 
 const props = defineProps<{
   sighting: Partial<Sighting>;

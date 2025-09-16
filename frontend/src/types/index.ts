@@ -130,7 +130,7 @@ export interface SuggestionLists {
 
 export enum BirdAge {
   AD = "ad",  // Adult
-  DJ = "dj",  // Juvenile
+  DJ = "dj",  // Diesjährig
   VJ = "vj",  // Vorjährig
   JUV = "juv" // Juvenile
 }

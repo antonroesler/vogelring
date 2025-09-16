@@ -158,6 +158,7 @@ import SightingsTable from '@/components/sightings/SightingsTable.vue';
 import { useSightingsStore } from '@/stores/sightings';
 import ShareDialog from '@/components/dialogs/ShareDialog.vue';
 import MissingRingDetails from '@/components/birds/MissingRingDetails.vue';
+import { formatRingingAge } from '@/utils/ageMapping';
 
 const route = useRoute();
 const router = useRouter();
@@ -736,21 +737,7 @@ const loadRingingData = async (ring: string) => {
 };
 
 const formatAge = (age: number) => {
-  switch (age) {
-    case 1: return 'Nestling / nicht voll flugfähiges Küken (1)';
-    case 2: return 'Fängling (2)';
-    case 3: return 'diesjährig (3)';
-    case 4: return 'nicht diesjährig (4)';
-    case 5: return 'vorjährig (5)';
-    case 6: return 'älter als vorjährig (6)';
-    case 7: return 'im 3. Kalender Jahr (7)';
-    case 8: return 'über 3 Jahre alt (8)';
-    case 9: return 'im 4. Kalenderjahr (9)';
-    case 10: return 'über 4 Jahre alt (10)';
-    case 11: return 'im 5. Kalenderjahr (11)';
-    case 12: return 'über 5 Jahre alt (12)';
-    default: return `Code ${age}`;
-  }
+  return formatRingingAge(age, true);
 };
 
 const formatSex = (sex: number) => {

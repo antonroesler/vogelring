@@ -157,12 +157,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from 'vue';
+import { ref } from 'vue';
 import { format } from 'date-fns';
 import type { BirdMeta, Ringing } from '@/types';
-import * as api from '@/api';
+import { formatRingingAge } from '@/utils/ageMapping';
 
-const props = defineProps<{
+defineProps<{
   bird: BirdMeta | null;
   ringingData: Ringing | null;
 }>();
@@ -176,14 +176,7 @@ const formatDate = (date: string | null) => {
 };
 
 const formatAge = (age: number) => {
-  // This is a simplified example - adjust based on your age coding system
-  switch (age) {
-    case 1: return 'Nestling (1)';
-    case 2: return 'Flügge (2)';
-    case 3: return 'Juvenil (3)';
-    case 4: return 'Adult (4)';
-    default: return `Code ${age}`;
-  }
+  return formatRingingAge(age, true);
 };
 
 const formatSex = (sex: number) => {

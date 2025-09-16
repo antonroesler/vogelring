@@ -196,6 +196,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { format } from 'date-fns';
 import type { Ringing } from '@/types';
 import draggable from 'vuedraggable';
+import { formatRingingAge } from '@/utils/ageMapping';
 
 const props = withDefaults(defineProps<{
   ringings: Ringing[];
@@ -376,15 +377,7 @@ const formatSex = (sex: number | string): string => {
 };
 
 const formatAge = (age: number | string): string => {
-  if (typeof age === 'number') {
-    switch (age) {
-      case 1: return 'Nestling';
-      case 2: return 'Juvenil';
-      case 3: return 'Adult';
-      default: return 'Unbekannt';
-    }
-  }
-  return age?.toString() || 'Unbekannt';
+  return formatRingingAge(age, false); // Don't include code for table display
 };
 
 const formatField = (_field: string, value: any): string => {
