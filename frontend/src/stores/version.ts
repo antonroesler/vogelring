@@ -1,5 +1,4 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
 
 interface ChangelogRelease {
   version: string
@@ -20,6 +19,7 @@ interface VersionState {
   showChangelogDialog: boolean
   changelogDisabled: boolean
   initialized: boolean
+  buildTime: string | null
 }
 
 const STORAGE_KEYS = {
@@ -34,7 +34,8 @@ export const useVersionStore = defineStore('version', {
     changelogData: { releases: [] },
     showChangelogDialog: false,
     changelogDisabled: false,
-    initialized: false
+    initialized: false,
+    buildTime: null
   }),
 
   getters: {
@@ -43,8 +44,11 @@ export const useVersionStore = defineStore('version', {
       return state.lastSeenVersion !== state.currentVersion
     },
 
-    shouldShowChangelog: (state) => {
-      return state.hasNewVersion && !state.changelogDisabled && state.changelogData.releases.length > 0
+    shouldShowChangelog(state) {
+      const hasNewVersion = state.lastSeenVersion && state.currentVersion 
+        ? state.lastSeenVersion !== state.currentVersion 
+        : false
+      return hasNewVersion && !state.changelogDisabled && state.changelogData.releases.length > 0
     },
 
     latestRelease: (state) => {
@@ -61,6 +65,9 @@ export const useVersionStore = defineStore('version', {
 
       // Load changelog data
       await this.loadChangelogData()
+
+      // Load version info to get build time and check for updates
+      await this.loadVersionInfo()
 
       // Check if we should show the changelog
       if (this.shouldShowChangelog) {
@@ -87,12 +94,38 @@ export const useVersionStore = defineStore('version', {
 
     async loadChangelogData() {
       try {
-        const response = await fetch('/changelog.json')
+        const response = await fetch('/changelog.json?t=' + Date.now())
         if (response.ok) {
           this.changelogData = await response.json()
+          
+          // Update current version to latest from changelog if available
+          if (this.changelogData.releases.length > 0) {
+            this.currentVersion = this.changelogData.releases[0].version
+          }
         }
       } catch (error) {
         console.warn('Error loading changelog data:', error)
+      }
+    },
+
+    async loadVersionInfo() {
+      try {
+        const response = await fetch('/version.json?t=' + Date.now())
+        if (response.ok) {
+          const versionInfo: VersionInfo = await response.json()
+          
+          // Store the current build time
+          const currentBuildTime = this.buildTime
+          this.buildTime = versionInfo.buildTime
+          
+          // If we have a previous build time and it's different, reload the page
+          if (currentBuildTime && currentBuildTime !== versionInfo.buildTime) {
+            console.log('New version detected (build time changed), reloading page...')
+            window.location.reload()
+          }
+        }
+      } catch (error) {
+        console.warn('Error loading version info:', error)
       }
     },
 
@@ -132,10 +165,13 @@ export const useVersionStore = defineStore('version', {
 
     // Get version info for display
     getVersionInfo(): { app: string; backend: string; hasUpdate: boolean } {
+      const hasNewVersion = this.lastSeenVersion && this.currentVersion 
+        ? this.lastSeenVersion !== this.currentVersion 
+        : false
       return {
         app: __APP_VERSION__ || '1.0.0',
         backend: this.currentVersion,
-        hasUpdate: this.hasNewVersion
+        hasUpdate: hasNewVersion
       }
     }
   }
