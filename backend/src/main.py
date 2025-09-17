@@ -1,23 +1,38 @@
 """
 FastAPI main application entry point
 """
+
 import logging
 import os
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from .api.routers import sightings, ringings, analytics, birds, places, species, dashboard, family, reports, suggestions, health
+from .api.routers import (
+    sightings,
+    ringings,
+    analytics,
+    birds,
+    places,
+    species,
+    dashboard,
+    family,
+    reports,
+    suggestions,
+    health,
+)
 from .database.connection import engine, get_db, create_tables, check_connection
 from .database.models import Base
-from .utils.logging_config import setup_logging, get_log_level_from_env, get_log_file_from_env, setup_request_logging
+from .utils.logging_config import (
+    setup_logging,
+    get_log_level_from_env,
+    get_log_file_from_env,
+    setup_request_logging,
+)
 from .utils.version import get_package_version
 
 # Setup logging configuration
-setup_logging(
-    log_level=get_log_level_from_env(),
-    log_file=get_log_file_from_env()
-)
+setup_logging(log_level=get_log_level_from_env(), log_file=get_log_file_from_env())
 logger = logging.getLogger("vogelring.main")
 
 # Create database tables (only if not in test mode)
@@ -34,7 +49,7 @@ app = FastAPI(
     description="Bird tracking and ringing management API",
     version=get_package_version(),
     docs_url="/swagger",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 # Configure CORS for frontend compatibility
@@ -61,25 +76,35 @@ app.include_router(suggestions.router, prefix="/api", tags=["suggestions"])
 app.include_router(health.router, tags=["health"])
 
 # Setup request logging middleware
-setup_request_logging(app, enable=os.getenv("ENABLE_REQUEST_LOGGING", "true").lower() == "true")
+setup_request_logging(
+    app, enable=os.getenv("ENABLE_REQUEST_LOGGING", "true").lower() == "true"
+)
 
 # Note: Health check endpoints are now handled by the health router
+
 
 @app.get("/")
 async def root():
     """Root endpoint"""
     return {"message": "Vogelring API", "version": get_package_version()}
 
+
 @app.get("/api/")
 async def api_root():
     """API root endpoint for frontend compatibility"""
-    return {"message": "Vogelring API", "version": get_package_version(), "status": "running"}
+    return {
+        "message": "Vogelring API",
+        "version": get_package_version(),
+        "status": "running",
+    }
+
 
 # Cache invalidation endpoint (for compatibility)
 @app.get("/api/cache/invalidate")
 async def invalidate_cache():
     """Cache invalidation endpoint"""
     from .utils.cache import clear_cache
+
     try:
         clear_cache()
         logger.info("Cache invalidated successfully")

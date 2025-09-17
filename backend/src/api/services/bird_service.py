@@ -1,6 +1,7 @@
 """
 Bird service layer for bird-centric operations (bird meta by ring)
 """
+
 from collections import Counter
 import logging
 from typing import Dict, Any, List
@@ -8,6 +9,7 @@ from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 
 from ...database.repositories import SightingRepository, RingingRepository
+from ...database.family_repository import FamilyRepository
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +21,7 @@ class BirdService:
         self.db = db
         self.sighting_repository = SightingRepository(db)
         self.ringing_repository = RingingRepository(db)
+        self.family_repository = FamilyRepository(db)
 
     def get_bird_meta_by_ring(self, ring: str) -> Dict[str, Any]:
         """Get bird metadata for a specific ring in the shape expected by the frontend"""
@@ -45,7 +48,7 @@ class BirdService:
             species_counts = Counter(s.species for s in sightings if s.species)
             if species_counts:
                 species = species_counts.most_common(1)[0][0]
-        
+
         if not species and ringing:
             species = ringing.species
 
@@ -92,7 +95,7 @@ class BirdService:
             )
 
         # Get partners from family tree (placeholder for now)
-        partners: List[Dict[str, Any]] = []
+        partners = self.family_repository.get_partners(ring)
 
         return {
             "ring": ring,

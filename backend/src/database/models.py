@@ -1,8 +1,20 @@
 """
 SQLAlchemy database models
 """
+
 import os
-from sqlalchemy import Column, String, Integer, Date, DECIMAL, Boolean, Text, TIMESTAMP, Index, JSON
+from sqlalchemy import (
+    Column,
+    String,
+    Integer,
+    Date,
+    DECIMAL,
+    Boolean,
+    Text,
+    TIMESTAMP,
+    Index,
+    JSON,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PostgresUUID
 from sqlalchemy.types import TypeDecorator, CHAR
 from sqlalchemy.sql import func
@@ -17,11 +29,12 @@ class GUID(TypeDecorator):
     """Platform-independent GUID type.
     Uses PostgreSQL's UUID type, otherwise uses CHAR(36), storing as stringified hex values.
     """
+
     impl = CHAR
     cache_ok = True
 
     def load_dialect_impl(self, dialect):
-        if dialect.name == 'postgresql':
+        if dialect.name == "postgresql":
             return dialect.type_descriptor(PostgresUUID(as_uuid=True))
         else:
             return dialect.type_descriptor(CHAR(36))
@@ -29,7 +42,7 @@ class GUID(TypeDecorator):
     def process_bind_param(self, value, dialect):
         if value is None:
             return value
-        elif dialect.name == 'postgresql':
+        elif dialect.name == "postgresql":
             return value
         else:
             if not isinstance(value, uuid.UUID):
@@ -53,10 +66,12 @@ def get_json_type():
         return JSON
     return JSONB
 
+
 class Ringing(Base):
     """Ringing data model - migrated from DynamoDB"""
+
     __tablename__ = "ringings"
-    
+
     id = Column(GUID(), primary_key=True, default=uuid4)
     ring = Column(String(50), unique=True, nullable=False, index=True)
     ring_scheme = Column(String(50), nullable=False)
@@ -70,25 +85,33 @@ class Ringing(Base):
     age = Column(Integer, nullable=False)
     status = Column(String(10))
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
-    updated_at = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
-    
+    updated_at = Column(
+        TIMESTAMP,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+    )
+
     # Relationship to sightings (one-to-many, since one ring can have multiple sightings)
-    sightings = relationship("Sighting", 
-                           primaryjoin="Ringing.ring == Sighting.ring",
-                           foreign_keys="Sighting.ring",
-                           viewonly=True)
-    
+    sightings = relationship(
+        "Sighting",
+        primaryjoin="Ringing.ring == Sighting.ring",
+        foreign_keys="Sighting.ring",
+        viewonly=True,
+    )
+
     # Additional indexes for performance
     __table_args__ = (
-        Index('idx_ringings_species_date', 'species', 'date'),
-        Index('idx_ringings_place_date', 'place', 'date'),
-        Index('idx_ringings_ringer', 'ringer'),
+        Index("idx_ringings_species_date", "species", "date"),
+        Index("idx_ringings_place_date", "place", "date"),
+        Index("idx_ringings_ringer", "ringer"),
     )
+
 
 class Sighting(Base):
     """Sighting data model - migrated from S3 pickle files"""
+
     __tablename__ = "sightings"
-    
+
     id = Column(GUID(), primary_key=True, default=uuid4)
     excel_id = Column(Integer)
     comment = Column(Text)
@@ -115,38 +138,25 @@ class Sighting(Base):
     habitat = Column(String(100))
     field_fruit = Column(String(100))
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
-    updated_at = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
-    
-    # Relationship to ringing data (optional, based on ring match)
-    # Note: This is a "loose" relationship since not all sightings have corresponding ringings
-    ringing_data = relationship("Ringing", 
-                               primaryjoin="and_(Sighting.ring == Ringing.ring, Sighting.ring.isnot(None))",
-                               foreign_keys=[ring],
-                               uselist=False,
-                               viewonly=True)
-    
-    # Additional indexes for performance
-    __table_args__ = (
-        Index('idx_sightings_species_date', 'species', 'date'),
-        Index('idx_sightings_place_date', 'place', 'date'),
-        Index('idx_sightings_ring_date', 'ring', 'date'),
+    updated_at = Column(
+        TIMESTAMP,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
     )
 
-class FamilyTreeEntry(Base):
-    """Family tree entry model - migrated from DynamoDB"""
-    __tablename__ = "family_tree_entries"
-    
-    id = Column(GUID(), primary_key=True, default=uuid4)
-    ring = Column(String(50), unique=True, nullable=False, index=True)
-    partners = Column(get_json_type())  # Store as JSON array of FamilyPartner objects
-    children = Column(get_json_type())  # Store as JSON array of FamilyChild objects
-    parents = Column(get_json_type())   # Store as JSON array of FamilyParent objects
-    created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
-    updated_at = Column(TIMESTAMP, server_default=func.current_timestamp(), onupdate=func.current_timestamp())
-    
     # Relationship to ringing data (optional, based on ring match)
-    ringing_data = relationship("Ringing", 
-                               primaryjoin="FamilyTreeEntry.ring == Ringing.ring",
-                               foreign_keys=[ring],
-                               uselist=False,
-                               viewonly=True)
+    # Note: This is a "loose" relationship since not all sightings have corresponding ringings
+    ringing_data = relationship(
+        "Ringing",
+        primaryjoin="and_(Sighting.ring == Ringing.ring, Sighting.ring.isnot(None))",
+        foreign_keys=[ring],
+        uselist=False,
+        viewonly=True,
+    )
+
+    # Additional indexes for performance
+    __table_args__ = (
+        Index("idx_sightings_species_date", "species", "date"),
+        Index("idx_sightings_place_date", "place", "date"),
+        Index("idx_sightings_ring_date", "ring", "date"),
+    )

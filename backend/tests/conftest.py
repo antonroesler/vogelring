@@ -1,6 +1,7 @@
 """
 Test configuration and fixtures
 """
+
 import pytest
 import os
 from datetime import date, datetime
@@ -14,7 +15,7 @@ from fastapi.testclient import TestClient
 os.environ["TESTING"] = "true"
 
 from src.database.connection import Base, get_db
-from src.database.models import Sighting, Ringing, FamilyTreeEntry
+from src.database.models import Sighting, Ringing
 from src.main import app
 
 
@@ -36,7 +37,7 @@ def test_db():
     """Create a test database session"""
     # Create tables
     Base.metadata.create_all(bind=test_engine)
-    
+
     # Create session
     db = TestingSessionLocal()
     try:
@@ -50,17 +51,18 @@ def test_db():
 @pytest.fixture(scope="function")
 def client(test_db):
     """Create a test client with test database"""
+
     def override_get_db():
         try:
             yield test_db
         finally:
             pass
-    
+
     app.dependency_overrides[get_db] = override_get_db
-    
+
     with TestClient(app) as test_client:
         yield test_client
-    
+
     # Clean up
     app.dependency_overrides.clear()
 
@@ -79,7 +81,7 @@ def sample_ringing_data():
         "ringer": "Test Ringer",
         "sex": 1,
         "age": 2,
-        "status": "alive"
+        "status": "alive",
     }
 
 
@@ -110,7 +112,7 @@ def sample_sighting_data():
         "lon": 13.4100,
         "is_exact_location": True,
         "habitat": "wetland",
-        "field_fruit": "none"
+        "field_fruit": "none",
     }
 
 
@@ -119,31 +121,16 @@ def sample_family_tree_data():
     """Sample family tree data for testing"""
     return {
         "ring": "TEST001",
-        "partners": [
-            {
-                "ring": "TEST002",
-                "year": 2023,
-                "confirmed": True
-            }
-        ],
-        "children": [
-            {
-                "ring": "TEST003",
-                "year": 2023,
-                "confirmed": True
-            }
-        ],
-        "parents": []
+        "partners": [{"ring": "TEST002", "year": 2023, "confirmed": True}],
+        "children": [{"ring": "TEST003", "year": 2023, "confirmed": True}],
+        "parents": [],
     }
 
 
 @pytest.fixture
 def create_test_ringing(test_db, sample_ringing_data):
     """Create a test ringing record in the database"""
-    ringing = Ringing(
-        id=uuid4(),
-        **sample_ringing_data
-    )
+    ringing = Ringing(id=uuid4(), **sample_ringing_data)
     test_db.add(ringing)
     test_db.commit()
     test_db.refresh(ringing)
@@ -153,10 +140,7 @@ def create_test_ringing(test_db, sample_ringing_data):
 @pytest.fixture
 def create_test_sighting(test_db, sample_sighting_data):
     """Create a test sighting record in the database"""
-    sighting = Sighting(
-        id=uuid4(),
-        **sample_sighting_data
-    )
+    sighting = Sighting(id=uuid4(), **sample_sighting_data)
     test_db.add(sighting)
     test_db.commit()
     test_db.refresh(sighting)
@@ -164,24 +148,12 @@ def create_test_sighting(test_db, sample_sighting_data):
 
 
 @pytest.fixture
-def create_test_family_tree(test_db, sample_family_tree_data):
-    """Create a test family tree record in the database"""
-    family_tree = FamilyTreeEntry(
-        id=uuid4(),
-        **sample_family_tree_data
-    )
-    test_db.add(family_tree)
-    test_db.commit()
-    test_db.refresh(family_tree)
-    return family_tree
-
-
-@pytest.fixture
 def multiple_test_sightings(test_db):
     """Create multiple test sightings for testing pagination and filtering"""
     from datetime import timedelta
+
     today = date.today()
-    
+
     sightings_data = [
         {
             "excel_id": 1001,
@@ -209,19 +181,19 @@ def multiple_test_sightings(test_db):
             "place": "Location A",
             "lat": 52.5250,
             "lon": 13.4075,
-        }
+        },
     ]
-    
+
     sightings = []
     for data in sightings_data:
         sighting = Sighting(id=uuid4(), **data)
         test_db.add(sighting)
         sightings.append(sighting)
-    
+
     test_db.commit()
     for sighting in sightings:
         test_db.refresh(sighting)
-    
+
     return sightings
 
 
@@ -229,8 +201,9 @@ def multiple_test_sightings(test_db):
 def multiple_test_ringings(test_db):
     """Create multiple test ringings for testing pagination and filtering"""
     from datetime import timedelta
+
     today = date.today()
-    
+
     ringings_data = [
         {
             "ring": "TEST001",
@@ -267,17 +240,17 @@ def multiple_test_ringings(test_db):
             "ringer": "Ringer A",
             "sex": 1,
             "age": 3,
-        }
+        },
     ]
-    
+
     ringings = []
     for data in ringings_data:
         ringing = Ringing(id=uuid4(), **data)
         test_db.add(ringing)
         ringings.append(ringing)
-    
+
     test_db.commit()
     for ringing in ringings:
         test_db.refresh(ringing)
-    
+
     return ringings
