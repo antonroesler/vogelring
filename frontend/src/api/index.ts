@@ -203,59 +203,71 @@ export const getSeasonalAnalysis = async () => {
   return response.data;
 };
 
-// Family Tree API functions
-export const getFamilyTreeByRing = async (ring: string): Promise<FamilyTreeEntry | null> => {
-  console.log('Fetching family tree for ring:', ring);
-  try {
-    const response = await api.get<FamilyTreeEntry>(`/family/${ring}`);
-    console.log('Received family tree:', response.data);
-    return response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.status === 404) {
-      return null;
-    }
-    throw error;
-  }
-};
-
-export const createFamilyTree = async (familyTree: Partial<FamilyTreeEntry>) => {
-  console.log('Creating family tree:', familyTree);
-  const response = await api.post<FamilyTreeEntry>('/family', familyTree);
-  console.log('Created family tree:', response.data);
+// Family Relationship API functions
+export const getBirdRelationships = async (ring: string) => {
+  console.log('Fetching relationships for ring:', ring);
+  const response = await api.get(`/family/relationships/${ring}`);
+  console.log('Received relationships:', response.data);
   return response.data;
 };
 
-export const updateFamilyTree = async (familyTree: Partial<FamilyTreeEntry>) => {
-  console.log('Updating family tree:', familyTree);
-  const response = await api.put<FamilyTreeEntry>('/family', familyTree);
-  console.log('Updated family tree:', response.data);
+export const getPartners = async (ring: string, year?: number) => {
+  console.log('Fetching partners for ring:', ring);
+  const params = year ? { year } : {};
+  const response = await api.get(`/family/partners/${ring}`, { params });
+  console.log('Received partners:', response.data);
   return response.data;
 };
 
-export const deleteFamilyTree = async (ring: string) => {
-  console.log('Deleting family tree for ring:', ring);
-  await api.delete(`/family/${ring}`);
-  console.log('Family tree deleted');
-};
-
-export const addPartnerRelationship = async (ring: string, partnerRing: string, year: number) => {
-  console.log('Adding partner relationship:', { ring, partnerRing, year });
-  const response = await api.post(`/family/${ring}/partners`, {
-    partner_ring: partnerRing,
-    year: year
-  });
-  console.log('Added partner relationship:', response.data);
+export const getChildren = async (ring: string, year?: number) => {
+  console.log('Fetching children for ring:', ring);
+  const params = year ? { year } : {};
+  const response = await api.get(`/family/children/${ring}`, { params });
+  console.log('Received children:', response.data);
   return response.data;
 };
 
-export const addChildRelationship = async (parentRing: string, childRing: string, year: number, sex: 'M' | 'W' | 'U') => {
-  console.log('Adding child relationship:', { parentRing, childRing, year, sex });
-  const response = await api.post(`/family/${parentRing}/children`, {
-    child_ring: childRing,
-    year: year,
-    sex: sex
-  });
-  console.log('Added child relationship:', response.data);
+export const getParents = async (ring: string, year?: number) => {
+  console.log('Fetching parents for ring:', ring);
+  const params = year ? { year } : {};
+  const response = await api.get(`/family/parents/${ring}`, { params });
+  console.log('Received parents:', response.data);
+  return response.data;
+};
+
+export const getSiblings = async (ring: string, year?: number) => {
+  console.log('Fetching siblings for ring:', ring);
+  const params = year ? { year } : {};
+  const response = await api.get(`/family/siblings/${ring}`, { params });
+  console.log('Received siblings:', response.data);
+  return response.data;
+};
+
+export const createRelationship = async (relationship: {
+  bird1_ring: string;
+  bird2_ring: string;
+  relationship_type: 'breeding_partner' | 'parent_of' | 'child_of' | 'sibling_of';
+  year: number;
+  sighting1_id?: string;
+  sighting2_id?: string;
+  ringing1_id?: string;
+  ringing2_id?: string;
+}) => {
+  console.log('Creating relationship:', relationship);
+  const response = await api.post('/family/relationships', relationship);
+  console.log('Created relationship:', response.data);
+  return response.data;
+};
+
+export const createSymmetricRelationship = async (relationship: {
+  bird1_ring: string;
+  bird2_ring: string;
+  relationship_type: 'breeding_partner' | 'sibling_of';
+  year: number;
+}) => {
+  console.log('Creating symmetric relationship:', relationship);
+  const response = await api.post('/family/relationships/symmetric', relationship);
+  console.log('Created symmetric relationship:', response.data);
   return response.data;
 };
 

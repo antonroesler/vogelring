@@ -269,6 +269,12 @@
       </v-col>
     </v-row>
 
+    <!-- Children Form -->
+    <children-form
+      v-if="isNewEntry"
+      v-model:children="children"
+    />
+
     <!-- Map -->
     <v-card-subtitle class="px-0 mt-4">Standort</v-card-subtitle>
     <v-row>
@@ -346,6 +352,16 @@
     @continue-without-species="handleContinueWithoutSpecies"
     @cancel="handleCancelSpeciesDialog"
   />
+
+  <!-- Family Confirmation Dialog -->
+  <family-confirmation-dialog
+    v-model="showFamilyConfirmationDialog"
+    :main-sighting="pendingSighting || {}"
+    :partner-sighting="getPartnerSighting()"
+    :child-sightings="getChildSightings()"
+    @confirm="handleFamilyConfirm"
+    @cancel="handleFamilyCancel"
+  />
 </template>
 
 <script setup lang="ts">
@@ -356,8 +372,11 @@ import LeafletMap from '@/components/map/LeafletMap.vue';
 import BirdSuggestions from '@/components/birds/BirdSuggestions.vue';
 import MissingRingDialog from '@/components/dialogs/MissingRingDialog.vue';
 import MissingSpeciesDialog from '@/components/dialogs/MissingSpeciesDialog.vue';
-import { api } from '@/api';
+import ChildrenForm from '@/components/sightings/ChildrenForm.vue';
+import FamilyConfirmationDialog from '@/components/dialogs/FamilyConfirmationDialog.vue';
+import { api, createSighting } from '@/api';
 import { cleanSightingData, toNumberOrNull } from '@/utils/formValidation';
+import * as apiRelationships from '@/api';
 
 const props = defineProps<{
   sighting: Partial<Sighting>;
@@ -397,7 +416,9 @@ const familySizeInput = ref<string>('');
 // Dialog state
 const showMissingRingDialog = ref(false);
 const showMissingSpeciesDialog = ref(false);
+const showFamilyConfirmationDialog = ref(false);
 const pendingSighting = ref<Partial<Sighting> | null>(null);
+const children = ref<Array<{ ring: string; age?: number }>>([]);
 
 const statusItems = [
   { title: 'Brutvogel', value: BirdStatus.BV },
@@ -555,6 +576,20 @@ const handleSubmit = () => {
     }
   }
   
+  // Check if we need family confirmation for new entries
+  if (props.isNewEntry) {
+    const hasPartner = cleanedSighting.partner && 
+      cleanedSighting.partner.toLowerCase() !== 'ub' && 
+      cleanedSighting.partner.toLowerCase() !== 'unberingt';
+    const hasChildren = children.value.some(child => child.ring);
+    
+    if (hasPartner || hasChildren) {
+      pendingSighting.value = cleanedSighting;
+      showFamilyConfirmationDialog.value = true;
+      return;
+    }
+  }
+  
   // If no dialogs needed or not a new entry, submit directly
   emit('submit', cleanedSighting);
 };
@@ -610,6 +645,150 @@ const handleContinueWithoutSpecies = () => {
 
 const handleCancelSpeciesDialog = () => {
   pendingSighting.value = null;
+};
+
+const getPartnerSighting = () => {
+  if (!pendingSighting.value?.partner || 
+      pendingSighting.value.partner.toLowerCase() === 'ub' || 
+      pendingSighting.value.partner.toLowerCase() === 'unberingt') {
+    return undefined;
+  }
+  
+  // Determine partner sex based on main sighting sex
+  let partnerSex: string | undefined;
+  if (pendingSighting.value.sex === 'M') {
+    partnerSex = 'W';
+  } else if (pendingSighting.value.sex === 'W') {
+    partnerSex = 'M';
+  }
+  
+  return {
+    ...pendingSighting.value,
+    ring: pendingSighting.value.partner,
+    partner: pendingSighting.value.ring,
+    reading: undefined,
+    comment: 'Diese Sichtung wurde automatisch generiert',
+    sex: partnerSex
+  };
+};
+
+const getChildSightings = () => {
+  return children.value
+    .filter(child => child.ring)
+    .map(child => ({
+      ...pendingSighting.value,
+      ring: child.ring,
+      partner: undefined,
+      reading: undefined,
+      comment: 'Diese Sichtung wurde automatisch generiert',
+      age: child.age ? `${child.age}` as any : undefined,
+      sex: child.sex,
+      status: undefined,
+      breed_size: undefined,
+      family_size: undefined,
+      pair: pendingSighting.value?.pair === 'x' ? undefined : pendingSighting.value?.pair
+    }));
+};
+
+const handleFamilyConfirm = async () => {
+  if (!pendingSighting.value) return;
+  
+  try {
+    const year = new Date(pendingSighting.value.date || new Date()).getFullYear();
+    
+    // Create main sighting
+    const mainSighting = await createSighting(pendingSighting.value);
+    
+    // Create partner sighting and relationship
+    const partnerSighting = getPartnerSighting();
+    let createdPartnerSighting = null;
+    if (partnerSighting) {
+      createdPartnerSighting = await createSighting(partnerSighting);
+      
+      await apiRelationships.createSymmetricRelationship({
+        bird1_ring: mainSighting.ring!,
+        bird2_ring: createdPartnerSighting.ring!,
+        relationship_type: 'breeding_partner',
+        year
+      });
+    }
+    
+    // Create children sightings and relationships
+    const childSightings = getChildSightings();
+    for (const childSighting of childSightings) {
+      const createdChildSighting = await createSighting(childSighting);
+      
+      // Create parent-child relationships with main bird
+      await apiRelationships.createRelationship({
+        bird1_ring: mainSighting.ring!,
+        bird2_ring: createdChildSighting.ring!,
+        relationship_type: 'parent_of',
+        year,
+        sighting1_id: mainSighting.id,
+        sighting2_id: createdChildSighting.id
+      });
+      
+      await apiRelationships.createRelationship({
+        bird1_ring: createdChildSighting.ring!,
+        bird2_ring: mainSighting.ring!,
+        relationship_type: 'child_of',
+        year,
+        sighting1_id: createdChildSighting.id,
+        sighting2_id: mainSighting.id
+      });
+
+      // Create parent-child relationships with partner if exists
+      if (createdPartnerSighting) {
+        await apiRelationships.createRelationship({
+          bird1_ring: createdPartnerSighting.ring!,
+          bird2_ring: createdChildSighting.ring!,
+          relationship_type: 'parent_of',
+          year,
+          sighting1_id: createdPartnerSighting.id,
+          sighting2_id: createdChildSighting.id
+        });
+        
+        await apiRelationships.createRelationship({
+          bird1_ring: createdChildSighting.ring!,
+          bird2_ring: createdPartnerSighting.ring!,
+          relationship_type: 'child_of',
+          year,
+          sighting1_id: createdChildSighting.id,
+          sighting2_id: createdPartnerSighting.id
+        });
+      }
+    }
+    
+    // Create sibling relationships between children
+    for (let i = 0; i < childSightings.length; i++) {
+      for (let j = i + 1; j < childSightings.length; j++) {
+        await apiRelationships.createSymmetricRelationship({
+          bird1_ring: childSightings[i].ring!,
+          bird2_ring: childSightings[j].ring!,
+          relationship_type: 'sibling_of',
+          year
+        });
+      }
+    }
+    
+    showFamilyConfirmationDialog.value = false;
+    pendingSighting.value = null;
+    
+    // Reset form
+    localSighting.value = {
+      date: new Date().toISOString().split('T')[0],
+      melded: false,
+      is_exact_location: false
+    };
+    children.value = [];
+    
+  } catch (error) {
+    console.error('Error creating family sighting:', error);
+  }
+};
+
+const handleFamilyCancel = () => {
+  showFamilyConfirmationDialog.value = false;
 };
 
 const hasCoordinates = computed(() => {

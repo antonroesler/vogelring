@@ -275,7 +275,20 @@ const loadFamilyData = async () => {
   
   isLoading.value = true;
   try {
-    familyData.value = await api.getFamilyTreeByRing(props.ring);
+    const [partners, children, parents, siblings] = await Promise.all([
+      api.getPartners(props.ring),
+      api.getChildren(props.ring),
+      api.getParents(props.ring),
+      api.getSiblings(props.ring)
+    ]);
+    
+    familyData.value = {
+      ring: props.ring,
+      partners,
+      children,
+      parents,
+      siblings
+    };
   } catch (error) {
     console.error('Error loading family data:', error);
     familyData.value = null;
@@ -290,10 +303,26 @@ const addFamilyMember = async () => {
   isAdding.value = true;
   try {
     if (addType.value === 'partner') {
-      await api.addPartnerRelationship(props.ring, addRing.value, addYear.value);
+      await api.createSymmetricRelationship({
+        bird1_ring: props.ring,
+        bird2_ring: addRing.value,
+        relationship_type: 'breeding_partner',
+        year: addYear.value
+      });
       successMessage.value = 'Partner erfolgreich hinzugefügt';
     } else {
-      await api.addChildRelationship(props.ring, addRing.value, addYear.value, addSex.value);
+      await api.createRelationship({
+        bird1_ring: props.ring,
+        bird2_ring: addRing.value,
+        relationship_type: 'parent_of',
+        year: addYear.value
+      });
+      await api.createRelationship({
+        bird1_ring: addRing.value,
+        bird2_ring: props.ring,
+        relationship_type: 'child_of',
+        year: addYear.value
+      });
       successMessage.value = 'Nachkomme erfolgreich hinzugefügt';
     }
     

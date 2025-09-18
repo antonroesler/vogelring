@@ -197,10 +197,13 @@ class FamilyRepository:
         self, parent_ring: str, year: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """Get all children of a bird"""
+
         query = self.db.query(BirdRelationship).filter(
             BirdRelationship.bird1_ring == parent_ring,
-            BirdRelationship.relationship_type == RelationshipType.PARENT_OF.value,
+            BirdRelationship._relationship_type == RelationshipType.PARENT_OF.value,
         )
+        print("DEBUG: get_children")
+        print(query.all())
 
         if year:
             query = query.filter(BirdRelationship.year == year)
@@ -224,7 +227,7 @@ class FamilyRepository:
         """Get all parents of a bird"""
         query = self.db.query(BirdRelationship).filter(
             BirdRelationship.bird1_ring == child_ring,
-            BirdRelationship.relationship_type == RelationshipType.CHILD_OF.value,
+            BirdRelationship._relationship_type == RelationshipType.CHILD_OF.value,
         )
 
         if year:
@@ -274,7 +277,8 @@ class FamilyRepository:
             # Direct sibling relationships only
             query = self.db.query(BirdRelationship).filter(
                 BirdRelationship.bird1_ring == bird_ring,
-                BirdRelationship.relationship_type == RelationshipType.SIBLING_OF.value,
+                BirdRelationship._relationship_type
+                == RelationshipType.SIBLING_OF.value,
             )
 
             if year:

@@ -96,6 +96,7 @@ class BirdService:
 
         # Get partners from family tree (placeholder for now)
         partners = self.family_repository.get_partners(ring)
+        children = self.family_repository.get_children(ring)
 
         return {
             "ring": ring,
@@ -108,6 +109,7 @@ class BirdService:
             else None,
             "sightings": sighting_dicts,
             "partners": partners,
+            "children": children,
         }
 
     def get_bird_suggestions_by_partial_reading(
