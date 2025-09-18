@@ -57,12 +57,14 @@ async def create_shareable_report(request: ShareableReportRequest):
     """Generate a shareable report and upload to S3"""
     s3_client = get_s3_client()
     report_uuid = str(uuid4())
-    s3_key = f"reports/{report_uuid}.html"
+    validity_date = datetime.now() + timedelta(days=request.days)
+    s3_key = f"reports/{report_uuid}/expires={validity_date.strftime('%Y-%m-%d')}/report.html"
     s3_client.put_object(
         Bucket="vogelring-reports",
         Key=s3_key,
         Body=request.html.encode("utf-8"),
         ContentType="text/html",
+        Tagging=f"retention={request.days}",
     )
     # Make the object public
     s3_client.put_object_acl(

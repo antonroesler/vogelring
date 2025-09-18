@@ -50,10 +50,10 @@ const dialog = ref(false);
 const showSnackbar = ref(false);
 const selectedDays = ref(90);
 const dayOptions = [
+  { title: '30 Tage', value: 7 },
   { title: '30 Tage', value: 30 },
   { title: '90 Tage', value: 90 },
   { title: '180 Tage', value: 180 },
-  { title: '360 Tage', value: 360 },
 ];
 
 const generateReport = async () => {
