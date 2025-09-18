@@ -5,6 +5,35 @@ All notable changes to Vogelring will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0](https://github.com/antonroesler/vogelring/compare/v2.1.0...v2.2.0) (2025-09-18)
+
+
+### ✨ Features
+
+* expiration date for reports ([3980196](https://github.com/antonroesler/vogelring/commit/3980196360ad016187c82639e2d4af3d2006b80d))
+* version check ([44cf183](https://github.com/antonroesler/vogelring/commit/44cf18382d01bf864b81bb84d4a9d6334b40bfbc))
+
+
+### 🐛 Bug Fixes
+
+* row click in ringing table ([c259b71](https://github.com/antonroesler/vogelring/commit/c259b7137623679d26af87a174f0ba6c9651e565))
+* shareable report ([b1d1f6a](https://github.com/antonroesler/vogelring/commit/b1d1f6a6c25b5e734b30aab061d96f2929c91cb0))
+
+
+### 🔧 Miscellaneous
+
+* remove old script ([4e43d0f](https://github.com/antonroesler/vogelring/commit/4e43d0fb599e19f50d6e783a4680eb09d5766476))
+
+
+### 📚 Documentation
+
+* set change log date of version 1.0.0 ([874aa7a](https://github.com/antonroesler/vogelring/commit/874aa7a9f20176f2509753f48f54b3b2eada998a))
+
+
+### ♻️ Code Refactoring
+
+* use correct ringing age mapping ([7781f47](https://github.com/antonroesler/vogelring/commit/7781f475a646e66c27c72db112eed2d4d70da2fc))
+
 ## [2.1.0](https://github.com/antonroesler/vogelring/compare/v2.0.0...v2.1.0) (2025-09-14)
 
 ### ✨ Features
