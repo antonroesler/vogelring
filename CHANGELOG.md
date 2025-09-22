@@ -5,6 +5,13 @@ All notable changes to Vogelring will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0](https://github.com/antonroesler/vogelring/compare/v2.2.0...v2.3.0) (2025-09-22)
+
+
+### ✨ Features
+
+* family relationships re-modelling ([#49](https://github.com/antonroesler/vogelring/issues/49)) ([ac44680](https://github.com/antonroesler/vogelring/commit/ac44680a578a5905cce54060ff9c1ba5bb606cae))
+
 ## [2.2.0](https://github.com/antonroesler/vogelring/compare/v2.1.0...v2.2.0) (2025-09-18)
 
 
