@@ -84,6 +84,7 @@ class Ringing(Base):
     sex = Column(Integer, nullable=False)
     age = Column(Integer, nullable=False)
     status = Column(String(10))
+    comment = Column(Text)
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
     updated_at = Column(
         TIMESTAMP,

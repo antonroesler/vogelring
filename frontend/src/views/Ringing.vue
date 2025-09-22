@@ -100,6 +100,10 @@
                       ></v-btn>
                     </v-list-item-subtitle>
                   </v-list-item>
+                  <v-list-item v-if="foundRinging.comment">
+                    <v-list-item-title>Kommentar</v-list-item-title>
+                    <v-list-item-subtitle>{{ foundRinging.comment }}</v-list-item-subtitle>
+                  </v-list-item>
                 </v-list>
 
                 <v-card-actions>
@@ -213,6 +217,16 @@
                     item-value="value"
                     clearable
                   ></v-select>
+                </v-col>
+                <v-col cols="12">
+                  <v-textarea
+                    v-model="newRinging.comment"
+                    label="Kommentar"
+                    placeholder="Zusätzliche Notizen zur Beringung..."
+                    rows="3"
+                    auto-grow
+                    clearable
+                  ></v-textarea>
                 </v-col>
               </v-row>
 
@@ -401,6 +415,7 @@ const newRinging = reactive({
   age: undefined as number | undefined,
   sex: undefined as number | undefined,
   status: undefined as string | undefined,
+  comment: '',
   lat: undefined as number | undefined,
   lon: undefined as number | undefined
 });
@@ -695,6 +710,7 @@ const submitForm = async () => {
       age: undefined,
       sex: undefined,
       status: preservedValues.status,
+      comment: '',
       lat: preservedValues.lat,
       lon: preservedValues.lon
     });

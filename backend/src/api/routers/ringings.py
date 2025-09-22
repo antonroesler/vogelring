@@ -1,6 +1,7 @@
 """
 Ringings API router
 """
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Dict, Any, List
@@ -15,6 +16,7 @@ router = APIRouter()
 
 class RingingCreate(BaseModel):
     """Pydantic model for creating ringings"""
+
     ring: str
     ring_scheme: str
     species: str
@@ -26,10 +28,12 @@ class RingingCreate(BaseModel):
     sex: int
     age: int
     status: str | None = None
+    comment: str | None = None
 
 
 class RingingUpdate(BaseModel):
     """Pydantic model for updating ringings"""
+
     ring: str
     ring_scheme: str | None = None
     species: str | None = None
@@ -41,6 +45,7 @@ class RingingUpdate(BaseModel):
     sex: int | None = None
     age: int | None = None
     status: str | None = None
+    comment: str | None = None
 
 
 @router.get("/ringings/count")
@@ -62,7 +67,7 @@ async def get_autocomplete_suggestions(
     field: str,
     q: str = Query(..., description="Query string"),
     limit: int = Query(10, ge=1, le=50, description="Maximum number of suggestions"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get autocomplete suggestions for a field"""
     service = RingingService(db)
@@ -79,45 +84,45 @@ async def get_ringings(
     species: str | None = Query(None, description="Species filter"),
     place: str | None = Query(None, description="Place filter"),
     ringer: str | None = Query(None, description="Ringer filter"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get ringings with optional filtering and pagination"""
     service = RingingService(db)
-    
+
     # Calculate offset
     offset = (page - 1) * per_page
-    
+
     # Build filters
     filters = {}
     if start_date:
-        filters['start_date'] = start_date
+        filters["start_date"] = start_date
     if end_date:
-        filters['end_date'] = end_date
+        filters["end_date"] = end_date
     if species:
-        filters['species'] = species
+        filters["species"] = species
     if place:
-        filters['place'] = place
+        filters["place"] = place
     if ringer:
-        filters['ringer'] = ringer
-    
+        filters["ringer"] = ringer
+
     # Get ringings
     if filters:
         ringings = service.search_ringings(filters)
         # Apply pagination manually for filtered results
         total = len(ringings)
-        ringings = ringings[offset:offset + per_page]
+        ringings = ringings[offset : offset + per_page]
     else:
         ringings = service.get_all_ringings(limit=per_page, offset=offset)
         total = service.get_ringings_count()
-    
+
     return {
         "ringings": ringings,
         "pagination": {
             "page": page,
             "per_page": per_page,
             "total": total,
-            "pages": (total + per_page - 1) // per_page
-        }
+            "pages": (total + per_page - 1) // per_page,
+        },
     }
 
 
@@ -131,41 +136,38 @@ async def get_ringings_entry_list(
     place: str | None = Query(None, description="Place filter"),
     ring: str | None = Query(None, description="Ring filter"),
     ringer: str | None = Query(None, description="Ringer filter"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Get ringings for entry list with server-side filtering for specific species"""
     service = RingingService(db)
-    
+
     # Calculate offset
     offset = (page - 1) * per_page
-    
+
     # Build filters with species filtering for target species
     filters = {}
     if start_date:
-        filters['start_date'] = start_date
+        filters["start_date"] = start_date
     if end_date:
-        filters['end_date'] = end_date
+        filters["end_date"] = end_date
     if species:
-        filters['species'] = species
+        filters["species"] = species
     if place:
-        filters['place'] = place
+        filters["place"] = place
     if ring:
-        filters['ring'] = ring
+        filters["ring"] = ring
     if ringer:
-        filters['ringer'] = ringer
-    
+        filters["ringer"] = ringer
+
     # Get filtered ringings for target species
     ringings = service.get_entry_list_ringings(filters, limit=per_page, offset=offset)
     total = service.get_entry_list_ringings_count(filters)
-    
+
     return ringings  # Return just the array for compatibility with sightings API
 
 
 @router.get("/ringing/{ring}")
-async def get_ringing_by_ring(
-    ring: str,
-    db: Session = Depends(get_db)
-):
+async def get_ringing_by_ring(ring: str, db: Session = Depends(get_db)):
     """Get ringing information by ring number"""
     service = RingingService(db)
     ringing = service.get_ringing_by_ring(ring)
@@ -175,10 +177,7 @@ async def get_ringing_by_ring(
 
 
 @router.post("/ringing")
-async def upsert_ringing(
-    ringing_data: RingingCreate,
-    db: Session = Depends(get_db)
-):
+async def upsert_ringing(ringing_data: RingingCreate, db: Session = Depends(get_db)):
     """Create or update a ringing record"""
     service = RingingService(db)
     try:
@@ -189,10 +188,7 @@ async def upsert_ringing(
 
 
 @router.put("/ringing")
-async def update_ringing(
-    ringing_data: RingingUpdate,
-    db: Session = Depends(get_db)
-):
+async def update_ringing(ringing_data: RingingUpdate, db: Session = Depends(get_db)):
     """Update an existing ringing record"""
     service = RingingService(db)
     try:
@@ -204,10 +200,7 @@ async def update_ringing(
 
 
 @router.delete("/ringing/{ring}")
-async def delete_ringing(
-    ring: str,
-    db: Session = Depends(get_db)
-):
+async def delete_ringing(ring: str, db: Session = Depends(get_db)):
     """Delete a ringing record"""
     service = RingingService(db)
     try:

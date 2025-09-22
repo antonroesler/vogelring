@@ -132,6 +132,10 @@
                   </v-btn>
                 </v-list-item-subtitle>
               </v-list-item>
+              <v-list-item v-if="ringingData.comment">
+                <v-list-item-title>Kommentar</v-list-item-title>
+                <v-list-item-subtitle>{{ ringingData.comment }}</v-list-item-subtitle>
+              </v-list-item>
             </v-list>
           </v-expand-transition>
         </template>

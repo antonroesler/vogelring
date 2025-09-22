@@ -131,6 +131,10 @@
             <template v-else-if="col === 'ring_scheme'">
               {{ item.ring_scheme }}
             </template>
+            <template v-else-if="col === 'comment'">
+              <span v-if="item.comment" class="comment-text">{{ item.comment }}</span>
+              <span v-else class="text-medium-emphasis">-</span>
+            </template>
             <template v-else>
               {{ formatField(col as string, (item as any)[col]) }}
             </template>
@@ -247,6 +251,7 @@ const allColumnDefs = [
   { key: 'sex', title: 'Geschlecht' },
   { key: 'age', title: 'Alter' },
   { key: 'status', title: 'Status' },
+  { key: 'comment', title: 'Kommentar' },
   { key: 'lat', title: 'Breitengrad' },
   { key: 'lon', title: 'Längengrad' },
 ] as const;
@@ -498,5 +503,14 @@ onMounted(() => {
 .actions-cell {
   width: 120px;
   text-align: center;
+}
+
+.comment-text {
+  max-width: 200px;
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: top;
 }
 </style>
