@@ -376,6 +376,7 @@ import ChildrenForm from '@/components/sightings/ChildrenForm.vue';
 import FamilyConfirmationDialog from '@/components/dialogs/FamilyConfirmationDialog.vue';
 import { api, createSighting } from '@/api';
 import { cleanSightingData, toNumberOrNull } from '@/utils/formValidation';
+import { createClearedSighting, createDefaultSighting } from '@/utils/fieldClearingUtils';
 import * as apiRelationships from '@/api';
 
 const props = defineProps<{
@@ -772,15 +773,17 @@ const handleFamilyConfirm = async () => {
     }
     
     showFamilyConfirmationDialog.value = false;
-    pendingSighting.value = null;
     
-    // Reset form
-    localSighting.value = {
-      date: new Date().toISOString().split('T')[0],
-      melded: false,
-      is_exact_location: false
-    };
+    // Reset form using the same field clearing logic as individual sightings
+    if (props.clearFieldsSettings) {
+      localSighting.value = createClearedSighting(pendingSighting.value, props.clearFieldsSettings);
+    } else {
+      // Fallback to default sighting if no clear fields settings available
+      localSighting.value = createDefaultSighting();
+    }
+    
     children.value = [];
+    pendingSighting.value = null;
     
   } catch (error) {
     console.error('Error creating family sighting:', error);

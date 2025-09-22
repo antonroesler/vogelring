@@ -45,6 +45,7 @@ import { useSightingsStore } from '@/stores/sightings';
 import type { Sighting } from '@/types';
 import SightingForm from '@/components/sightings/SightingForm.vue';
 import ClearFieldsSettings from '@/components/settings/ClearFieldsSettings.vue';
+import { createClearedSighting, createDefaultSighting } from '@/utils/fieldClearingUtils';
 
 const store = useSightingsStore();
 const loading = ref(false);
@@ -53,11 +54,7 @@ const showErrorSnackbar = ref(false);
 const errorMessage = ref('Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.');
 const clearFieldsSettings = ref<Record<string, boolean>>({});
 
-const sighting = ref<Partial<Sighting>>({
-  date: new Date().toISOString().split('T')[0],
-  melded: false,
-  is_exact_location: false
-});
+const sighting = ref<Partial<Sighting>>(createDefaultSighting());
 
 const saveSighting = async (newSighting: Partial<Sighting>) => {
   loading.value = true;
@@ -65,33 +62,8 @@ const saveSighting = async (newSighting: Partial<Sighting>) => {
     await store.createSighting(newSighting);
     showSuccessSnackbar.value = true;
     
-    // Create new sighting object with preserved fields
-    const preservedSighting: Partial<Sighting> = {};
-    
-    // Preserve fields based on settings
-    Object.keys(newSighting).forEach(key => {
-      if (!clearFieldsSettings.value[key]) {
-        preservedSighting[key as keyof Sighting] = newSighting[key as keyof Sighting];
-      }
-    });
-
-    // Handle coordinates together
-    if (clearFieldsSettings.value.lat || clearFieldsSettings.value.lon) {
-      preservedSighting.lat = null;
-      preservedSighting.lon = null;
-      preservedSighting.is_exact_location = false;
-    } else {
-      preservedSighting.lat = newSighting.lat;
-      preservedSighting.lon = newSighting.lon;
-      preservedSighting.is_exact_location = newSighting.is_exact_location;
-    }
-
-    // Always reset Ring and Ablesung (reading) fields regardless of settings
-    preservedSighting.ring = undefined;
-    preservedSighting.reading = undefined;
-
-    preservedSighting.melded = false;
-    sighting.value = preservedSighting;
+    // Create new sighting object with fields cleared according to user settings
+    sighting.value = createClearedSighting(newSighting, clearFieldsSettings.value);
   } catch (error) {
     console.error('Error saving sighting:', error);
     showErrorSnackbar.value = true;
