@@ -147,20 +147,37 @@ export enum SeenStatus {
   SEEN_SEPARATE = "SEEN_SEPARATE"
 }
 
-// Family Tree Types
+// Family Relationship Types
 export interface FamilyPartner {
   ring: string;
   year: number;
+  confidence?: string;
+  source?: string;
+  notes?: string;
 }
 
 export interface FamilyChild {
   ring: string;
-  year?: number | null;
+  year: number;
+  confidence?: string;
+  source?: string;
+  notes?: string;
 }
 
 export interface FamilyParent {
   ring: string;
-  sex: 'M' | 'W' | 'U';
+  year: number;
+  confidence?: string;
+  source?: string;
+  notes?: string;
+}
+
+export interface FamilySibling {
+  ring: string;
+  year: number;
+  confidence?: string;
+  source?: string;
+  notes?: string;
 }
 
 export interface FamilyTreeEntry {
@@ -168,4 +185,5 @@ export interface FamilyTreeEntry {
   partners: FamilyPartner[];
   children: FamilyChild[];
   parents: FamilyParent[];
+  siblings: FamilySibling[];
 }

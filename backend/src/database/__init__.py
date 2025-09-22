@@ -1,6 +1,7 @@
 """
 Database package for Vogelring application
 """
+
 from .connection import (
     engine,
     SessionLocal,
@@ -9,31 +10,30 @@ from .connection import (
     get_db_session,
     create_tables,
     drop_tables,
-    check_connection
+    check_connection,
 )
-from .models import Sighting, Ringing, FamilyTreeEntry
-from .repositories import SightingRepository, RingingRepository, FamilyTreeRepository
-from .utils import DatabaseUtils, create_optimized_indexes
+from .models import Sighting, Ringing
+from .family_models import BirdRelationship, RelationshipType
+from .repositories import SightingRepository, RingingRepository
+from .family_repository import FamilyRepository
 
 __all__ = [
     # Connection utilities
-    'engine',
-    'SessionLocal', 
-    'Base',
-    'get_db',
-    'get_db_session',
-    'create_tables',
-    'drop_tables',
-    'check_connection',
+    "engine",
+    "SessionLocal",
+    "Base",
+    "get_db",
+    "get_db_session",
+    "create_tables",
+    "drop_tables",
+    "check_connection",
     # Models
-    'Sighting',
-    'Ringing', 
-    'FamilyTreeEntry',
+    "Sighting",
+    "Ringing",
+    "BirdRelationship",
+    "RelationshipType",
     # Repositories
-    'SightingRepository',
-    'RingingRepository',
-    'FamilyTreeRepository',
-    # Utils
-    'DatabaseUtils',
-    'create_optimized_indexes'
+    "SightingRepository",
+    "RingingRepository",
+    "FamilyRepository",
 ]

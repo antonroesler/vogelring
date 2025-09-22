@@ -629,7 +629,18 @@ const submitForm = async () => {
     
     if (parent1Ring.value) {
       try {
-        await api.addChildRelationship(parent1Ring.value, newRinging.ring, currentYear, parent1Sex.value);
+        await api.createRelationship({
+          bird1_ring: parent1Ring.value,
+          bird2_ring: newRinging.ring,
+          relationship_type: 'parent_of',
+          year: currentYear
+        });
+        await api.createRelationship({
+          bird1_ring: newRinging.ring,
+          bird2_ring: parent1Ring.value,
+          relationship_type: 'child_of',
+          year: currentYear
+        });
         showNotification(`Eltern-Kind-Beziehung zu ${parent1Ring.value} hinzugefügt.`);
       } catch (error) {
         console.error('Error adding parent 1 relationship:', error);
@@ -639,7 +650,18 @@ const submitForm = async () => {
 
     if (parent2Ring.value) {
       try {
-        await api.addChildRelationship(parent2Ring.value, newRinging.ring, currentYear, parent2Sex.value);
+        await api.createRelationship({
+          bird1_ring: parent2Ring.value,
+          bird2_ring: newRinging.ring,
+          relationship_type: 'parent_of',
+          year: currentYear
+        });
+        await api.createRelationship({
+          bird1_ring: newRinging.ring,
+          bird2_ring: parent2Ring.value,
+          relationship_type: 'child_of',
+          year: currentYear
+        });
         showNotification(`Eltern-Kind-Beziehung zu ${parent2Ring.value} hinzugefügt.`);
       } catch (error) {
         console.error('Error adding parent 2 relationship:', error);
