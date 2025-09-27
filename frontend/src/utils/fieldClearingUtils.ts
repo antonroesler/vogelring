@@ -52,3 +52,4 @@ export function createDefaultSighting(): Partial<Sighting> {
     is_exact_location: false
   };
 }
+
