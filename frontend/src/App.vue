@@ -166,6 +166,14 @@
           Beringungen
         </v-btn>
         <v-btn 
+          to="/family-relations" 
+          variant="text"
+          class="nav-btn"
+        >
+          <v-icon icon="mdi-family-tree" class="me-1"></v-icon>
+          Familienbeziehungen
+        </v-btn>
+        <v-btn 
           to="/statistics" 
           variant="text"
           class="nav-btn"

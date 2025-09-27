@@ -144,6 +144,40 @@ class FamilyRepository:
 
         return query.order_by(BirdRelationship.year.desc()).all()
 
+    def get_all_relationships(
+        self,
+        relationship_type: Optional[RelationshipType] = None,
+        year: Optional[int] = None,
+        bird_ring: Optional[str] = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> List[BirdRelationship]:
+        """Get all relationships with optional filters"""
+        query = self.db.query(BirdRelationship)
+
+        if relationship_type:
+            query = query.filter(
+                BirdRelationship.relationship_type == relationship_type
+            )
+
+        if year:
+            query = query.filter(BirdRelationship.year == year)
+
+        if bird_ring:
+            query = query.filter(
+                or_(
+                    BirdRelationship.bird1_ring == bird_ring,
+                    BirdRelationship.bird2_ring == bird_ring,
+                )
+            )
+
+        return (
+            query.order_by(BirdRelationship.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
+
     def get_partners(
         self, bird_ring: str, year: Optional[int] = None, unique_per_year: bool = True
     ) -> List[Dict[str, Any]]:

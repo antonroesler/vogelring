@@ -12,7 +12,10 @@ from enum import Enum
 
 from ...database.connection import get_db
 from ...database.family_repository import FamilyRepository
-from ...database.family_models import RelationshipType as DBRelationshipType
+from ...database.family_models import (
+    RelationshipType as DBRelationshipType,
+    BirdRelationship,
+)
 
 router = APIRouter(prefix="/family", tags=["family"])
 
@@ -78,6 +81,16 @@ class BreedingFamilyCreate(BaseModel):
     )
 
 
+class RelationshipUpdate(BaseModel):
+    """Model for updating an existing relationship"""
+
+    relationship_type: Optional[RelationshipType] = None
+    year: Optional[int] = Field(None, ge=1900, le=2100)
+    confidence: Optional[str] = Field(None, max_length=20)
+    source: Optional[str] = Field(None, max_length=100)
+    notes: Optional[str] = Field(None, max_length=500)
+
+
 class RelationshipResponse(BaseModel):
     """Response model for a relationship"""
 
@@ -89,6 +102,10 @@ class RelationshipResponse(BaseModel):
     confidence: Optional[str]
     source: Optional[str]
     notes: Optional[str]
+    sighting1_id: Optional[UUID]
+    sighting2_id: Optional[UUID]
+    ringing1_id: Optional[UUID]
+    ringing2_id: Optional[UUID]
     created_at: str
     updated_at: str
 
@@ -212,6 +229,10 @@ async def create_relationship(
             confidence=relationship.confidence,
             source=relationship.source,
             notes=relationship.notes,
+            sighting1_id=relationship.sighting1_id,
+            sighting2_id=relationship.sighting2_id,
+            ringing1_id=relationship.ringing1_id,
+            ringing2_id=relationship.ringing2_id,
             created_at=relationship.created_at.isoformat(),
             updated_at=relationship.updated_at.isoformat(),
         )
@@ -423,12 +444,197 @@ async def get_breeding_events(
     ]
 
 
+@router.put("/relationships/{relationship_id}", response_model=RelationshipResponse)
+async def update_relationship(
+    relationship_id: UUID,
+    relationship_data: RelationshipUpdate,
+    update_symmetric: bool = Query(
+        False, description="Also update symmetric relationship if it exists"
+    ),
+    db: Session = Depends(get_db),
+):
+    """Update a specific relationship"""
+    repo = FamilyRepository(db)
+
+    # Get existing relationship
+    existing_relationship = repo.get_relationship_by_id(relationship_id)
+    if not existing_relationship:
+        raise HTTPException(status_code=404, detail="Relationship not found")
+
+    try:
+        # Store original values for symmetric update
+        original_type = existing_relationship.relationship_type
+        bird1_ring = existing_relationship.bird1_ring
+        bird2_ring = existing_relationship.bird2_ring
+
+        # Update only provided fields
+        if relationship_data.relationship_type is not None:
+            db_relationship_type = DBRelationshipType[
+                relationship_data.relationship_type.value.upper()
+            ]
+            existing_relationship.relationship_type = db_relationship_type
+
+        if relationship_data.year is not None:
+            existing_relationship.year = relationship_data.year
+
+        if relationship_data.confidence is not None:
+            existing_relationship.confidence = relationship_data.confidence
+
+        if relationship_data.source is not None:
+            existing_relationship.source = relationship_data.source
+
+        if relationship_data.notes is not None:
+            existing_relationship.notes = relationship_data.notes
+
+        db.commit()
+        db.refresh(existing_relationship)
+
+        # Handle symmetric update if requested and relationship type is symmetric
+        if update_symmetric and original_type in [
+            DBRelationshipType.BREEDING_PARTNER,
+            DBRelationshipType.SIBLING_OF,
+        ]:
+            # Find the symmetric relationship
+            symmetric_relationship = (
+                db.query(BirdRelationship)
+                .filter(
+                    BirdRelationship.bird1_ring == bird2_ring,
+                    BirdRelationship.bird2_ring == bird1_ring,
+                    BirdRelationship.relationship_type == original_type,
+                )
+                .first()
+            )
+
+            if symmetric_relationship:
+                # Update symmetric relationship with same changes
+                if relationship_data.relationship_type is not None:
+                    symmetric_relationship.relationship_type = (
+                        existing_relationship.relationship_type
+                    )
+                if relationship_data.year is not None:
+                    symmetric_relationship.year = existing_relationship.year
+                if relationship_data.confidence is not None:
+                    symmetric_relationship.confidence = existing_relationship.confidence
+                if relationship_data.source is not None:
+                    symmetric_relationship.source = existing_relationship.source
+                if relationship_data.notes is not None:
+                    symmetric_relationship.notes = existing_relationship.notes
+
+                db.commit()
+
+        return RelationshipResponse(
+            id=existing_relationship.id,
+            bird1_ring=existing_relationship.bird1_ring,
+            bird2_ring=existing_relationship.bird2_ring,
+            relationship_type=existing_relationship.relationship_type.value,
+            year=existing_relationship.year,
+            confidence=existing_relationship.confidence,
+            source=existing_relationship.source,
+            notes=existing_relationship.notes,
+            sighting1_id=existing_relationship.sighting1_id,
+            sighting2_id=existing_relationship.sighting2_id,
+            ringing1_id=existing_relationship.ringing1_id,
+            ringing2_id=existing_relationship.ringing2_id,
+            created_at=existing_relationship.created_at.isoformat(),
+            updated_at=existing_relationship.updated_at.isoformat(),
+        )
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/relationships", response_model=List[RelationshipResponse])
+async def get_all_relationships(
+    relationship_type: Optional[RelationshipType] = None,
+    year: Optional[int] = None,
+    bird_ring: Optional[str] = None,
+    limit: int = Query(100, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    db: Session = Depends(get_db),
+):
+    """Get all relationships with optional filters"""
+    repo = FamilyRepository(db)
+
+    # Convert API enum to DB enum if provided
+    db_relationship_type = None
+    if relationship_type:
+        db_relationship_type = DBRelationshipType[relationship_type.value.upper()]
+
+    relationships = repo.get_all_relationships(
+        relationship_type=db_relationship_type,
+        year=year,
+        bird_ring=bird_ring,
+        limit=limit,
+        offset=offset,
+    )
+
+    return [
+        RelationshipResponse(
+            id=rel.id,
+            bird1_ring=rel.bird1_ring,
+            bird2_ring=rel.bird2_ring,
+            relationship_type=rel.relationship_type.value,
+            year=rel.year,
+            confidence=rel.confidence,
+            source=rel.source,
+            notes=rel.notes,
+            sighting1_id=rel.sighting1_id,
+            sighting2_id=rel.sighting2_id,
+            ringing1_id=rel.ringing1_id,
+            ringing2_id=rel.ringing2_id,
+            created_at=rel.created_at.isoformat(),
+            updated_at=rel.updated_at.isoformat(),
+        )
+        for rel in relationships
+    ]
+
+
 @router.delete("/relationships/{relationship_id}")
-async def delete_relationship(relationship_id: UUID, db: Session = Depends(get_db)):
+async def delete_relationship(
+    relationship_id: UUID,
+    delete_symmetric: bool = Query(
+        False, description="Also delete symmetric relationship if it exists"
+    ),
+    db: Session = Depends(get_db),
+):
     """Delete a specific relationship"""
     repo = FamilyRepository(db)
 
+    # Get the relationship before deleting to check for symmetric counterpart
+    relationship = repo.get_relationship_by_id(relationship_id)
+    if not relationship:
+        raise HTTPException(status_code=404, detail="Relationship not found")
+
+    # Store info for symmetric deletion
+    bird1_ring = relationship.bird1_ring
+    bird2_ring = relationship.bird2_ring
+    relationship_type = relationship.relationship_type
+
+    # Delete the main relationship
     if repo.delete_relationship(relationship_id):
+        # Handle symmetric deletion if requested and relationship type is symmetric
+        if delete_symmetric and relationship_type in [
+            DBRelationshipType.BREEDING_PARTNER,
+            DBRelationshipType.SIBLING_OF,
+        ]:
+            # Find and delete the symmetric relationship
+            symmetric_relationship = (
+                db.query(BirdRelationship)
+                .filter(
+                    BirdRelationship.bird1_ring == bird2_ring,
+                    BirdRelationship.bird2_ring == bird1_ring,
+                    BirdRelationship.relationship_type == relationship_type,
+                )
+                .first()
+            )
+
+            if symmetric_relationship:
+                db.delete(symmetric_relationship)
+                db.commit()
+                return {
+                    "message": "Relationship and its symmetric counterpart deleted successfully"
+                }
+
         return {"message": "Relationship deleted successfully"}
     else:
         raise HTTPException(status_code=404, detail="Relationship not found")

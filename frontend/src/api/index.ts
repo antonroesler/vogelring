@@ -248,6 +248,8 @@ export const createRelationship = async (relationship: {
   bird2_ring: string;
   relationship_type: 'breeding_partner' | 'parent_of' | 'child_of' | 'sibling_of';
   year: number;
+  source?: string;
+  notes?: string;
   sighting1_id?: string;
   sighting2_id?: string;
   ringing1_id?: string;
@@ -268,6 +270,40 @@ export const createSymmetricRelationship = async (relationship: {
   console.log('Creating symmetric relationship:', relationship);
   const response = await api.post('/family/relationships/symmetric', relationship);
   console.log('Created symmetric relationship:', response.data);
+  return response.data;
+};
+
+export const getAllRelationships = async (params?: {
+  relationship_type?: 'breeding_partner' | 'parent_of' | 'child_of' | 'sibling_of';
+  year?: number;
+  bird_ring?: string;
+  limit?: number;
+  offset?: number;
+}) => {
+  console.log('Fetching all relationships with params:', params);
+  const response = await api.get('/family/relationships', { params });
+  console.log('Received all relationships:', response.data);
+  return response.data;
+};
+
+export const updateRelationship = async (id: string, updates: {
+  relationship_type?: 'breeding_partner' | 'parent_of' | 'child_of' | 'sibling_of';
+  year?: number;
+  source?: string;
+  notes?: string;
+}, updateSymmetric: boolean = false) => {
+  console.log('Updating relationship:', id, updates, 'symmetric:', updateSymmetric);
+  const params = updateSymmetric ? { update_symmetric: true } : {};
+  const response = await api.put(`/family/relationships/${id}`, updates, { params });
+  console.log('Updated relationship:', response.data);
+  return response.data;
+};
+
+export const deleteRelationship = async (id: string, deleteSymmetric: boolean = false) => {
+  console.log('Deleting relationship:', id, 'symmetric:', deleteSymmetric);
+  const params = deleteSymmetric ? { delete_symmetric: true } : {};
+  const response = await api.delete(`/family/relationships/${id}`, { params });
+  console.log('Deleted relationship:', response.data);
   return response.data;
 };
 

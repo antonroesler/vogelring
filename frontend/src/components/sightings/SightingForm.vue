@@ -706,11 +706,25 @@ const handleFamilyConfirm = async () => {
     if (partnerSighting) {
       createdPartnerSighting = await createSighting(partnerSighting);
       
-      await apiRelationships.createSymmetricRelationship({
+      // Create breeding partner relationships with source
+      await apiRelationships.createRelationship({
         bird1_ring: mainSighting.ring!,
         bird2_ring: createdPartnerSighting.ring!,
         relationship_type: 'breeding_partner',
-        year
+        year,
+        source: `sighting_${mainSighting.id}`,
+        sighting1_id: mainSighting.id,
+        sighting2_id: createdPartnerSighting.id
+      });
+      
+      await apiRelationships.createRelationship({
+        bird1_ring: createdPartnerSighting.ring!,
+        bird2_ring: mainSighting.ring!,
+        relationship_type: 'breeding_partner',
+        year,
+        source: `sighting_${mainSighting.id}`,
+        sighting1_id: createdPartnerSighting.id,
+        sighting2_id: mainSighting.id
       });
     }
     
@@ -725,6 +739,7 @@ const handleFamilyConfirm = async () => {
         bird2_ring: createdChildSighting.ring!,
         relationship_type: 'parent_of',
         year,
+        source: `sighting_${mainSighting.id}`,
         sighting1_id: mainSighting.id,
         sighting2_id: createdChildSighting.id
       });
@@ -734,6 +749,7 @@ const handleFamilyConfirm = async () => {
         bird2_ring: mainSighting.ring!,
         relationship_type: 'child_of',
         year,
+        source: `sighting_${mainSighting.id}`,
         sighting1_id: createdChildSighting.id,
         sighting2_id: mainSighting.id
       });
@@ -745,6 +761,7 @@ const handleFamilyConfirm = async () => {
           bird2_ring: createdChildSighting.ring!,
           relationship_type: 'parent_of',
           year,
+          source: `sighting_${mainSighting.id}`,
           sighting1_id: createdPartnerSighting.id,
           sighting2_id: createdChildSighting.id
         });
@@ -754,6 +771,7 @@ const handleFamilyConfirm = async () => {
           bird2_ring: createdPartnerSighting.ring!,
           relationship_type: 'child_of',
           year,
+          source: `sighting_${mainSighting.id}`,
           sighting1_id: createdChildSighting.id,
           sighting2_id: createdPartnerSighting.id
         });
@@ -763,11 +781,21 @@ const handleFamilyConfirm = async () => {
     // Create sibling relationships between children
     for (let i = 0; i < childSightings.length; i++) {
       for (let j = i + 1; j < childSightings.length; j++) {
-        await apiRelationships.createSymmetricRelationship({
+        // Create sibling relationships with source
+        await apiRelationships.createRelationship({
           bird1_ring: childSightings[i].ring!,
           bird2_ring: childSightings[j].ring!,
           relationship_type: 'sibling_of',
-          year
+          year,
+          source: `sighting_${mainSighting.id}`
+        });
+        
+        await apiRelationships.createRelationship({
+          bird1_ring: childSightings[j].ring!,
+          bird2_ring: childSightings[i].ring!,
+          relationship_type: 'sibling_of',
+          year,
+          source: `sighting_${mainSighting.id}`
         });
       }
     }

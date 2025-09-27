@@ -117,6 +117,11 @@ const router = createRouter({
       name: 'ringing',
       component: () => import('./views/Ringing.vue')
     },
+    {
+      path: '/family-relations',
+      name: 'family-relations',
+      component: () => import('./views/FamilyRelationsList.vue')
+    },
   ]
 })
 

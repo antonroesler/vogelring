@@ -52,13 +52,12 @@
             :ringingData="ringingData"
           ></bird-details>
 
-          <!-- Family Tree Card (replaces Partners Card) -->
-          <family-tree
+          <!-- Family Relationships Editor -->
+          <bird-family-editor
             v-if="bird?.ring"
             :ring="bird.ring"
             class="mt-4"
-            @family-updated="handleFamilyUpdated"
-          ></family-tree>
+          ></bird-family-editor>
         </v-col>
 
         <!-- Analytics Cards -->
@@ -164,7 +163,7 @@ import { format } from 'date-fns';
 import type { BirdMeta, Ringing } from '@/types';
 import * as api from '@/api';
 import BirdDetails from '@/components/birds/BirdDetails.vue';
-import FamilyTree from '@/components/birds/FamilyTree.vue';
+import BirdFamilyEditor from '@/components/family/BirdFamilyEditor.vue';
 import SightingsMap from '@/components/map/SightingsMap.vue';
 import VChart from 'vue-echarts';
 import { use } from 'echarts/core';
