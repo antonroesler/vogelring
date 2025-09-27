@@ -445,7 +445,7 @@ const generateStaticHTML = () => {
           <td>${sighting.value?.habitat || '-'}</td>
         </tr>
         <tr>
-          <td class="field-label">Feldobst</td>
+          <td class="field-label">Feldfrucht</td>
           <td>${sighting.value?.field_fruit || '-'}</td>
         </tr>
         <tr>
@@ -587,9 +587,10 @@ const generateStaticHTML = () => {
               <th>Datum</th>
               <th>Ort</th>
               <th>Ring</th>
-              <th>Spezies</th>
               <th>Status</th>
               <th>Alter</th>
+              <th>Koordinaten</th>
+              <th>Großgruppe</th>
             </tr>
           </thead>
           <tbody>
@@ -598,9 +599,10 @@ const generateStaticHTML = () => {
                 <td>${s.date ? formatDate(s.date) : '-'}</td>
                 <td>${s.place || '-'}</td>
                 <td>${s.ring || '-'}</td>
-                <td>${s.species || '-'}</td>
                 <td>${s.status || '-'}</td>
                 <td>${s.age || '-'}</td>
+                <td class="coordinates">${s.lat && s.lon ? `${s.lat}, ${s.lon}` : '-'}</td>
+                <td>${s.large_group_size || '-'}</td>
               </tr>
             `).join('')}
           </tbody>
