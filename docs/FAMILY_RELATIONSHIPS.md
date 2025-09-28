@@ -80,7 +80,9 @@ The family relationships system manages breeding partnerships, parent-child rela
 
 ## Data Flow
 
-### Relationship Creation (Family Sightings)
+### Relationship Creation
+
+#### Family Sightings
 
 When a family is created through the sighting form:
 
@@ -93,7 +95,7 @@ When a family is created through the sighting form:
    - Siblings: All children connected bidirectionally
 
 ```typescript
-// Example: Creating family relationships
+// Example: Creating family relationships from sightings
 await createRelationship({
   bird1_ring: mainSighting.ring,
   bird2_ring: partnerSighting.ring,
@@ -101,6 +103,25 @@ await createRelationship({
   year: 2025,
   sighting1_id: mainSighting.id,
   sighting2_id: partnerSighting.id,
+});
+```
+
+#### Ringing with Parents
+
+When a bird is ringed with parent information:
+
+1. **Ringing** is created first
+2. **Ringing ID** is fetched from database
+3. **Parent-child relationships** are established with ringing references
+
+```typescript
+// Example: Creating parent relationships from ringing
+await createRelationship({
+  bird1_ring: parentRing,
+  bird2_ring: newRinging.ring,
+  relationship_type: "parent_of",
+  year: currentYear,
+  ringing2_id: ringingId, // Links to the child's ringing
 });
 ```
 

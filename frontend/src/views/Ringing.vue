@@ -642,19 +642,32 @@ const submitForm = async () => {
     // Then, add parent relationships if provided
     const currentYear = new Date().getFullYear();
     
+    // Get the created ringing ID once if we have parent relationships to create
+    let ringingId: string | undefined = undefined;
+    if (parent1Ring.value || parent2Ring.value) {
+      try {
+        const createdRinging = await api.getRingingByRing(newRinging.ring);
+        ringingId = createdRinging?.id;
+      } catch (error) {
+        console.error('Error fetching created ringing:', error);
+      }
+    }
+    
     if (parent1Ring.value) {
       try {
         await api.createRelationship({
           bird1_ring: parent1Ring.value,
           bird2_ring: newRinging.ring,
           relationship_type: 'parent_of',
-          year: currentYear
+          year: currentYear,
+          ringing2_id: ringingId
         });
         await api.createRelationship({
           bird1_ring: newRinging.ring,
           bird2_ring: parent1Ring.value,
           relationship_type: 'child_of',
-          year: currentYear
+          year: currentYear,
+          ringing1_id: ringingId
         });
         showNotification(`Eltern-Kind-Beziehung zu ${parent1Ring.value} hinzugefügt.`);
       } catch (error) {
@@ -669,13 +682,15 @@ const submitForm = async () => {
           bird1_ring: parent2Ring.value,
           bird2_ring: newRinging.ring,
           relationship_type: 'parent_of',
-          year: currentYear
+          year: currentYear,
+          ringing2_id: ringingId
         });
         await api.createRelationship({
           bird1_ring: newRinging.ring,
           bird2_ring: parent2Ring.value,
           relationship_type: 'child_of',
-          year: currentYear
+          year: currentYear,
+          ringing1_id: ringingId
         });
         showNotification(`Eltern-Kind-Beziehung zu ${parent2Ring.value} hinzugefügt.`);
       } catch (error) {
