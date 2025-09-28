@@ -500,7 +500,8 @@ async def update_relationship(
                 .filter(
                     BirdRelationship.bird1_ring == bird2_ring,
                     BirdRelationship.bird2_ring == bird1_ring,
-                    BirdRelationship._relationship_type == cast(str, original_type.value),
+                    BirdRelationship._relationship_type
+                    == cast(str, original_type.value),
                 )
                 .first()
             )
@@ -623,7 +624,8 @@ async def delete_relationship(
                 .filter(
                     BirdRelationship.bird1_ring == bird2_ring,
                     BirdRelationship.bird2_ring == bird1_ring,
-                    BirdRelationship._relationship_type == cast(str, relationship_type.value),
+                    BirdRelationship._relationship_type
+                    == cast(str, relationship_type.value),
                 )
                 .first()
             )
