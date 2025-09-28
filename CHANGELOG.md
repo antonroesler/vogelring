@@ -5,6 +5,32 @@ All notable changes to Vogelring will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0](https://github.com/antonroesler/vogelring/compare/v2.4.0...v2.5.0) (2025-09-28)
+
+
+### ✨ Features
+
+* **frontend:** add totfund status and centralized status formatting ([5ea2cc4](https://github.com/antonroesler/vogelring/commit/5ea2cc456bc918f308678762de71daf95646abde)), closes [#48](https://github.com/antonroesler/vogelring/issues/48)
+* **frontend:** enhance shareable report with coordinates, sex, and group size columns ([306c620](https://github.com/antonroesler/vogelring/commit/306c620b436b1e3ebc4ca41464409177b54246ae))
+
+
+### 🐛 Bug Fixes
+
+* Rastvogel -&gt; Reviervogel ([462ded7](https://github.com/antonroesler/vogelring/commit/462ded70ec740cc666e763ad8587209264a93cad))
+* set ringing id in family relationship ([97e6cbe](https://github.com/antonroesler/vogelring/commit/97e6cbefd584d825c412cd0e922336104790f203))
+* ui improvements and fixed for working with family relationships ([8d9d540](https://github.com/antonroesler/vogelring/commit/8d9d540635367c816b96dc70b070a44fbe9f294c))
+
+
+### 🔧 Miscellaneous
+
+* more rules ([e5cf6de](https://github.com/antonroesler/vogelring/commit/e5cf6de6b3f0b2b4dd438b039dfd9ee1edbca407))
+* rules ([5679d9a](https://github.com/antonroesler/vogelring/commit/5679d9a23f3bee401a528d819782a74ddffb6285))
+
+
+### 📚 Documentation
+
+* family relationships ([9c4aba2](https://github.com/antonroesler/vogelring/commit/9c4aba2c43a86cb98803da189ec2998b9ff802d2))
+
 ## [2.4.0](https://github.com/antonroesler/vogelring/compare/v2.3.0...v2.4.0) (2025-09-27)
 
 
