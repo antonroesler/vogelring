@@ -589,6 +589,7 @@ const generateStaticHTML = () => {
               <th>Ring</th>
               <th>Status</th>
               <th>Alter</th>
+              <th>Geschlecht</th>
               <th>Koordinaten</th>
               <th>Großgruppe</th>
             </tr>
@@ -601,6 +602,7 @@ const generateStaticHTML = () => {
                 <td>${s.ring || '-'}</td>
                 <td>${s.status || '-'}</td>
                 <td>${s.age || '-'}</td>
+                <td>${s.sex || '-'}</td>
                 <td class="coordinates">${s.lat && s.lon ? `${s.lat}, ${s.lon}` : '-'}</td>
                 <td>${s.large_group_size || '-'}</td>
               </tr>
