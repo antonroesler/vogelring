@@ -4,7 +4,7 @@ Family relationships API router (Version 2 - Relational Model)
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, cast
 from datetime import date
 from uuid import UUID
 from pydantic import BaseModel, Field
@@ -500,7 +500,7 @@ async def update_relationship(
                 .filter(
                     BirdRelationship.bird1_ring == bird2_ring,
                     BirdRelationship.bird2_ring == bird1_ring,
-                    BirdRelationship.relationship_type == original_type,
+                    BirdRelationship._relationship_type == cast(str, original_type.value),
                 )
                 .first()
             )
@@ -623,7 +623,7 @@ async def delete_relationship(
                 .filter(
                     BirdRelationship.bird1_ring == bird2_ring,
                     BirdRelationship.bird2_ring == bird1_ring,
-                    BirdRelationship.relationship_type == relationship_type,
+                    BirdRelationship._relationship_type == cast(str, relationship_type.value),
                 )
                 .first()
             )

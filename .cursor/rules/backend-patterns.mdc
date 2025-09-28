@@ -105,6 +105,41 @@ Family models in [database/family_models.py](mdc:backend/src/database/family_mod
 - `BirdRelationship`: Relationship management
 - `RelationshipType`: Enum for relationship types
 
+#### Family Relationship Enum Conversion Pattern
+
+**CRITICAL**: The family relationships API uses a specific enum conversion pattern due to dual enum definitions:
+
+1. **API Enum** (`family.py`): `RelationshipType` with values like `"breeding_partner"`
+2. **Database Enum** (`family_models.py`): `RelationshipType` with same values but uppercase names
+
+**Conversion Pattern**:
+
+```python
+# API enum to Database enum conversion
+db_relationship_type = DBRelationshipType[relationship_type.value.upper()]
+
+# Example: "breeding_partner" -> "BREEDING_PARTNER" -> DBRelationshipType.BREEDING_PARTNER
+```
+
+**Why `.upper()` is needed**:
+
+- API enum value: `"breeding_partner"` (lowercase)
+- Database enum name: `BREEDING_PARTNER` (uppercase)
+- `DBRelationshipType["BREEDING_PARTNER"]` accesses enum by **name**, not value
+- Alternative: `DBRelationshipType("breeding_partner")` accesses by **value**
+
+**Database Query Pattern**:
+
+```python
+# CORRECT: Query the underlying string column
+query.filter(BirdRelationship._relationship_type == relationship_type.value)
+
+# INCORRECT: Query the property (causes filtering issues)
+query.filter(BirdRelationship.relationship_type == relationship_type)
+```
+
+The `BirdRelationship.relationship_type` property converts between string and enum, but database queries must use the underlying `_relationship_type` column.
+
 ### API Routers
 
 All routers follow consistent patterns:

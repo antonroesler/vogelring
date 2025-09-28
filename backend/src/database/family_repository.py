@@ -136,7 +136,7 @@ class FamilyRepository:
 
         if relationship_type:
             query = query.filter(
-                BirdRelationship.relationship_type == relationship_type
+                BirdRelationship._relationship_type == relationship_type.value
             )
 
         if year:
@@ -157,7 +157,7 @@ class FamilyRepository:
 
         if relationship_type:
             query = query.filter(
-                BirdRelationship.relationship_type == relationship_type
+                BirdRelationship._relationship_type == relationship_type.value
             )
 
         if year:
