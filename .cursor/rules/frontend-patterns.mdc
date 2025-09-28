@@ -1,0 +1,162 @@
+---
+globs: frontend/**/*.vue,frontend/**/*.ts,*.vue,*.ts
+description: Frontend Vue.js patterns and structure guide
+---
+
+# Frontend Development Patterns
+
+## Vue.js 3 + TypeScript Structure
+
+The frontend is built with Vue.js 3, TypeScript, Vuetify, and follows composition API patterns:
+
+```
+frontend/src/
+├── main.ts              # App entry point with Vuetify setup
+├── App.vue             # Root component
+├── router/             # Vue Router configuration
+├── stores/             # Pinia state management
+│   ├── sightings.ts    # Sightings data store
+│   ├── auth.ts         # Authentication store
+│   └── ...
+├── views/              # Page-level route components
+│   ├── EntryDetail.vue # Detailed entry view
+│   ├── EntryList.vue   # List view with filtering
+│   └── ...
+├── components/         # Reusable components
+│   ├── forms/          # Form components
+│   ├── charts/         # Chart components
+│   └── ...
+├── api/                # API client and types
+├── utils/              # Frontend utilities
+└── types/              # TypeScript type definitions
+```
+
+## Development Patterns
+
+### Component Structure
+
+- Use Vue 3 Composition API with `<script setup>`
+- TypeScript for type safety
+- Vuetify components for Material Design UI
+- Single File Components (.vue files)
+
+### State Management
+
+- **Pinia** for centralized state management
+- Store pattern with reactive state
+- Composables for shared logic
+
+### API Integration
+
+- Centralized API client in [api/](mdc:frontend/src/api/)
+- Axios for HTTP requests
+- TypeScript interfaces for API responses
+
+### Routing
+
+- Vue Router 4 with TypeScript
+- Route-based code splitting
+- Navigation guards for authentication
+
+## Key Dependencies
+
+From [package.json](mdc:frontend/package.json):
+
+- **Vue 3**: Core framework with Composition API
+- **Vuetify 3**: Material Design component library
+- **TypeScript**: Type safety and better developer experience
+- **Pinia**: State management
+- **Vue Router**: Client-side routing
+- **Axios**: HTTP client
+- **Leaflet**: Interactive maps
+- **ECharts**: Data visualization
+- **Date-fns**: Date manipulation utilities
+
+## Component Patterns
+
+### Composition API Pattern
+
+```vue
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useSightingsStore } from "@/stores/sightings";
+
+// Props and emits
+interface Props {
+  id: string;
+}
+const props = defineProps<Props>();
+
+// Reactive state
+const loading = ref(false);
+const data = ref(null);
+
+// Store usage
+const sightingsStore = useSightingsStore();
+const router = useRouter();
+
+// Computed properties
+const formattedData = computed(() => {
+  // Transform data
+});
+
+// Lifecycle
+onMounted(async () => {
+  await loadData();
+});
+</script>
+```
+
+### Vuetify Component Usage
+
+- Use `v-` prefixed components from Vuetify
+- Material Design principles
+- Responsive design with `v-row`/`v-col` grid system
+- Theme support with dark/light modes
+
+### Form Handling
+
+- Vuetify form components (`v-text-field`, `v-select`, etc.)
+- Form validation with built-in rules
+- Reactive form state management
+
+## Map Integration
+
+- **Leaflet** for interactive maps
+- Marker clustering for performance
+- Custom map controls and overlays
+- Geographic data visualization
+
+## Chart Integration
+
+- **ECharts** via `vue-echarts`
+- Reactive chart data binding
+- Multiple chart types (line, bar, pie, etc.)
+- Interactive chart features
+
+## Build and Development
+
+### Development Server
+
+```bash
+cd frontend
+npm run dev        # Start Vite dev server
+npm run build      # Production build
+npm run preview    # Preview production build
+```
+
+### Build Configuration
+
+- **Vite**: Fast build tool and dev server
+- **TypeScript**: Type checking and compilation
+- Hot module replacement for fast development
+- Optimized production builds with code splitting
+
+## File References
+
+- Package configuration: [frontend/package.json](mdc:frontend/package.json)
+- Vite configuration: [frontend/vite.config.ts](mdc:frontend/vite.config.ts)
+- TypeScript config: [frontend/tsconfig.json](mdc:frontend/tsconfig.json)
+- Entry point: [frontend/src/main.ts](mdc:frontend/src/main.ts)
+- Example detailed view: [frontend/src/views/EntryDetail.vue](mdc:frontend/src/views/EntryDetail.vue)

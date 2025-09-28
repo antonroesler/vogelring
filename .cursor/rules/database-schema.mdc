@@ -1,0 +1,204 @@
+---
+globs: backend/src/database/**/*.py,backend/database/**/*.sql
+description: Database schema and model patterns guide
+---
+
+# Database Schema and Models
+
+## Database Overview
+
+Vogelring uses **PostgreSQL 15** as the primary database with SQLAlchemy ORM for data access. The schema supports bird tracking, sighting management, and family relationship modeling.
+
+## Core Database Models
+
+### Primary Tables
+
+#### 1. Ringings Table
+
+**Location**: [backend/src/database/models.py](mdc:backend/src/database/models.py)
+
+```python
+class Ringing(Base):
+    __tablename__ = "ringings"
+
+    id = Column(GUID(), primary_key=True, default=uuid4)
+    ring = Column(String(50), unique=True, nullable=False, index=True)
+    ring_scheme = Column(String(50), nullable=False)
+    species = Column(String(100), nullable=False, index=True)
+    date = Column(Date, nullable=False, index=True)
+    place = Column(String(200), nullable=False, index=True)
+    lat = Column(DECIMAL(9, 6), nullable=False)  # Latitude
+    lon = Column(DECIMAL(10, 6), nullable=False)  # Longitude
+    ringer = Column(String(100), nullable=False)
+    sex = Column(Integer, nullable=False)
+    age = Column(Integer, nullable=False)
+    status = Column(String(10))
+    comment = Column(Text)
+```
+
+**Purpose**: Stores bird ringing records with identification and metadata
+**Key Indexes**: ring (unique), species, date, place
+
+#### 2. Sightings Table
+
+```python
+class Sighting(Base):
+    __tablename__ = "sightings"
+
+    id = Column(GUID(), primary_key=True, default=uuid4)
+    ring = Column(String(50), nullable=False, index=True)
+    date = Column(Date, nullable=False, index=True)
+    lat = Column(DECIMAL(9, 6), nullable=False)
+    lon = Column(DECIMAL(10, 6), nullable=False)
+    place = Column(String(200), nullable=False)
+    observer = Column(String(100), nullable=False)
+    species = Column(String(100), nullable=False, index=True)
+    sex = Column(Integer)
+    age = Column(Integer)
+    status = Column(String(10))
+    comment = Column(Text)
+```
+
+**Purpose**: Individual bird observation records
+**Key Indexes**: ring, date, species
+**Relationships**: Links to ringings via ring number
+
+#### 3. Family Relationships
+
+**Location**: [backend/src/database/family_models.py](mdc:backend/src/database/family_models.py)
+
+```python
+class BirdRelationship(Base):
+    __tablename__ = "bird_relationships"
+
+    id = Column(GUID(), primary_key=True, default=uuid4)
+    bird_ring_1 = Column(String(50), nullable=False, index=True)
+    bird_ring_2 = Column(String(50), nullable=False, index=True)
+    relationship_type = Column(SQLEnum(RelationshipType), nullable=False)
+    breeding_year = Column(Integer)
+    created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
+```
+
+**Relationship Types**:
+
+- `BREEDING_PARTNER`: Breeding partners (symmetric)
+- `PARENT_OF`: Parent to child relationship
+- `CHILD_OF`: Child to parent relationship
+- `SIBLING_OF`: Sibling relationships (symmetric)
+
+#### 4. Legacy Family Tree Entries
+
+```python
+class FamilyTreeEntry(Base):
+    __tablename__ = "family_tree_entries"
+
+    id = Column(GUID(), primary_key=True, default=uuid4)
+    ring = Column(String(50), nullable=False, unique=True, index=True)
+    family_data = Column(get_json_type())  # JSONB in prod, JSON in test
+```
+
+**Purpose**: Legacy family data storage (being migrated to BirdRelationship)
+
+## Database Patterns
+
+### Connection Management
+
+**Location**: [backend/src/database/connection.py](mdc:backend/src/database/connection.py)
+
+- **Session Factory**: `get_db()` dependency for FastAPI
+- **Engine Configuration**: PostgreSQL with connection pooling
+- **Base Class**: SQLAlchemy declarative base for all models
+
+### Data Types
+
+#### Custom GUID Type
+
+```python
+class GUID(TypeDecorator):
+    """Platform-independent GUID type"""
+    # Uses PostgreSQL UUID in production, CHAR(36) in testing
+```
+
+#### JSON Storage
+
+- **Production**: JSONB for efficient JSON operations
+- **Testing**: JSON for SQLite compatibility
+- **Usage**: Legacy family data and flexible metadata storage
+
+### Indexes and Performance
+
+- **Primary Keys**: UUID-based for distributed systems
+- **Search Indexes**: ring, species, date, place for common queries
+- **Composite Indexes**: Available for complex query patterns
+- **Foreign Key Indexes**: Automatic indexing for relationships
+
+## Repository Pattern
+
+### Data Access Layer
+
+**Location**: [backend/src/database/repositories.py](mdc:backend/src/database/repositories.py)
+
+Complex queries are abstracted into repository classes:
+
+- **SightingRepository**: Sighting data access with filtering
+- **RingingRepository**: Ringing data management
+- **FamilyRepository**: Family relationship operations
+
+### Family Repository
+
+**Location**: [backend/src/database/family_repository.py](mdc:backend/src/database/family_repository.py)
+
+Specialized repository for family relationship management:
+
+```python
+class FamilyRepository:
+    def create_relationship(self, bird_ring_1: str, bird_ring_2: str,
+                          relationship_type: RelationshipType) -> BirdRelationship
+    def create_symmetric_relationship(self, ...)
+    def get_bird_relationships(self, bird_ring: str) -> List[BirdRelationship]
+    def delete_relationship(self, relationship_id: str) -> bool
+```
+
+## Migrations
+
+### Migration Files
+
+**Location**: [backend/database/migrations/](mdc:backend/database/migrations/)
+
+- **001_family_model_refactor.sql**: Family relationship model migration
+- **002_add_comment_to_ringings.sql**: Added comment field to ringings
+
+### Migration Pattern
+
+- **Forward Migrations**: SQL files with DDL changes
+- **Rollback Support**: Documented rollback procedures
+- **Data Migration**: Scripts for data transformation between schema versions
+
+## Database Initialization
+
+**Location**: [backend/database/init.sql](mdc:backend/database/init.sql)
+
+- Initial database setup
+- Extension installation (if needed)
+- Basic configuration
+
+## Environment Configuration
+
+### Connection String Format
+
+```
+DATABASE_URL=postgresql://user:password@host:port/database
+```
+
+### Environment Variables
+
+- `DATABASE_URL`: Full PostgreSQL connection string
+- `TESTING`: Boolean flag for test database behavior
+- `DB_PASSWORD`: Database password for Docker Compose
+- `DB_PORT`: Database port mapping
+
+## Testing Database
+
+- **SQLite**: Used for unit tests with in-memory database
+- **Test Fixtures**: Defined in [backend/tests/conftest.py](mdc:backend/tests/conftest.py)
+- **Schema Compatibility**: Models support both PostgreSQL and SQLite

@@ -1,0 +1,98 @@
+---
+alwaysApply: true
+description: Vogelring project overview and architecture guide
+---
+
+# Vogelring Project Overview
+
+## Project Description
+
+Vogelring is a comprehensive bird tracking and sighting management system for ornithologists and bird watchers. It enables researchers to track ringed birds, manage sightings, analyze migration patterns, and maintain detailed records of bird populations.
+
+**GitHub Repository**: https://github.com/antonroesler/vogelring
+
+## Architecture Overview
+
+### Technology Stack
+
+- **Frontend**: Vue.js 3 with TypeScript, Vuetify (Material Design), Vite
+- **Backend**: FastAPI with Python 3.11+, SQLAlchemy ORM
+- **Database**: PostgreSQL 15
+- **Infrastructure**: Docker Compose orchestration
+- **Maps**: Leaflet for interactive mapping
+- **Charts**: ECharts for data visualization
+
+### Project Structure
+
+```
+vogelring/
+├── frontend/           # Vue.js 3 + TypeScript frontend
+│   ├── src/
+│   │   ├── views/      # Vue route components
+│   │   ├── components/ # Reusable Vue components
+│   │   ├── stores/     # Pinia state management
+│   │   ├── api/        # API client
+│   │   └── utils/      # Frontend utilities
+│   └── package.json
+├── backend/            # FastAPI Python backend
+│   ├── src/
+│   │   ├── main.py     # FastAPI app entry point
+│   │   ├── api/        # API routes and services
+│   │   ├── database/   # Models and database layer
+│   │   └── utils/      # Backend utilities
+│   └── pyproject.toml
+├── data/postgres/      # PostgreSQL data directory
+├── scripts/           # Deployment and maintenance scripts
+└── docker-compose.yml # Development orchestration
+```
+
+## Core Data Models
+
+### Primary Entities
+
+- **Sightings**: Individual bird observations with location, date, and metadata
+- **Ringings**: Bird ringing records with identification and tracking information
+- **Family Relationships**: Breeding partnerships and lineage tracking
+- **Birds**: Derived from ringings, represents unique ringed birds
+
+### Key Features
+
+- **Advanced Search**: Partial ring reading support with wildcards
+- **Interactive Maps**: Location visualization with accuracy indicators
+- **Family Trees**: Breeding relationship and lineage management
+- **Analytics**: Friend analysis, seasonal patterns, radius searches
+- **Data Quality**: Built-in validation and quality assessment
+
+## Development Environment
+
+### Local Development
+
+- Uses Docker Compose for consistent environment
+- Hot reload enabled for both frontend and backend
+- PostgreSQL with persistent volumes
+- Nginx reverse proxy for routing
+
+### Key Commands
+
+```bash
+# Start development environment
+docker-compose up --build
+
+# Backend development (with uv)
+cd backend && uv run uvicorn src.main:app --reload
+
+# Frontend development
+cd frontend && npm run dev
+
+# Run tests
+cd backend && uv run pytest
+```
+
+## File References
+
+- Main README: [README.md](mdc:README.md)
+- Backend README: [backend/README.md](mdc:backend/README.md)
+- Family relationships documentation: [docs/FAMILY_RELATIONSHIPS.md](mdc:docs/FAMILY_RELATIONSHIPS.md)
+- Docker configuration: [docker-compose.yml](mdc:docker-compose.yml)
+- Backend configuration: [backend/pyproject.toml](mdc:backend/pyproject.toml)
+- Frontend configuration: [frontend/package.json](mdc:frontend/package.json)

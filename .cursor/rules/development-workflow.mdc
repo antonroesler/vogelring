@@ -1,0 +1,302 @@
+---
+alwaysApply: true
+description: Development workflow, tooling, and deployment guide
+---
+
+# Development Workflow and Tooling
+
+## Development Environment Setup
+
+### Prerequisites
+
+- **Docker & Docker Compose**: Container orchestration
+- **Node.js 18+**: Frontend development
+- **Python 3.11+**: Backend development
+- **uv**: Python package manager (backend)
+- **Git**: Version control
+
+### Quick Start
+
+```bash
+# Clone repository
+git clone https://github.com/antonroesler/vogelring.git
+cd vogelring
+
+# Start development environment
+docker-compose up --build
+
+# Access application
+# Frontend: http://localhost
+# API: http://localhost/api
+# Health: http://localhost/health
+```
+
+## Package Management
+
+### Backend (Python)
+
+- **Tool**: `uv` (modern Python package manager)
+- **Config**: [backend/pyproject.toml](mdc:backend/pyproject.toml)
+- **Lock File**: [backend/uv.lock](mdc:backend/uv.lock)
+
+```bash
+cd backend
+uv sync                    # Install dependencies
+uv sync --extra test      # Install with test dependencies
+uv run pytest            # Run tests
+uv run uvicorn src.main:app --reload  # Development server
+```
+
+### Frontend (Node.js)
+
+- **Tool**: `npm` (Node Package Manager)
+- **Config**: [frontend/package.json](mdc:frontend/package.json)
+- **Lock File**: [frontend/package-lock.json](mdc:frontend/package-lock.json)
+
+```bash
+cd frontend
+npm install               # Install dependencies
+npm run dev              # Development server
+npm run build            # Production build
+npm run preview          # Preview production build
+```
+
+## Git Workflow
+
+### Commit Convention
+
+**MUST follow Conventional Commits format** (enforced by workspace rules):
+
+```
+<type>[optional scope]: <description>
+
+Examples:
+feat(frontend): add dark mode toggle to settings page
+fix(backend): resolve database connection timeout issue
+docs: update API documentation for ringings endpoint
+refactor(database): simplify family relationship queries
+```
+
+### Branch Strategy
+
+- **Main Branch**: `master` (production-ready code)
+- **Feature Branches**: `feature/description` for new features
+- **Hotfix Branches**: `hotfix/description` for urgent fixes
+- **Direct Commits**: Allowed to master for small changes
+
+### Commit Guidelines
+
+- Commit directly to master unless working on complex features
+- Keep commits atomic and focused
+- Use imperative mood ("add" not "added")
+- Reference issues when applicable
+
+## Testing Strategy
+
+### Backend Testing
+
+- **Framework**: pytest with async support
+- **Location**: [backend/tests/](mdc:backend/tests/)
+- **Configuration**: [backend/pyproject.toml](mdc:backend/pyproject.toml)
+- **Coverage**: pytest-cov for coverage reports
+
+```bash
+cd backend
+uv run pytest                    # Run all tests
+uv run pytest -v                 # Verbose output
+uv run pytest --cov=src         # With coverage
+uv run pytest tests/test_api_sightings.py  # Specific test file
+```
+
+### Test Structure
+
+```
+tests/
+├── conftest.py              # Test configuration and fixtures
+├── test_api_*.py           # API endpoint tests
+├── test_database_*.py      # Database layer tests
+└── test_migration_*.py     # Migration tests
+```
+
+### Frontend Testing
+
+- **Framework**: Not yet implemented
+- **Future**: Vitest + Vue Test Utils planned
+
+## Development Scripts
+
+### Maintenance Scripts
+
+**Location**: [scripts/](mdc:scripts/)
+
+- **[start.sh](mdc:scripts/start.sh)**: Start all services
+- **[stop.sh](mdc:scripts/stop.sh)**: Stop all services
+- **[backup.sh](mdc:scripts/backup.sh)**: Database backup
+- **[restore.sh](mdc:scripts/restore.sh)**: Database restore
+- **[update.sh](mdc:scripts/update.sh)**: Update application
+- **[monitoring.sh](mdc:scripts/monitoring.sh)**: System monitoring
+
+### Data Migration
+
+**Location**: [scripts/migration/](mdc:scripts/migration/)
+
+Scripts for migrating from legacy DynamoDB/S3 to PostgreSQL:
+
+- **[migrate_all.py](mdc:scripts/migration/migrate_all.py)**: Complete migration
+- **[migrate_dynamodb.py](mdc:scripts/migration/migrate_dynamodb.py)**: DynamoDB migration
+- **[migrate_s3_pickle.py](mdc:scripts/migration/migrate_s3_pickle.py)**: S3 data migration
+
+## Docker Development
+
+### Services Architecture
+
+**Configuration**: [docker-compose.yml](mdc:docker-compose.yml)
+
+```yaml
+services:
+  postgres: # PostgreSQL 15 database
+  api: # FastAPI backend
+  nginx: # Reverse proxy + static files
+```
+
+### Development Commands
+
+```bash
+# Start all services
+docker-compose up --build
+
+# Start in background
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f [service_name]
+
+# Stop services
+docker-compose down
+
+# Clean rebuild
+docker-compose down -v && docker-compose up --build
+```
+
+### Volume Mounts
+
+- **Database**: Persistent PostgreSQL data
+- **Backend Source**: Hot reload for development
+- **Frontend Dist**: Served by nginx
+
+## Production Deployment
+
+### Deployment Scripts
+
+- **[deploy.sh](mdc:deploy.sh)**: Main production deployment
+- **[scripts/pi-deploy.sh](mdc:scripts/pi-deploy.sh)**: Raspberry Pi specific
+- **[scripts/deploy.sh](mdc:scripts/deploy.sh)**: Server deployment
+
+### Production Configuration
+
+- **Environment**: [docker-compose.prod.yml](mdc:docker-compose.prod.yml)
+- **Nginx**: [nginx/nginx.prod.conf](mdc:nginx/nginx.prod.conf)
+- **SSL**: Let's Encrypt certificates
+- **Monitoring**: Health checks and logging
+
+### Deployment Process
+
+```bash
+# On production server
+./deploy.sh
+
+# Or for Raspberry Pi
+./scripts/pi-deploy.sh
+```
+
+## Monitoring and Maintenance
+
+### Health Checks
+
+- **API Health**: `/health` endpoint
+- **Database**: Connection monitoring
+- **Services**: Docker health checks
+
+### Logging
+
+- **Backend**: Centralized logging with configurable levels
+- **Nginx**: Access and error logs
+- **Application**: Structured JSON logging
+
+### Monitoring Scripts
+
+**Location**: [scripts/MONITORING_README.md](mdc:scripts/MONITORING_README.md)
+
+- **[monitor.py](mdc:scripts/monitor.py)**: System monitoring
+- **[alert.py](mdc:scripts/alert.py)**: Alert system
+- **[log_monitor.sh](mdc:scripts/log_monitor.sh)**: Log monitoring
+
+## Database Management
+
+### Migrations
+
+- **Location**: [backend/database/migrations/](mdc:backend/database/migrations/)
+- **Format**: SQL files with sequential numbering
+- **Execution**: Manual application via psql or migration scripts
+
+### Backup Strategy
+
+```bash
+# Create backup
+./scripts/backup.sh
+
+# Restore from backup
+./scripts/restore.sh backup_file.sql.gz
+```
+
+### Data Import/Export
+
+- **CSV Import**: [backend/upsert_ringings_csv.py](mdc:backend/upsert_ringings_csv.py)
+- **Production Sync**: [backend/upsert_prod.py](mdc:backend/upsert_prod.py)
+- **Environment Sync**: [backend/upsert_with_env.py](mdc:backend/upsert_with_env.py)
+
+## IDE Configuration
+
+### VS Code / Cursor
+
+- **Python**: Configure Python interpreter to use uv environment
+- **TypeScript**: Automatic configuration via tsconfig files
+- **Linting**: Pyright for Python, ESLint for TypeScript (if configured)
+- **Formatting**: Black for Python, Prettier for frontend (if configured)
+
+### Environment Variables
+
+Create `.env` file in project root:
+
+```bash
+DB_PASSWORD=your_db_password
+LOG_LEVEL=DEBUG
+TESTING=false
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Port Conflicts**: Check if ports 80, 5432 are available
+2. **Database Connection**: Verify PostgreSQL is running
+3. **Permission Issues**: Check file permissions for volumes
+4. **Memory Issues**: Monitor resource usage on Raspberry Pi
+
+### Debug Commands
+
+```bash
+# Check service status
+docker-compose ps
+
+# View service logs
+docker-compose logs api
+docker-compose logs postgres
+
+# Enter service container
+docker-compose exec api bash
+docker-compose exec postgres psql -U vogelring -d vogelring
+
+# Check database connection
+docker-compose exec api python -c "from src.database.connection import check_connection; check_connection()"
+```

@@ -1,0 +1,293 @@
+---
+globs: backend/src/api/**/*.py
+description: API routing patterns and endpoint conventions
+---
+
+# API Patterns and Routing
+
+## FastAPI Router Structure
+
+The API follows a modular router pattern with consistent conventions across all endpoints.
+
+### Router Organization
+
+**Location**: [backend/src/api/routers/](mdc:backend/src/api/routers/)
+
+```
+api/routers/
+├── sightings.py     # Bird sighting management
+├── ringings.py      # Ringing data management
+├── family.py        # Family relationship endpoints
+├── analytics.py     # Analytics and reporting
+├── dashboard.py     # Dashboard statistics
+├── birds.py         # Bird metadata and suggestions
+├── places.py        # Location data
+├── species.py       # Species information
+├── reports.py       # Report generation
+├── suggestions.py   # Search suggestions
+└── health.py        # Health check endpoints
+```
+
+## API Router Patterns
+
+### Standard Router Setup
+
+```python
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+from typing import List, Optional
+from pydantic import BaseModel
+
+from ...database.connection import get_db
+from ..services.service_name import ServiceClass
+
+router = APIRouter(prefix="/endpoint", tags=["endpoint"])
+```
+
+### Pydantic Models Convention
+
+#### Request Models
+
+```python
+class EntityCreate(BaseModel):
+    """Model for creating new entities"""
+    field1: str
+    field2: int | None = None
+    field3: Optional[str] = Field(None, max_length=100)
+
+class EntityUpdate(BaseModel):
+    """Model for updating entities"""
+    id: str  # Always include ID for updates
+    field1: str | None = None
+    # All fields optional for partial updates
+```
+
+#### Response Models
+
+```python
+class EntityResponse(BaseModel):
+    """Model for entity responses"""
+    id: str
+    field1: str
+    field2: int
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True  # For SQLAlchemy ORM compatibility
+```
+
+### Endpoint Patterns
+
+#### CRUD Operations
+
+```python
+@router.get("/", response_model=List[EntityResponse])
+def get_entities(
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    db: Session = Depends(get_db)
+):
+    """Get entities with pagination"""
+    pass
+
+@router.get("/{entity_id}", response_model=EntityResponse)
+def get_entity(entity_id: str, db: Session = Depends(get_db)):
+    """Get single entity by ID"""
+    pass
+
+@router.post("/", response_model=EntityResponse)
+def create_entity(entity: EntityCreate, db: Session = Depends(get_db)):
+    """Create new entity"""
+    pass
+
+@router.put("/{entity_id}", response_model=EntityResponse)
+def update_entity(
+    entity_id: str,
+    entity: EntityUpdate,
+    db: Session = Depends(get_db)
+):
+    """Update existing entity"""
+    pass
+
+@router.delete("/{entity_id}")
+def delete_entity(entity_id: str, db: Session = Depends(get_db)):
+    """Delete entity"""
+    pass
+```
+
+## Service Layer Pattern
+
+### Service Classes
+
+**Location**: [backend/src/api/services/](mdc:backend/src/api/services/)
+
+Services handle business logic and complex operations:
+
+```python
+class EntityService:
+    def __init__(self, db: Session):
+        self.db = db
+
+    def get_entities(self, skip: int = 0, limit: int = 100):
+        """Get entities with business logic"""
+        pass
+
+    def create_entity(self, entity_data: EntityCreate):
+        """Create entity with validation"""
+        pass
+```
+
+### Service Integration
+
+```python
+@router.post("/")
+def create_entity(entity: EntityCreate, db: Session = Depends(get_db)):
+    service = EntityService(db)
+    try:
+        return service.create_entity(entity)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+```
+
+## Specific API Patterns
+
+### Sightings API
+
+**Location**: [backend/src/api/routers/sightings.py](mdc:backend/src/api/routers/sightings.py)
+
+- **Bulk Operations**: Support for creating multiple sightings
+- **Search Filtering**: Complex query parameters for filtering
+- **Partial Updates**: Update specific fields without replacing entire records
+
+### Family Relationships API
+
+**Location**: [backend/src/api/routers/family.py](mdc:backend/src/api/routers/family.py)
+
+- **Symmetric Relationships**: Special endpoints for bidirectional relationships
+- **Relationship Types**: Enum-based relationship categorization
+- **Nested Queries**: Get related entities (partners, children, siblings)
+
+### Analytics API
+
+**Location**: [backend/src/api/routers/analytics.py](mdc:backend/src/api/routers/analytics.py)
+
+- **Aggregated Data**: Statistical analysis endpoints
+- **Date Range Filtering**: Time-based analytics
+- **Geographic Analysis**: Location-based insights
+
+## Error Handling Patterns
+
+### Standard Error Responses
+
+```python
+from fastapi import HTTPException
+
+# 400 - Bad Request
+raise HTTPException(status_code=400, detail="Invalid input data")
+
+# 404 - Not Found
+raise HTTPException(status_code=404, detail="Entity not found")
+
+# 422 - Validation Error (handled automatically by FastAPI)
+
+# 500 - Internal Server Error
+raise HTTPException(status_code=500, detail="Internal server error")
+```
+
+### Custom Exception Handling
+
+```python
+try:
+    result = service.perform_operation()
+    return result
+except ValueError as e:
+    raise HTTPException(status_code=400, detail=str(e))
+except KeyError as e:
+    raise HTTPException(status_code=404, detail=f"Resource not found: {e}")
+except Exception as e:
+    logger.error(f"Unexpected error: {e}")
+    raise HTTPException(status_code=500, detail="Internal server error")
+```
+
+## Query Parameters
+
+### Pagination
+
+```python
+skip: int = Query(0, ge=0, description="Number of records to skip")
+limit: int = Query(100, ge=1, le=1000, description="Maximum records to return")
+```
+
+### Filtering
+
+```python
+species: Optional[str] = Query(None, description="Filter by species")
+date_from: Optional[date] = Query(None, description="Start date filter")
+date_to: Optional[date] = Query(None, description="End date filter")
+```
+
+### Search
+
+```python
+q: Optional[str] = Query(None, min_length=1, description="Search query")
+```
+
+## Response Patterns
+
+### Success Responses
+
+- **200 OK**: Successful GET, PUT operations
+- **201 Created**: Successful POST operations
+- **204 No Content**: Successful DELETE operations
+
+### Pagination Response
+
+```python
+{
+    "items": [...],
+    "total": 150,
+    "skip": 0,
+    "limit": 100,
+    "has_more": true
+}
+```
+
+### Error Response Format
+
+```python
+{
+    "detail": "Error message description"
+}
+```
+
+## Authentication & Authorization
+
+### Dependency Pattern (Future)
+
+```python
+from fastapi import Depends
+from ..auth import get_current_user
+
+@router.get("/protected")
+def protected_endpoint(current_user = Depends(get_current_user)):
+    """Protected endpoint requiring authentication"""
+    pass
+```
+
+## API Documentation
+
+### OpenAPI Integration
+
+- **Automatic Documentation**: FastAPI generates OpenAPI specs
+- **Tags**: Organize endpoints by functionality
+- **Descriptions**: Detailed endpoint and parameter descriptions
+- **Examples**: Request/response examples in documentation
+
+### Access Points
+
+- **Interactive Docs**: `/docs` (Swagger UI)
+- **Alternative Docs**: `/redoc` (ReDoc)
+- **OpenAPI JSON**: `/openapi.json`

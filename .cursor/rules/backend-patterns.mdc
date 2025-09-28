@@ -1,0 +1,122 @@
+---
+globs: backend/**/*.py,*.py
+description: Backend FastAPI patterns and structure guide
+---
+
+# Backend Development Patterns
+
+## FastAPI Application Structure
+
+The backend follows a layered architecture pattern with clear separation of concerns:
+
+```
+backend/src/
+├── main.py                 # FastAPI app entry point
+├── api/
+│   ├── routers/           # API route handlers
+│   │   ├── sightings.py   # Sighting management endpoints
+│   │   ├── ringings.py    # Ringing management endpoints
+│   │   ├── analytics.py   # Analytics and reporting endpoints
+│   │   ├── family.py      # Family relationship endpoints
+│   │   └── ...
+│   └── services/          # Business logic layer
+├── database/
+│   ├── connection.py      # Database session management
+│   ├── models.py          # SQLAlchemy ORM models
+│   ├── family_models.py   # Family relationship models
+│   ├── repositories.py    # Data access layer
+│   └── family_repository.py # Family-specific data access
+└── utils/
+    ├── logging_config.py  # Logging configuration
+    ├── cache.py          # Caching utilities
+    └── distance.py       # Geographic calculations
+```
+
+## Development Patterns
+
+### Dependency Management
+
+- Use `uv` for Python package management
+- Dependencies defined in [pyproject.toml](mdc:backend/pyproject.toml)
+- Test dependencies in optional `[test]` group
+
+### Database Patterns
+
+- **Session Management**: Use `get_db()` dependency for database sessions
+- **Models**: SQLAlchemy ORM models in [database/models.py](mdc:backend/src/database/models.py)
+- **Repositories**: Data access layer pattern for complex queries
+- **Migrations**: SQL migration files in [database/migrations/](mdc:backend/database/migrations/)
+
+### API Router Pattern
+
+```python
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from ..database.connection import get_db
+
+router = APIRouter(prefix="/endpoint", tags=["endpoint"])
+
+@router.get("/")
+def get_items(db: Session = Depends(get_db)):
+    # Implementation
+    pass
+```
+
+### Error Handling
+
+- Use FastAPI's built-in exception handling
+- Return appropriate HTTP status codes
+- Include meaningful error messages
+
+### Testing
+
+- Tests located in [tests/](mdc:backend/tests/)
+- Use pytest with async support
+- Test configuration in [pyproject.toml](mdc:backend/pyproject.toml)
+- Run tests: `uv run pytest`
+
+### Logging
+
+- Centralized logging configuration in [utils/logging_config.py](mdc:backend/src/utils/logging_config.py)
+- Environment-based log levels
+- Request logging middleware available
+
+## Key Components
+
+### Main Application
+
+Entry point: [src/main.py](mdc:backend/src/main.py)
+
+- FastAPI app initialization
+- CORS middleware configuration
+- Router registration
+- Database table creation
+
+### Database Models
+
+Primary models in [database/models.py](mdc:backend/src/database/models.py):
+
+- `Sighting`: Bird observation records
+- `Ringing`: Bird ringing information
+- `FamilyTreeEntry`: Family relationships
+
+Family models in [database/family_models.py](mdc:backend/src/database/family_models.py):
+
+- `BirdRelationship`: Relationship management
+- `RelationshipType`: Enum for relationship types
+
+### API Routers
+
+All routers follow consistent patterns:
+
+- Prefix-based routing (`/sightings`, `/ringings`, etc.)
+- Dependency injection for database sessions
+- Proper HTTP status codes and error handling
+- Pydantic models for request/response validation
+
+## Environment Configuration
+
+- Database URL via `DATABASE_URL` environment variable
+- Logging level via `LOG_LEVEL`
+- Testing mode via `TESTING` flag
+- Environment file support with python-dotenv

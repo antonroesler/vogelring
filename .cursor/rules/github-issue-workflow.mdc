@@ -1,0 +1,88 @@
+---
+description: GitHub issue workflow for tracking and closing issues
+---
+
+# GitHub Issue Workflow
+
+When completing coding tasks, always follow this workflow to maintain proper issue tracking:
+
+## 1. Search for Related Issues
+
+After making code changes, use GitHub MCP tools to find related issues:
+
+```bash
+# Search for issues in the repository
+mcp_github_search_issues or mcp_github_list_issues
+```
+
+Look for issues that match:
+
+- Feature requests you just implemented
+- Bug fixes you just resolved
+- Improvements you just made
+
+## 2. Link Commits to Issues
+
+When making commits, reference issue numbers in commit messages:
+
+- Use conventional commit format: `feat: description (fixes #123)`
+- Reference multiple issues: `fix: description (closes #123, #456)`
+
+## 3. Add Detailed Comments
+
+When you find a related issue, add a comment explaining:
+
+- Which commit fixed/implemented the issue
+- What specific changes were made
+- Any additional improvements included
+- Reference the commit hash
+
+Example comment format:
+
+```
+Fixed in commit [hash].
+
+[Description of main fix addressing the issue]
+
+Additional improvements made in the same commit:
+- [List any bonus improvements]
+- [Include technical details]
+```
+
+## 4. Close Issues Appropriately
+
+Close issues when:
+
+- The feature/fix is fully implemented
+- The issue requirements are met
+- Code is tested and working
+
+Use appropriate state reasons:
+
+- `completed` - for successfully implemented features/fixes
+- `not_planned` - for issues that won't be addressed
+- `duplicate` - for duplicate issues
+
+## 5. Repository Context
+
+For the vogelring project:
+
+- Repository: `antonroesler/vogelring`
+- Main language: Python (backend), Vue.js (frontend)
+- Focus areas: Bird sighting tracking, reports, data management
+
+## 6. Tools to Use
+
+- `mcp_github_list_issues` - List open issues
+- `mcp_github_search_issues` - Search for specific issues
+- `mcp_github_get_issue` - Get detailed issue information
+- `mcp_github_add_issue_comment` - Add explanatory comments
+- `mcp_github_update_issue` - Close issues with proper state
+
+## 7. Best Practices
+
+- Always search for related issues after completing tasks
+- Provide detailed commit references in issue comments
+- Close issues promptly when requirements are met
+- Document additional improvements made beyond the original request
+- Use proper conventional commit messages that reference issues

@@ -1,0 +1,69 @@
+---
+alwaysApply: true
+description: Conventional commit message formatting guidelines
+---
+
+# Conventional Commit Messages
+
+When making commits, always use conventional commit message format:
+
+## Format
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+## Types
+
+- **feat**: A new feature
+- **fix**: A bug fix
+- **docs**: Documentation only changes
+- **style**: Changes that do not affect the meaning of the code (white-space, formatting, missing semi-colons, etc)
+- **refactor**: A code change that neither fixes a bug nor adds a feature
+- **perf**: A code change that improves performance
+- **test**: Adding missing tests or correcting existing tests
+- **build**: Changes that affect the build system or external dependencies
+- **ci**: Changes to CI configuration files and scripts
+- **chore**: Other changes that don't modify src or test files
+- **revert**: Reverts a previous commit
+
+## Scopes (optional)
+
+- **frontend**: Changes to Vue.js frontend code
+- **backend**: Changes to Python backend code
+- **api**: Changes to API endpoints or services
+- **database**: Changes to database models, migrations, or queries
+- **deploy**: Changes to deployment scripts or configuration
+- **docs**: Changes to documentation
+
+## Examples
+
+```
+feat(frontend): add dark mode toggle to settings page
+fix(backend): resolve database connection timeout issue
+docs: update API documentation for ringings endpoint
+refactor(database): simplify family relationship queries
+test(api): add unit tests for sightings service
+chore(deploy): update docker configuration
+```
+
+## Breaking Changes
+
+For breaking changes, add `!` after the type/scope:
+
+```
+feat(api)!: change ringings endpoint response format
+```
+
+## Commit Guidelines
+
+- Commit directly to master branch unless otherwise specified
+- Keep the subject line under 50 characters
+- Use imperative mood ("add" not "added" or "adds")
+- Don't capitalize the first letter of the description
+- Don't end the description with a period
+- Use the body to explain what and why, not how
