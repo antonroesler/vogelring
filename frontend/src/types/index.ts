@@ -19,7 +19,7 @@ export interface Sighting {
   lon?: number;
   is_exact_location?: boolean;
   partner?: string | null;
-  status?: 'BV' | 'MG' | 'NB' | null;
+  status?: 'BV' | 'MG' | 'NB' | 'RV' | 'TF' | null;
   age?: BirdAge | null;
   breed_size?: number | null;
   family_size?: number | null;
@@ -31,7 +31,8 @@ export enum BirdStatus {
   BV = "BV",
   MG = "MG",
   NB = "NB",
-  RV = "RV"
+  RV = "RV",
+  TOTFUND = "TF"
 }
 
 export interface BirdMeta {

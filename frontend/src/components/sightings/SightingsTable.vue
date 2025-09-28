@@ -88,7 +88,21 @@
             {{ formatPairStatus(item.pair) }}
           </template>
           <template v-else-if="col === 'status'">
-            {{ formatStatus(item.status) }}
+            <v-chip
+              v-if="item.status"
+              :color="getBirdStatusColor(item.status)"
+              size="small"
+              variant="tonal"
+            >
+              <v-icon 
+                v-if="getBirdStatusIcon(item.status)"
+                :icon="getBirdStatusIcon(item.status)"
+                size="x-small"
+                class="mr-1"
+              ></v-icon>
+              {{ formatBirdStatus(item.status) }}
+            </v-chip>
+            <span v-else>-</span>
           </template>
           <template v-else-if="col === 'melder'">
             {{ item.melder }}
@@ -180,6 +194,7 @@
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { format } from 'date-fns';
+import { formatBirdStatus, getBirdStatusColor, getBirdStatusIcon } from '@/utils/statusUtils';
 import type { Sighting } from '@/types';
 import { useSightingsStore } from '@/stores/sightings';
 
@@ -304,21 +319,6 @@ const formatPairStatus = (pair?: string | null) => {
   }
 };
 
-const formatStatus = (status?: string | null) => {
-  if (!status) return '-';
-  switch (status) {
-    case 'BV':
-      return 'Brutvogel';
-    case 'MG':
-      return 'Mausergast';
-    case 'NB':
-      return 'Nichtbrüter';
-    case 'RV':
-      return 'Reviervogel';
-    default:
-      return status;
-  }
-};
 
 const handleRowClick = (event: Event, item: any) => {
   const sighting = item.item;
@@ -481,7 +481,7 @@ const getExtraFields = (item: Sighting) => {
 const formatField = (key: string, value: any) => {
   if (key === 'date') return formatDate(value);
   if (key === 'pair') return formatPairStatus(value);
-  if (key === 'status') return formatStatus(value);
+  if (key === 'status') return formatBirdStatus(value);
   if (typeof value === 'boolean') return value ? 'Ja' : 'Nein';
   return value;
 };

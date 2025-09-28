@@ -425,7 +425,8 @@ const statusItems = [
   { title: 'Brutvogel', value: BirdStatus.BV },
   { title: 'Mausergast', value: BirdStatus.MG },
   { title: 'Nichtbrüter', value: BirdStatus.NB },
-  { title: 'Reviervogel', value: BirdStatus.RV }
+  { title: 'Reviervogel', value: BirdStatus.RV },
+  { title: 'Totfund', value: BirdStatus.TOTFUND }
 ];
 
 const ageItems = [

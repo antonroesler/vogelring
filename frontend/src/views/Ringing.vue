@@ -82,7 +82,23 @@
                   </v-list-item>
                   <v-list-item v-if="foundRinging.status">
                     <v-list-item-title>Status</v-list-item-title>
-                    <v-list-item-subtitle>{{ formatStatus(foundRinging.status) }}</v-list-item-subtitle>
+                    <v-list-item-subtitle>
+                      <v-chip
+                        v-if="foundRinging.status"
+                        :color="getBirdStatusColor(foundRinging.status)"
+                        size="small"
+                        variant="tonal"
+                      >
+                        <v-icon 
+                          v-if="getBirdStatusIcon(foundRinging.status)"
+                          :icon="getBirdStatusIcon(foundRinging.status)"
+                          size="x-small"
+                          class="mr-1"
+                        ></v-icon>
+                        {{ formatBirdStatus(foundRinging.status) }}
+                      </v-chip>
+                      <span v-else>-</span>
+                    </v-list-item-subtitle>
                   </v-list-item>
                   <v-list-item>
                     <v-list-item-title>Koordinaten</v-list-item-title>
@@ -363,6 +379,7 @@
 <script setup lang="ts">
 import { ref, reactive, watch, computed, onMounted } from 'vue';
 import { format } from 'date-fns';
+import { formatBirdStatus, getBirdStatusColor, getBirdStatusIcon } from '@/utils/statusUtils';
 import type { Ringing } from '@/types';
 import { BirdStatus } from '@/types';
 import * as api from '@/api';
@@ -529,7 +546,8 @@ const statusOptions = [
   { text: 'Brutvogel', value: 'BV' },
   { text: 'Mausergast', value: 'MG' },
   { text: 'Nichtbrüter', value: 'NB' },
-  { text: 'Reviervogel', value: 'RV' }
+  { text: 'Reviervogel', value: 'RV' },
+  { text: 'Totfund', value: 'TF' }
 ];
 
 const parentSexOptions = [
@@ -551,10 +569,6 @@ const formatSex = (sex: number) => {
   return option ? option.text : `Code ${sex}`;
 };
 
-const formatStatus = (status: string) => {
-  const option = statusOptions.find(opt => opt.value === status);
-  return option ? option.text : status;
-};
 
 const formatCoordinates = (lat: number, lon: number) => {
   return `${lat.toFixed(6)}°, ${lon.toFixed(6)}°`;

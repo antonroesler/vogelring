@@ -105,7 +105,23 @@
               </v-list-item>
               <v-list-item>
                 <v-list-item-title>Status</v-list-item-title>
-                <v-list-item-subtitle>{{ formatStatus(ringingData.status) }}</v-list-item-subtitle>
+                <v-list-item-subtitle>
+                  <v-chip
+                    v-if="ringingData.status"
+                    :color="getBirdStatusColor(ringingData.status)"
+                    size="small"
+                    variant="tonal"
+                  >
+                    <v-icon 
+                      v-if="getBirdStatusIcon(ringingData.status)"
+                      :icon="getBirdStatusIcon(ringingData.status)"
+                      size="x-small"
+                      class="mr-1"
+                    ></v-icon>
+                    {{ formatBirdStatus(ringingData.status) }}
+                  </v-chip>
+                  <span v-else>Unbekannt</span>
+                </v-list-item-subtitle>
               </v-list-item>
               <v-list-item>
                 <v-list-item-title>Beringer</v-list-item-title>
@@ -163,6 +179,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { format } from 'date-fns';
+import { formatBirdStatus, getBirdStatusColor, getBirdStatusIcon } from '@/utils/statusUtils';
 import type { BirdMeta, Ringing } from '@/types';
 import { formatRingingAge } from '@/utils/ageMapping';
 
@@ -192,17 +209,6 @@ const formatSex = (sex: number) => {
   }
 };
 
-const formatStatus = (status: string | null | undefined) => {
-  if (!status) return 'Unbekannt';
-  
-  switch (status) {
-    case 'BV': return 'Brutvogel';
-    case 'MG': return 'Mausergast';
-    case 'NB': return 'Nichtbrüter';
-    case 'RV': return 'Reviervogel';
-    default: return status;
-  }
-};
 
 const formatCoordinates = (lat: number, lon: number) => {
   return `${lat.toFixed(6)}°, ${lon.toFixed(6)}°`;

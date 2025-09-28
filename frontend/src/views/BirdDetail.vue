@@ -32,6 +32,16 @@
                 <span class="font-weight-regular">Ring:</span>
                 <span class="ring-number">{{ bird?.ring }}</span>
               </v-chip>
+              <v-chip
+                v-if="isBirdDead"
+                class="ml-2"
+                color="error"
+                size="large"
+                variant="elevated"
+              >
+                <v-icon icon="mdi-close-circle" size="small" class="mr-1"></v-icon>
+                Totfund
+              </v-chip>
             </div>
             <v-btn
               color="primary"
@@ -126,6 +136,7 @@
                     <th>Datum</th>
                     <th>Ort</th>
                     <th>Melder</th>
+                    <th>Status</th>
                     <th>Ablesung</th>
                     <th>Partner</th>
                     <th>Kommentar</th>
@@ -142,6 +153,23 @@
                     <td>{{ formatDate(sighting.date) }}</td>
                     <td>{{ sighting.place }}</td>
                     <td>{{ sighting.melder }}</td>
+                    <td>
+                      <v-chip
+                        v-if="sighting.status"
+                        :color="getBirdStatusColor(sighting.status)"
+                        size="small"
+                        variant="tonal"
+                      >
+                        <v-icon 
+                          v-if="getBirdStatusIcon(sighting.status)"
+                          :icon="getBirdStatusIcon(sighting.status)"
+                          size="x-small"
+                          class="mr-1"
+                        ></v-icon>
+                        {{ formatBirdStatus(sighting.status) }}
+                      </v-chip>
+                      <span v-else>-</span>
+                    </td>
                     <td>{{ sighting.reading }}</td>
                     <td>{{ sighting.partner || '-' }}</td>
                     <td>{{ sighting.comment }}</td>
@@ -160,6 +188,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { format } from 'date-fns';
+import { formatBirdStatus, getBirdStatusColor, getBirdStatusIcon, isBirdDead as isBirdDeadUtil } from '@/utils/statusUtils';
 import type { BirdMeta, Ringing } from '@/types';
 import * as api from '@/api';
 import BirdDetails from '@/components/birds/BirdDetails.vue';
@@ -247,6 +276,11 @@ const formatDate = (date: string | null) => {
 const navigateToSighting = (id: string) => {
   router.push(`/entries/${id}`);
 };
+
+// Check if bird has any sightings with TF (Totfund) status
+const isBirdDead = computed(() => {
+  return bird.value ? isBirdDeadUtil(bird.value.sightings) : false;
+});
 
 const handleFamilyUpdated = () => {
   // Optionally reload bird data or show a success message

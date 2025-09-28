@@ -2,6 +2,7 @@
 Pydantic models for migration scripts
 These mirror the models from the Lambda API
 """
+
 from pydantic import BaseModel, Field, field_validator
 from datetime import date as DateType
 from uuid import uuid4
@@ -15,6 +16,7 @@ class BirdStatus(str, Enum):
     MG = "MG"  # Mausergast
     NB = "NB"  # Nichtbrüter
     RV = "RV"  # Reviervogel
+    TOTFUND = "TF"  # Totfund
 
 
 class BirdAge(str, Enum):
@@ -32,6 +34,7 @@ class PairType(str, Enum):
 
 class Ringing(BaseModel):
     """Ringing model for DynamoDB migration"""
+
     id: str = Field(default_factory=lambda: str(uuid4()))
     ring: str
     ring_scheme: str
@@ -71,6 +74,7 @@ class FamilyParent(BaseModel):
 
 class FamilyTreeEntry(BaseModel):
     """Family tree entry model for DynamoDB migration"""
+
     ring: str
     partners: List[FamilyPartner] = []
     children: List[FamilyChild] = []
@@ -79,6 +83,7 @@ class FamilyTreeEntry(BaseModel):
 
 class Sighting(BaseModel):
     """Sighting model for S3 pickle migration"""
+
     id: str = Field(default_factory=lambda: str(uuid4()))
     excel_id: Optional[int] = None
     comment: Optional[str] = None
@@ -105,7 +110,13 @@ class Sighting(BaseModel):
     habitat: Optional[str] = None
     field_fruit: Optional[str] = None
 
-    @field_validator("large_group_size", "small_group_size", "breed_size", "family_size", mode="before")
+    @field_validator(
+        "large_group_size",
+        "small_group_size",
+        "breed_size",
+        "family_size",
+        mode="before",
+    )
     @classmethod
     def validate_numeric_fields(cls, v):
         """Convert empty strings to None for numeric fields"""
@@ -122,8 +133,17 @@ class Sighting(BaseModel):
         return v
 
     @field_validator(
-        "species", "ring", "reading", "partner", "comment", "melder", 
-        "place", "area", "habitat", "field_fruit", mode="before"
+        "species",
+        "ring",
+        "reading",
+        "partner",
+        "comment",
+        "melder",
+        "place",
+        "area",
+        "habitat",
+        "field_fruit",
+        mode="before",
     )
     @classmethod
     def validate_string_fields(cls, v):

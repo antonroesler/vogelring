@@ -17,7 +17,7 @@ id;excel_id;species;ring;reading;date;place;area;sex;age;breed_size;family_size;
 - small_group_size: count of birds in a small nearby group
 - large_group_size: count of birds in a larger flock
 - partner: partner's ring (for known pairs)
-- status: breeding/status code (BV = Brutvogel, MG = Mausergast, NB = Nichtbrüter, RV = Reviervogel)
+- status: breeding/status code (BV = Brutvogel, MG = Mausergast, NB = Nichtbrüter, RV = Reviervogel, TF = Totfund)
 - habitat: habitat type of the sighting location
 - field_fruit: crop/field type (if on agricultural land)
 - comment: free-text notes
