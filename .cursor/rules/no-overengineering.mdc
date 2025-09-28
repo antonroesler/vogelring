@@ -1,0 +1,111 @@
+---
+alwaysApply: true
+---
+
+# No Overengineering Principle
+
+## Core Philosophy
+
+**CRITICAL**: Only implement exactly what is requested. Do not add extra functionality, features, or complexity unless explicitly asked.
+
+## Implementation Guidelines
+
+### What NOT to do:
+
+- ❌ Add functionality beyond what was requested
+- ❌ Create additional features "for completeness"
+- ❌ Write tests unless specifically asked to do so
+- ❌ Add error handling beyond basic requirements
+- ❌ Implement "best practices" that weren't requested
+- ❌ Add configuration options that weren't mentioned
+- ❌ Create abstractions or patterns beyond the immediate need
+- ❌ Add logging, monitoring, or observability unless requested
+
+### What TO do:
+
+- ✅ Implement exactly what was asked for
+- ✅ Use the simplest approach that works
+- ✅ Focus on the specific requirement
+- ✅ Ask for clarification if the requirement is unclear
+- ✅ Stop when the requested functionality is complete
+
+## Examples
+
+### ❌ Overengineered Response
+
+**Request**: "Create a function to add two numbers"
+
+```python
+# DON'T DO THIS
+class Calculator:
+    def __init__(self):
+        self.history = []
+        self.logger = logging.getLogger(__name__)
+
+    def add(self, a: float, b: float) -> float:
+        self.logger.info(f"Adding {a} and {b}")
+        result = a + b
+        self.history.append(f"{a} + {b} = {result}")
+        return result
+
+    def get_history(self):
+        return self.history
+
+# Plus unit tests, error handling, type validation, etc.
+```
+
+### ✅ Appropriate Response
+
+**Request**: "Create a function to add two numbers"
+
+```python
+# DO THIS
+def add(a, b):
+    return a + b
+```
+
+## Common Overengineering Patterns to Avoid
+
+### Database Operations
+
+- Don't create repositories, services, or complex abstractions unless requested
+- Don't add caching, connection pooling, or optimization unless asked
+- Don't implement full CRUD when only one operation is needed
+
+### API Development
+
+- Don't add authentication/authorization unless requested
+- Don't implement pagination if not asked for
+- Don't add comprehensive error handling beyond basic HTTP status codes
+- Don't create response models for simple endpoints
+
+### Frontend Development
+
+- Don't add state management for simple components
+- Don't create reusable components unless specifically asked
+- Don't add form validation beyond what's requested
+- Don't implement responsive design unless mentioned
+
+### Testing
+
+- **Never write tests unless explicitly requested**
+- Don't create test fixtures, mocks, or complex test setups
+- Don't add integration tests when unit tests were asked for
+
+## Decision Framework
+
+Before implementing anything, ask yourself:
+
+1. Was this specifically requested?
+2. Is this the simplest solution that meets the requirement?
+3. Am I adding complexity that wasn't asked for?
+
+**If the answer to #3 is yes, stop and simplify.**
+
+## When in Doubt
+
+- **Ask for clarification** rather than assuming requirements
+- **Implement the minimum** that satisfies the request
+- **Wait for feedback** before adding more functionality
+
+Remember: It's easier to add complexity later than to remove it. Start simple and only add what's explicitly requested.

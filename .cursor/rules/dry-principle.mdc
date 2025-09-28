@@ -1,0 +1,343 @@
+---
+alwaysApply: true
+---
+
+# DRY Principle - Don't Repeat Yourself
+
+## Core Philosophy
+
+**CRITICAL**: When implementing features that could be useful in other views/components, ensure you implement them in a central place and reuse them. Avoid duplicating code across the codebase.
+
+## Implementation Guidelines
+
+### What TO do:
+
+- ✅ Create reusable utilities for common operations (date formatting, data filtering, etc.)
+- ✅ Build shared components for repeated UI patterns (entry lists, form fields, etc.)
+- ✅ Centralize business logic in services or composables
+- ✅ Use shared stores for common state management
+- ✅ Create common styling/theming utilities
+- ✅ Abstract repeated API patterns into reusable functions
+
+### What NOT to do:
+
+- ❌ Copy-paste similar code between components
+- ❌ Implement the same formatting logic in multiple places
+- ❌ Create multiple versions of similar UI components
+- ❌ Duplicate API calls or data processing logic
+- ❌ Repeat styling patterns without abstraction
+
+## Common Reusable Patterns in Vogelring
+
+### 1. Entry Lists
+
+**Problem**: Multiple entry lists exist (main list, sightings per bird, bird details, faulty entries in data quality)
+
+**Solution**: Create a centralized `EntryList.vue` component
+
+```vue
+<!-- frontend/src/components/EntryList.vue -->
+<template>
+  <div>
+    <!-- Reusable entry list with configurable columns, filters, actions -->
+  </div>
+</template>
+
+<script setup lang="ts">
+interface Props {
+  entries: Entry[];
+  columns?: string[];
+  showFilters?: boolean;
+  allowEdit?: boolean;
+  // ... other configuration options
+}
+</script>
+```
+
+**Usage**:
+
+```vue
+<!-- In various views -->
+<EntryList
+  :entries="sightings"
+  :columns="['date', 'species', 'location']"
+  :show-filters="true"
+  @edit="handleEdit"
+/>
+```
+
+### 2. Date Formatting
+
+**Problem**: Date formatting needed throughout the application
+
+**Solution**: Create centralized utility
+
+```typescript
+// frontend/src/utils/dateUtils.ts
+import { format, parseISO } from "date-fns";
+
+export const formatDate = (
+  date: string | Date,
+  formatStr = "dd.MM.yyyy"
+): string => {
+  const dateObj = typeof date === "string" ? parseISO(date) : date;
+  return format(dateObj, formatStr);
+};
+
+export const formatDateTime = (date: string | Date): string => {
+  return formatDate(date, "dd.MM.yyyy HH:mm");
+};
+
+export const formatDateForAPI = (date: Date): string => {
+  return format(date, "yyyy-MM-dd");
+};
+```
+
+**Usage**:
+
+```vue
+<script setup lang="ts">
+import { formatDate } from "@/utils/dateUtils";
+
+const formattedDate = formatDate(sighting.date);
+</script>
+```
+
+### 3. Data Filtering & Sorting
+
+**Problem**: Similar filtering logic needed across different entry lists
+
+**Solution**: Create reusable composable
+
+```typescript
+// frontend/src/composables/useEntryFilters.ts
+import { ref, computed } from 'vue'
+
+export function useEntryFilters<T>(entries: Ref<T[]>) {
+  const searchQuery = ref('')
+  const sortField = ref('')
+  const sortDirection = ref<'asc' | 'desc'>('asc')
+
+  const filteredEntries = computed(() => {
+    let result = entries.value
+
+    // Apply search filter
+    if (searchQuery.value) {
+      result = result.filter(entry =>
+        // Generic search logic
+      )
+    }
+
+    // Apply sorting
+    if (sortField.value) {
+      result = result.sort((a, b) => {
+        // Generic sorting logic
+      })
+    }
+
+    return result
+  })
+
+  return {
+    searchQuery,
+    sortField,
+    sortDirection,
+    filteredEntries
+  }
+}
+```
+
+### 4. Form Validation
+
+**Problem**: Similar validation rules across different forms
+
+**Solution**: Create reusable validation utilities
+
+```typescript
+// frontend/src/utils/validation.ts
+export const validationRules = {
+  required: (value: any) => !!value || "Dieses Feld ist erforderlich",
+  ring: (value: string) => {
+    const ringPattern = /^[A-Z]{2,4}[0-9]{4,6}$/;
+    return ringPattern.test(value) || "Ungültiges Ringformat";
+  },
+  coordinates: (value: number) => {
+    return (value >= -180 && value <= 180) || "Ungültige Koordinaten";
+  },
+};
+```
+
+### 5. API Client Patterns
+
+**Problem**: Similar API calls and error handling across services
+
+**Solution**: Create reusable API utilities
+
+```typescript
+// frontend/src/api/baseApi.ts
+import axios from "axios";
+
+export const apiClient = axios.create({
+  baseURL: "/api",
+  timeout: 10000,
+});
+
+export async function apiRequest<T>(
+  method: "GET" | "POST" | "PUT" | "DELETE",
+  url: string,
+  data?: any
+): Promise<T> {
+  try {
+    const response = await apiClient.request({ method, url, data });
+    return response.data;
+  } catch (error) {
+    // Centralized error handling
+    throw error;
+  }
+}
+```
+
+## Backend DRY Patterns
+
+### 1. Repository Base Class
+
+**Problem**: Similar CRUD operations across repositories
+
+**Solution**: Create base repository
+
+```python
+# backend/src/database/base_repository.py
+from typing import Generic, TypeVar, Type, List, Optional
+from sqlalchemy.orm import Session
+
+T = TypeVar('T')
+
+class BaseRepository(Generic[T]):
+    def __init__(self, db: Session, model: Type[T]):
+        self.db = db
+        self.model = model
+
+    def get_by_id(self, id: str) -> Optional[T]:
+        return self.db.query(self.model).filter(self.model.id == id).first()
+
+    def get_all(self, skip: int = 0, limit: int = 100) -> List[T]:
+        return self.db.query(self.model).offset(skip).limit(limit).all()
+
+    def create(self, obj: T) -> T:
+        self.db.add(obj)
+        self.db.commit()
+        self.db.refresh(obj)
+        return obj
+```
+
+### 2. Response Models
+
+**Problem**: Similar response structures across endpoints
+
+**Solution**: Create base response models
+
+```python
+# backend/src/api/models/base.py
+from pydantic import BaseModel
+from typing import Generic, TypeVar, List
+from datetime import datetime
+
+T = TypeVar('T')
+
+class BaseResponse(BaseModel):
+    id: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    items: List[T]
+    total: int
+    skip: int
+    limit: int
+    has_more: bool
+```
+
+## File Organization for Reusability
+
+### Frontend Structure
+
+```
+frontend/src/
+├── components/
+│   ├── common/          # Reusable UI components
+│   │   ├── EntryList.vue
+│   │   ├── DatePicker.vue
+│   │   └── FilterBar.vue
+│   └── forms/           # Reusable form components
+├── composables/         # Reusable Vue composition functions
+│   ├── useEntryFilters.ts
+│   ├── useFormValidation.ts
+│   └── useApiRequest.ts
+├── utils/              # Pure utility functions
+│   ├── dateUtils.ts
+│   ├── validation.ts
+│   └── formatters.ts
+└── stores/             # Centralized state management
+```
+
+### Backend Structure
+
+```
+backend/src/
+├── database/
+│   ├── base_repository.py    # Base CRUD operations
+│   └── mixins/              # Reusable model mixins
+├── api/
+│   ├── models/
+│   │   └── base.py          # Base response models
+│   └── utils/               # API utilities
+└── utils/                   # Pure utility functions
+```
+
+## Implementation Checklist
+
+Before implementing any feature, ask:
+
+1. **Is this logic already implemented elsewhere?** → Reuse existing implementation
+2. **Could this be useful in other places?** → Create reusable utility/component
+3. **Is this similar to existing patterns?** → Abstract common patterns
+4. **Can this be parameterized?** → Make it configurable for different use cases
+
+## Examples of DRY Violations to Avoid
+
+❌ **Date formatting in multiple components**:
+
+```vue
+<!-- DON'T: Repeat in every component -->
+<template>{{ new Date(entry.date).toLocaleDateString("de-DE") }}</template>
+```
+
+✅ **Centralized date formatting**:
+
+```vue
+<!-- DO: Use centralized utility -->
+<template>{{ formatDate(entry.date) }}</template>
+```
+
+❌ **Duplicate entry list implementations**:
+
+```vue
+<!-- DON'T: Create separate list components for each use case -->
+<SightingsList />
+<RingingsList />
+<FaultyEntriesList />
+```
+
+✅ **Reusable entry list component**:
+
+```vue
+<!-- DO: One configurable component -->
+<EntryList :entries="sightings" type="sightings" />
+<EntryList :entries="ringings" type="ringings" />
+<EntryList :entries="faultyEntries" type="faulty" />
+```
+
+Remember: **If you're about to copy-paste code, stop and create a reusable solution instead.**
