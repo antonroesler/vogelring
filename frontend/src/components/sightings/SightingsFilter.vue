@@ -125,7 +125,7 @@
                   { title: 'Brutvogel', value: 'BV' },
                   { title: 'Mausergast', value: 'MG' },
                   { title: 'Nichtbrüter', value: 'NB' },
-                  { title: 'Rastvogel', value: 'RV' },
+                  { title: 'Reviervogel', value: 'RV' },
                   { title: 'Totfund', value: 'TF' }
                 ]"
                 density="compact"
