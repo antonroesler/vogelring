@@ -5,8 +5,34 @@
         <v-card class="mb-4 family-relations-card">
           <v-card-title class="d-flex align-center">
             <v-icon icon="mdi-family-tree" class="me-2" color="primary"></v-icon>
-            <span class="card-title-text">Familienbeziehungen</span>
+            <div class="d-flex flex-column">
+              <span class="card-title-text">Familienbeziehungen</span>
+              <v-chip
+                v-if="birdRingFilter"
+                color="primary"
+                variant="tonal"
+                size="small"
+                class="mt-1"
+                prepend-icon="mdi-bird"
+                :to="`/birds/${birdRingFilter}`"
+                target="_blank"
+                clickable
+              >
+                Gefiltert für Vogel: {{ birdRingFilter }}
+                <v-icon size="small" class="ml-1">mdi-open-in-new</v-icon>
+              </v-chip>
+            </div>
             <v-spacer></v-spacer>
+            <v-btn
+              v-if="birdRingFilter"
+              color="secondary"
+              variant="outlined"
+              prepend-icon="mdi-close"
+              @click="clearBirdFilter"
+              class="me-2"
+            >
+              Filter entfernen
+            </v-btn>
             <v-btn
               color="primary"
               variant="elevated"
@@ -121,21 +147,67 @@
               </template>
 
 
-              <template v-slot:item.source="{ item }">
-                <v-btn
-                  v-if="item.source && item.source.startsWith('sighting_')"
-                  :to="`/entries/${item.source.replace('sighting_', '')}`"
-                  target="_blank"
-                  variant="text"
-                  size="small"
-                  color="primary"
-                  v-tooltip="'Zur ursprünglichen Sichtung'"
-                >
-                  Sichtung
-                  <v-icon size="small" class="ml-1">mdi-open-in-new</v-icon>
-                </v-btn>
-                <span v-else-if="item.source" class="text-medium-emphasis">{{ item.source }}</span>
-                <span v-else class="text-medium-emphasis">-</span>
+              <template v-slot:item.references="{ item }">
+                <div class="d-flex flex-column gap-1">
+                  <!-- Prioritize ringing references over sighting references -->
+                  <template v-if="item.ringing1_id || item.ringing2_id">
+                    <v-btn
+                      v-if="item.ringing1_id"
+                      :to="`/birds/${item.bird1_ring}`"
+                      target="_blank"
+                      variant="text"
+                      size="x-small"
+                      color="primary"
+                      class="pa-1"
+                      v-tooltip="'Zur Beringung von Vogel 1'"
+                    >
+                      Beringung 1
+                      <v-icon size="x-small" class="ml-1">mdi-open-in-new</v-icon>
+                    </v-btn>
+                    <v-btn
+                      v-if="item.ringing2_id"
+                      :to="`/birds/${item.bird2_ring}`"
+                      target="_blank"
+                      variant="text"
+                      size="x-small"
+                      color="primary"
+                      class="pa-1"
+                      v-tooltip="'Zur Beringung von Vogel 2'"
+                    >
+                      Beringung 2
+                      <v-icon size="x-small" class="ml-1">mdi-open-in-new</v-icon>
+                    </v-btn>
+                  </template>
+                  <template v-else-if="item.sighting1_id || item.sighting2_id">
+                    <v-btn
+                      v-if="item.sighting1_id"
+                      :to="`/entries/${item.sighting1_id}`"
+                      target="_blank"
+                      variant="text"
+                      size="x-small"
+                      color="primary"
+                      class="pa-1"
+                      v-tooltip="'Zur Sichtung von Vogel 1'"
+                    >
+                      Sichtung 1
+                      <v-icon size="x-small" class="ml-1">mdi-open-in-new</v-icon>
+                    </v-btn>
+                    <v-btn
+                      v-if="item.sighting2_id"
+                      :to="`/entries/${item.sighting2_id}`"
+                      target="_blank"
+                      variant="text"
+                      size="x-small"
+                      color="primary"
+                      class="pa-1"
+                      v-tooltip="'Zur Sichtung von Vogel 2'"
+                    >
+                      Sichtung 2
+                      <v-icon size="x-small" class="ml-1">mdi-open-in-new</v-icon>
+                    </v-btn>
+                  </template>
+                  <span v-else class="text-medium-emphasis">-</span>
+                </div>
               </template>
 
               <template v-slot:item.created_at="{ item }">
@@ -180,13 +252,6 @@
         <v-card-text>
           <p>Möchten Sie diese Familienbeziehung wirklich löschen?</p>
           
-          <v-checkbox
-            v-if="isSymmetricRelationshipToDelete"
-            v-model="deleteSymmetric"
-            label="Auch die entsprechende Rückbeziehung löschen"
-            class="mt-2"
-            density="compact"
-          ></v-checkbox>
           
           <v-alert type="warning" variant="tonal" class="mt-3">
             <strong>Achtung:</strong> Diese Aktion kann nicht rückgängig gemacht werden.
@@ -223,6 +288,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch, computed } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { format } from 'date-fns';
 import { getAllRelationships, deleteRelationship as apiDeleteRelationship } from '@/api';
 import FamilyRelationshipEditor from '@/components/family/FamilyRelationshipEditor.vue';
@@ -240,6 +306,9 @@ interface Relationship {
   updated_at: string;
 }
 
+const route = useRoute();
+const router = useRouter();
+
 const relationships = ref<Relationship[]>([]);
 const loading = ref(false);
 const deleting = ref(false);
@@ -251,7 +320,9 @@ const successMessage = ref('');
 const errorMessage = ref('');
 const editingRelationship = ref<Relationship | null>(null);
 const relationshipToDelete = ref<Relationship | null>(null);
-const deleteSymmetric = ref(true); // Default to true for symmetric deletion
+
+// Get bird ring filter from URL parameter
+const birdRingFilter = computed(() => route.query.bird_ring as string || null);
 
 const filters = ref({
   relationship_type: null as string | null,
@@ -272,16 +343,11 @@ const headers = [
   { title: 'Beziehung', key: 'relationship_type', sortable: true },
   { title: 'Vogel 2', key: 'bird2_ring', sortable: true },
   { title: 'Jahr', key: 'year', sortable: true },
-  { title: 'Quelle', key: 'source', sortable: true },
+  { title: 'Referenzen', key: 'references', sortable: false },
   { title: 'Erstellt', key: 'created_at', sortable: true },
   { title: 'Aktionen', key: 'actions', sortable: false, width: 120 }
 ];
 
-// Check if relationship to delete is symmetric
-const isSymmetricRelationshipToDelete = computed(() => 
-  relationshipToDelete.value && 
-  ['breeding_partner', 'sibling_of'].includes(relationshipToDelete.value.relationship_type)
-);
 
 const formatRelationshipType = (type: string) => {
   const option = relationshipTypeOptions.find(opt => opt.value === type);
@@ -337,7 +403,7 @@ const deleteRelationship = async () => {
   
   deleting.value = true;
   try {
-    await apiDeleteRelationship(relationshipToDelete.value.id, deleteSymmetric.value);
+    await apiDeleteRelationship(relationshipToDelete.value.id);
     successMessage.value = 'Familienbeziehung erfolgreich gelöscht';
     showSuccessSnackbar.value = true;
     showDeleteDialog.value = false;
@@ -364,12 +430,33 @@ const handleDialogCancelled = () => {
   editingRelationship.value = null;
 };
 
+const clearBirdFilter = () => {
+  router.push({ path: '/family-relations' });
+};
+
+// Initialize filters with URL parameters
+const initializeFilters = () => {
+  if (birdRingFilter.value) {
+    filters.value.bird_ring = birdRingFilter.value;
+  }
+};
+
 // Watch filters for auto-refresh
 watch(filters, () => {
   loadRelationships();
 }, { deep: true });
 
+// Watch route changes to update filters
+watch(() => route.query.bird_ring, (newBirdRing) => {
+  if (newBirdRing) {
+    filters.value.bird_ring = newBirdRing as string;
+  } else {
+    filters.value.bird_ring = null;
+  }
+}, { immediate: true });
+
 onMounted(() => {
+  initializeFilters();
   loadRelationships();
 });
 </script>

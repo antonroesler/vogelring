@@ -30,21 +30,67 @@
 
         <v-list-item-subtitle>
           {{ relationship.displayType }} ({{ relationship.year }})
-          <template v-if="relationship.source && relationship.source.startsWith('sighting_')">
-            • 
-            <v-btn
-              :to="`/entries/${relationship.source.replace('sighting_', '')}`"
-              target="_blank"
-              variant="text"
-              size="x-small"
-              color="primary"
-              class="pa-0 ma-0"
-              style="text-decoration: underline; min-width: auto; height: auto;"
-              v-tooltip="'Zur ursprünglichen Sichtung'"
-            >
-              Quelle
-              <v-icon size="x-small" class="ml-1">mdi-open-in-new</v-icon>
-            </v-btn>
+          <template v-if="relationship.ringing1_id || relationship.ringing2_id || relationship.sighting1_id || relationship.sighting2_id">
+            <br>
+            <div class="d-flex flex-wrap gap-1 mt-1">
+              <!-- Prioritize ringing references over sighting references -->
+              <template v-if="relationship.ringing1_id || relationship.ringing2_id">
+                <v-btn
+                  v-if="relationship.ringing1_id"
+                  :to="`/birds/${relationship.bird1_ring}`"
+                  target="_blank"
+                  variant="text"
+                  size="x-small"
+                  color="primary"
+                  class="pa-1"
+                  v-tooltip="'Zur Beringung von Vogel 1'"
+                >
+                  Beringung 1
+                  <v-icon size="x-small" class="ml-1">mdi-open-in-new</v-icon>
+                </v-btn>
+                <v-btn
+                  v-if="relationship.ringing2_id"
+                  :to="`/birds/${relationship.bird2_ring}`"
+                  target="_blank"
+                  variant="text"
+                  size="x-small"
+                  color="primary"
+                  class="pa-1"
+                  v-tooltip="'Zur Beringung von Vogel 2'"
+                >
+                  Beringung 2
+                  <v-icon size="x-small" class="ml-1">mdi-open-in-new</v-icon>
+                </v-btn>
+              </template>
+              <template v-else>
+                <v-btn
+                  v-if="relationship.sighting1_id"
+                  :to="`/entries/${relationship.sighting1_id}`"
+                  target="_blank"
+                  variant="text"
+                  size="x-small"
+                  color="primary"
+                  class="pa-1"
+                  v-tooltip="'Zur Sichtung von Vogel 1'"
+                >
+                  Sichtung 1
+                  <v-icon size="x-small" class="ml-1">mdi-open-in-new</v-icon>
+                </v-btn>
+                <v-btn
+                  v-if="relationship.sighting2_id"
+                  :to="`/entries/${relationship.sighting2_id}`"
+                  target="_blank"
+                  variant="text"
+                  size="x-small"
+                  color="primary"
+                  class="pa-1"
+                  v-tooltip="'Zur Sichtung von Vogel 2'"
+                >
+                  Sichtung 2
+                  <v-icon size="x-small" class="ml-1">mdi-open-in-new</v-icon>
+                </v-btn>
+              </template>
+            </div>
           </template>
         </v-list-item-subtitle>
 
@@ -87,6 +133,10 @@ interface RelationshipDisplay {
   confidence?: string;
   source?: string;
   notes?: string;
+  sighting1_id?: string;
+  sighting2_id?: string;
+  ringing1_id?: string;
+  ringing2_id?: string;
   otherBird: string;
   displayType: string;
   created_at: string;

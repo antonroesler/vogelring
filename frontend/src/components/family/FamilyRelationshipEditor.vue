@@ -59,15 +59,6 @@
             </v-col>
 
 
-            <!-- Source -->
-            <v-col cols="12" md="6">
-              <v-text-field
-                v-model="localRelationship.source"
-                label="Quelle"
-                variant="outlined"
-                :rules="[rules.maxLength(100)]"
-              ></v-text-field>
-            </v-col>
 
             <!-- Notes -->
             <v-col cols="12">
@@ -81,7 +72,7 @@
             </v-col>
           </v-row>
 
-          <!-- Symmetric Relationship Options -->
+          <!-- Symmetric Relationship Info (read-only) -->
           <v-alert
             v-if="isSymmetricRelationship"
             type="info"
@@ -91,14 +82,6 @@
             <v-icon icon="mdi-information"></v-icon>
             <strong>Symmetrische Beziehung:</strong> 
             {{ getSymmetricWarning() }}
-            
-            <v-checkbox
-              v-if="isEditing"
-              v-model="updateSymmetric"
-              label="Auch die entsprechende Rückbeziehung aktualisieren"
-              class="mt-2"
-              density="compact"
-            ></v-checkbox>
           </v-alert>
 
           <!-- Validation Error -->
@@ -145,8 +128,6 @@ interface Relationship {
   bird2_ring: string;
   relationship_type: string;
   year: number;
-  confidence?: string;
-  source?: string;
   notes?: string;
 }
 
@@ -167,15 +148,12 @@ const valid = ref(false);
 const saving = ref(false);
 const validationError = ref('');
 const form = ref();
-const updateSymmetric = ref(true); // Default to true for symmetric updates
 
 const defaultRelationship: Relationship = {
   bird1_ring: '',
   bird2_ring: '',
   relationship_type: '',
   year: new Date().getFullYear(),
-  confidence: '',
-  source: '',
   notes: ''
 };
 
@@ -208,10 +186,10 @@ const isSymmetricRelationship = computed(() =>
 
 const getSymmetricWarning = () => {
   if (localRelationship.value.relationship_type === 'breeding_partner') {
-    return 'Es wird automatisch eine entsprechende Brutpartner-Beziehung in beide Richtungen erstellt.';
+    return 'Dies ist eine symmetrische Beziehung. Änderungen müssen für beide Richtungen separat vorgenommen werden.';
   }
   if (localRelationship.value.relationship_type === 'sibling_of') {
-    return 'Es wird automatisch eine entsprechende Geschwister-Beziehung in beide Richtungen erstellt.';
+    return 'Dies ist eine symmetrische Beziehung. Änderungen müssen für beide Richtungen separat vorgenommen werden.';
   }
   return '';
 };
@@ -245,9 +223,8 @@ const save = async () => {
       await updateRelationship(localRelationship.value.id!, {
         relationship_type: localRelationship.value.relationship_type as any,
         year: localRelationship.value.year,
-        source: localRelationship.value.source || undefined,
         notes: localRelationship.value.notes || undefined
-      }, updateSymmetric.value);
+      });
     } else {
       // Create new relationship
       if (isSymmetricRelationship.value) {
@@ -263,7 +240,6 @@ const save = async () => {
           bird2_ring: localRelationship.value.bird2_ring,
           relationship_type: localRelationship.value.relationship_type as any,
           year: localRelationship.value.year,
-          source: localRelationship.value.source,
           notes: localRelationship.value.notes
         });
       }

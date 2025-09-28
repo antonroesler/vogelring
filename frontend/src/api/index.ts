@@ -248,7 +248,6 @@ export const createRelationship = async (relationship: {
   bird2_ring: string;
   relationship_type: 'breeding_partner' | 'parent_of' | 'child_of' | 'sibling_of';
   year: number;
-  source?: string;
   notes?: string;
   sighting1_id?: string;
   sighting2_id?: string;
@@ -289,20 +288,17 @@ export const getAllRelationships = async (params?: {
 export const updateRelationship = async (id: string, updates: {
   relationship_type?: 'breeding_partner' | 'parent_of' | 'child_of' | 'sibling_of';
   year?: number;
-  source?: string;
   notes?: string;
-}, updateSymmetric: boolean = false) => {
-  console.log('Updating relationship:', id, updates, 'symmetric:', updateSymmetric);
-  const params = updateSymmetric ? { update_symmetric: true } : {};
-  const response = await api.put(`/family/relationships/${id}`, updates, { params });
+}) => {
+  console.log('Updating relationship:', id, updates);
+  const response = await api.put(`/family/relationships/${id}`, updates);
   console.log('Updated relationship:', response.data);
   return response.data;
 };
 
-export const deleteRelationship = async (id: string, deleteSymmetric: boolean = false) => {
-  console.log('Deleting relationship:', id, 'symmetric:', deleteSymmetric);
-  const params = deleteSymmetric ? { delete_symmetric: true } : {};
-  const response = await api.delete(`/family/relationships/${id}`, { params });
+export const deleteRelationship = async (id: string) => {
+  console.log('Deleting relationship:', id);
+  const response = await api.delete(`/family/relationships/${id}`);
   console.log('Deleted relationship:', response.data);
   return response.data;
 };

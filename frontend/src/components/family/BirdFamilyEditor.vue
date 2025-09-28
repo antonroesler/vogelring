@@ -3,22 +3,6 @@
     <v-card-title class="d-flex align-center">
       <v-icon icon="mdi-family-tree" class="me-2" color="primary"></v-icon>
       Familienbeziehungen
-      <v-spacer></v-spacer>
-      <v-btn
-        icon="mdi-plus"
-        variant="text"
-        @click="showCreateDialog = true"
-        v-tooltip="'Neue Beziehung hinzufügen'"
-        size="small"
-      ></v-btn>
-      <v-btn
-        icon="mdi-open-in-new"
-        variant="text"
-        :to="`/family-relations?bird_ring=${ring}`"
-        target="_blank"
-        v-tooltip="'Alle Beziehungen anzeigen'"
-        size="small"
-      ></v-btn>
     </v-card-title>
     
     <v-card-text>
@@ -33,131 +17,83 @@
         <v-tabs v-model="activeTab" class="mb-4">
           <v-tab value="partners">
             <v-icon icon="mdi-heart" class="me-2"></v-icon>
-            Partner ({{ partners.length }})
+            Partner ({{ uniquePartnerRelationships.length }})
           </v-tab>
           <v-tab value="children">
             <v-icon icon="mdi-baby-face" class="me-2"></v-icon>
-            Nachkommen ({{ children.length }})
+            Nachkommen ({{ uniqueChildrenRelationships.length }})
           </v-tab>
           <v-tab value="parents">
             <v-icon icon="mdi-account-supervisor" class="me-2"></v-icon>
-            Eltern ({{ parents.length }})
+            Eltern ({{ uniqueParentRelationships.length }})
           </v-tab>
           <v-tab value="siblings">
             <v-icon icon="mdi-account-group" class="me-2"></v-icon>
-            Geschwister ({{ siblings.length }})
+            Geschwister ({{ uniqueSiblingRelationships.length }})
           </v-tab>
         </v-tabs>
 
         <v-tabs-window v-model="activeTab">
           <!-- Partners Tab -->
           <v-tabs-window-item value="partners">
-            <family-relationship-list
-              :relationships="partnerRelationships"
+            <family-overview-list
+              :relationships="uniquePartnerRelationships"
               :bird-ring="ring"
-              @edit="editRelationship"
-              @delete="confirmDelete"
+              relationship-type="Partner"
             />
           </v-tabs-window-item>
 
           <!-- Children Tab -->
           <v-tabs-window-item value="children">
-            <family-relationship-list
-              :relationships="childrenRelationships"
+            <family-overview-list
+              :relationships="uniqueChildrenRelationships"
               :bird-ring="ring"
-              @edit="editRelationship"
-              @delete="confirmDelete"
+              relationship-type="Nachkommen"
             />
           </v-tabs-window-item>
 
           <!-- Parents Tab -->
           <v-tabs-window-item value="parents">
-            <family-relationship-list
-              :relationships="parentRelationships"
+            <family-overview-list
+              :relationships="uniqueParentRelationships"
               :bird-ring="ring"
-              @edit="editRelationship"
-              @delete="confirmDelete"
+              relationship-type="Eltern"
             />
           </v-tabs-window-item>
 
           <!-- Siblings Tab -->
           <v-tabs-window-item value="siblings">
-            <family-relationship-list
-              :relationships="siblingRelationships"
+            <family-overview-list
+              :relationships="uniqueSiblingRelationships"
               :bird-ring="ring"
-              @edit="editRelationship"
-              @delete="confirmDelete"
+              relationship-type="Geschwister"
             />
           </v-tabs-window-item>
         </v-tabs-window>
+
+        <!-- Show All Relationships Button -->
+        <v-btn
+          :to="`/family-relations?bird_ring=${ring}`"
+          target="_blank"
+          color="primary"
+          variant="elevated"
+          block
+          size="large"
+          class="mt-4 show-all-btn"
+          prepend-icon="mdi-open-in-new"
+        >
+          Alle Beziehungen anzeigen
+        </v-btn>
       </template>
     </v-card-text>
 
-    <!-- Create/Edit Dialog -->
-    <family-relationship-editor
-      v-model="showCreateDialog"
-      :relationship="editingRelationship"
-      :default-bird-ring="ring"
-      @saved="handleRelationshipSaved"
-      @cancelled="handleDialogCancelled"
-    />
-
-    <!-- Delete Confirmation Dialog -->
-    <v-dialog v-model="showDeleteDialog" max-width="500">
-      <v-card>
-        <v-card-title>Beziehung löschen</v-card-title>
-        <v-card-text>
-          <p>Möchten Sie diese Familienbeziehung wirklich löschen?</p>
-          
-          <v-checkbox
-            v-if="isSymmetricRelationshipToDelete"
-            v-model="deleteSymmetric"
-            label="Auch die entsprechende Rückbeziehung löschen"
-            class="mt-2"
-            density="compact"
-          ></v-checkbox>
-          
-          <v-alert type="warning" variant="tonal" class="mt-3">
-            <strong>Achtung:</strong> Diese Aktion kann nicht rückgängig gemacht werden.
-          </v-alert>
-        </v-card-text>
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn color="grey" variant="text" @click="showDeleteDialog = false">
-            Abbrechen
-          </v-btn>
-          <v-btn 
-            color="error" 
-            @click="deleteRelationship"
-            :loading="deleting"
-          >
-            Löschen
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- Snackbars -->
-    <v-snackbar v-model="showSuccessSnackbar" color="success">
-      <v-icon icon="mdi-check-circle" class="me-2"></v-icon>
-      {{ successMessage }}
-    </v-snackbar>
-    
-    <v-snackbar v-model="showErrorSnackbar" color="error">
-      <v-icon icon="mdi-alert-circle" class="me-2"></v-icon>
-      {{ errorMessage }}
-    </v-snackbar>
   </v-card>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { 
-  getBirdRelationships, 
-  deleteRelationship as apiDeleteRelationship 
-} from '@/api';
-import FamilyRelationshipEditor from './FamilyRelationshipEditor.vue';
-import FamilyRelationshipList from './FamilyRelationshipList.vue';
+import { getBirdRelationships } from '@/api';
+import FamilyOverviewList from './FamilyOverviewList.vue';
 
 interface Relationship {
   id: string;
@@ -178,17 +114,7 @@ const props = defineProps<{
 
 const relationships = ref<Relationship[]>([]);
 const loading = ref(false);
-const deleting = ref(false);
-const showCreateDialog = ref(false);
-const showDeleteDialog = ref(false);
-const showSuccessSnackbar = ref(false);
-const showErrorSnackbar = ref(false);
-const successMessage = ref('');
-const errorMessage = ref('');
-const editingRelationship = ref<Relationship | null>(null);
-const relationshipToDelete = ref<Relationship | null>(null);
 const activeTab = ref('partners');
-const deleteSymmetric = ref(true); // Default to true for symmetric deletion
 
 // Computed properties to filter relationships by type
 const partners = computed(() => 
@@ -211,44 +137,71 @@ const siblings = computed(() =>
   relationships.value.filter(rel => rel.relationship_type === 'sibling_of')
 );
 
-// Transform relationships for display components
-const partnerRelationships = computed(() => 
-  partners.value.map(rel => ({
-    ...rel,
-    otherBird: rel.bird1_ring === props.ring ? rel.bird2_ring : rel.bird1_ring,
-    displayType: 'Brutpartner'
-  }))
-);
+// Create unique relationships (one per bird per year for each relationship type)
+const uniquePartnerRelationships = computed(() => {
+  const unique = new Map();
+  partners.value.forEach(rel => {
+    const otherBird = rel.bird1_ring === props.ring ? rel.bird2_ring : rel.bird1_ring;
+    const key = `${otherBird}-${rel.year}`;
+    if (!unique.has(key)) {
+      unique.set(key, {
+        otherBird,
+        year: rel.year,
+        displayType: 'Brutpartner'
+      });
+    }
+  });
+  return Array.from(unique.values());
+});
 
-const childrenRelationships = computed(() => 
-  children.value.map(rel => ({
-    ...rel,
-    otherBird: rel.bird2_ring,
-    displayType: 'Nachkomme'
-  }))
-);
+const uniqueChildrenRelationships = computed(() => {
+  const unique = new Map();
+  children.value.forEach(rel => {
+    const otherBird = rel.bird2_ring;
+    const key = `${otherBird}-${rel.year}`;
+    if (!unique.has(key)) {
+      unique.set(key, {
+        otherBird,
+        year: rel.year,
+        displayType: 'Nachkomme'
+      });
+    }
+  });
+  return Array.from(unique.values());
+});
 
-const parentRelationships = computed(() => 
-  parents.value.map(rel => ({
-    ...rel,
-    otherBird: rel.bird2_ring,
-    displayType: 'Elternteil'
-  }))
-);
+const uniqueParentRelationships = computed(() => {
+  const unique = new Map();
+  parents.value.forEach(rel => {
+    const otherBird = rel.bird2_ring;
+    const key = `${otherBird}-${rel.year}`;
+    if (!unique.has(key)) {
+      unique.set(key, {
+        otherBird,
+        year: rel.year,
+        displayType: 'Elternteil'
+      });
+    }
+  });
+  return Array.from(unique.values());
+});
 
-const siblingRelationships = computed(() => 
-  siblings.value.map(rel => ({
-    ...rel,
-    otherBird: rel.bird1_ring === props.ring ? rel.bird2_ring : rel.bird1_ring,
-    displayType: 'Geschwister'
-  }))
-);
+const uniqueSiblingRelationships = computed(() => {
+  const unique = new Map();
+  siblings.value.forEach(rel => {
+    const otherBird = rel.bird1_ring === props.ring ? rel.bird2_ring : rel.bird1_ring;
+    const key = `${otherBird}-${rel.year}`;
+    if (!unique.has(key)) {
+      unique.set(key, {
+        otherBird,
+        year: rel.year,
+        displayType: 'Geschwister'
+      });
+    }
+  });
+  return Array.from(unique.values());
+});
 
-// Check if relationship to delete is symmetric
-const isSymmetricRelationshipToDelete = computed(() => 
-  relationshipToDelete.value && 
-  ['breeding_partner', 'sibling_of'].includes(relationshipToDelete.value.relationship_type)
-);
 
 const loadRelationships = async () => {
   if (!props.ring) return;
@@ -258,53 +211,9 @@ const loadRelationships = async () => {
     relationships.value = await getBirdRelationships(props.ring);
   } catch (error) {
     console.error('Error loading relationships:', error);
-    errorMessage.value = 'Fehler beim Laden der Familienbeziehungen';
-    showErrorSnackbar.value = true;
   } finally {
     loading.value = false;
   }
-};
-
-const editRelationship = (relationship: any) => {
-  editingRelationship.value = relationship;
-  showCreateDialog.value = true;
-};
-
-const confirmDelete = (relationship: any) => {
-  relationshipToDelete.value = relationship;
-  showDeleteDialog.value = true;
-};
-
-const deleteRelationship = async () => {
-  if (!relationshipToDelete.value) return;
-  
-  deleting.value = true;
-  try {
-    await apiDeleteRelationship(relationshipToDelete.value.id, deleteSymmetric.value);
-    successMessage.value = 'Familienbeziehung erfolgreich gelöscht';
-    showSuccessSnackbar.value = true;
-    showDeleteDialog.value = false;
-    relationshipToDelete.value = null;
-    await loadRelationships();
-  } catch (error) {
-    console.error('Error deleting relationship:', error);
-    errorMessage.value = 'Fehler beim Löschen der Familienbeziehung';
-    showErrorSnackbar.value = true;
-  } finally {
-    deleting.value = false;
-  }
-};
-
-const handleRelationshipSaved = () => {
-  successMessage.value = editingRelationship.value 
-    ? 'Familienbeziehung erfolgreich aktualisiert' 
-    : 'Familienbeziehung erfolgreich erstellt';
-  showSuccessSnackbar.value = true;
-  loadRelationships();
-};
-
-const handleDialogCancelled = () => {
-  editingRelationship.value = null;
 };
 
 onMounted(() => {
@@ -319,5 +228,20 @@ onMounted(() => {
 
 :deep(.v-tabs-window-item) {
   padding: 0;
+}
+
+.show-all-btn {
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  letter-spacing: 0.025em !important;
+  background: linear-gradient(135deg, #00436C 0%, #228096 100%) !important;
+  box-shadow: 0 4px 16px rgba(0, 67, 108, 0.3) !important;
+  transition: all 0.3s ease !important;
+}
+
+.show-all-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 67, 108, 0.4) !important;
 }
 </style>
