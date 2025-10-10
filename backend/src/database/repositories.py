@@ -32,7 +32,6 @@ class BaseRepository:
             instance = self.model_class(**kwargs)
             self.db.add(instance)
             self.db.commit()
-            self.db.refresh(instance)
             return instance
         except IntegrityError as e:
             self.db.rollback()

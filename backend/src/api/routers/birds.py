@@ -5,14 +5,19 @@ Birds API router
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from ...database.connection import get_db
+from ...utils.auth import get_current_user, get_db_with_org
+from ...database.user_models import User
 from ..services.bird_service import BirdService
 
 router = APIRouter()
 
 
 @router.get("/birds/{ring}")
-async def get_bird_by_ring(ring: str, db: Session = Depends(get_db)):
+async def get_bird_by_ring(
+    ring: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
+):
     """Get bird information by ring number
 
     Returns a BirdMeta-like structure expected by the frontend, including:
@@ -44,7 +49,9 @@ async def get_bird_by_ring(ring: str, db: Session = Depends(get_db)):
 
 @router.get("/birds/suggestions/{partial_reading}")
 async def get_bird_suggestions_by_partial_reading(
-    partial_reading: str, db: Session = Depends(get_db)
+    partial_reading: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
 ):
     """Get bird suggestions by partial ring reading"""
     if not partial_reading or len(partial_reading) < 2:

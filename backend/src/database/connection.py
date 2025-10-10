@@ -1,6 +1,7 @@
 """
 Database connection and session management
 """
+
 import os
 import logging
 from contextlib import contextmanager
@@ -8,22 +9,28 @@ from sqlalchemy import create_engine, event, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.pool import QueuePool
+from contextvars import ContextVar
 
 logger = logging.getLogger(__name__)
 
+# Context variable to store current organization ID
+current_org_id: ContextVar[str | None] = ContextVar("current_org_id", default=None)
+
 # Database URL from environment variable
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://vogelring:password@localhost:5432/vogelring")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql://vogelring:password@localhost:5432/vogelring"
+)
 
 # Create SQLAlchemy engine with optimized settings for Raspberry Pi
 engine = create_engine(
     DATABASE_URL,
     # Connection pool settings optimized for Raspberry Pi resources
     poolclass=QueuePool,
-    pool_size=3,         # Reduced pool size for Raspberry Pi memory constraints
-    max_overflow=7,      # Lower overflow for resource management
+    pool_size=3,  # Reduced pool size for Raspberry Pi memory constraints
+    max_overflow=7,  # Lower overflow for resource management
     pool_pre_ping=True,  # Verify connections before use
-    pool_recycle=1800,   # Recycle connections every 30 minutes (more frequent)
-    pool_timeout=30,     # Connection timeout for better resource management
+    pool_recycle=1800,  # Recycle connections every 30 minutes (more frequent)
+    pool_timeout=30,  # Connection timeout for better resource management
     # Performance optimizations
     connect_args={
         "application_name": "vogelring_backend",
@@ -35,7 +42,8 @@ engine = create_engine(
         "isolation_level": "READ_COMMITTED",
         "autocommit": False,
     },
-    echo=os.getenv("SQL_DEBUG", "false").lower() == "true"  # Enable SQL logging if needed
+    echo=os.getenv("SQL_DEBUG", "false").lower()
+    == "true",  # Enable SQL logging if needed
 )
 
 # Create SessionLocal class
@@ -44,16 +52,19 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 # Create Base class for models
 Base = declarative_base()
 
+
 # Event listeners for connection management
 @event.listens_for(engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
     """Set database connection parameters if needed"""
     pass
 
+
 @event.listens_for(engine, "checkout")
 def receive_checkout(dbapi_connection, connection_record, connection_proxy):
     """Log connection checkout for debugging"""
     logger.debug("Connection checked out from pool")
+
 
 def get_db():
     """
@@ -68,6 +79,7 @@ def get_db():
         raise
     finally:
         db.close()
+
 
 @contextmanager
 def get_db_session():
@@ -85,20 +97,33 @@ def get_db_session():
     finally:
         db.close()
 
+
 def create_tables():
     """
     Create all database tables and performance indexes
     """
     try:
-        Base.metadata.create_all(bind=engine)
+        # Import all models to ensure they're registered with Base
+        from .models import Base as MainBase
+        from .family_models import Base as FamilyBase
+        from .user_models import Base as UserBase
+        from .organization_models import Base as OrgBase
+
+        # Create all tables
+        MainBase.metadata.create_all(bind=engine)
+        FamilyBase.metadata.create_all(bind=engine)
+        UserBase.metadata.create_all(bind=engine)
+        OrgBase.metadata.create_all(bind=engine)
+
         logger.info("Database tables created successfully")
-        
+
         # Create performance indexes after tables are created
         create_performance_indexes()
-        
+
     except Exception as e:
         logger.error(f"Error creating database tables: {e}")
         raise
+
 
 def create_performance_indexes():
     """
@@ -114,6 +139,7 @@ def create_performance_indexes():
         logger.warning(f"Error creating performance indexes (may already exist): {e}")
         # Don't raise here as indexes might already exist
 
+
 def drop_tables():
     """
     Drop all database tables (use with caution!)
@@ -124,6 +150,7 @@ def drop_tables():
     except Exception as e:
         logger.error(f"Error dropping database tables: {e}")
         raise
+
 
 def check_connection():
     """

@@ -8,8 +8,9 @@ from typing import Dict, Any, List
 from datetime import date as DateType
 from pydantic import BaseModel
 
-from ...database.connection import get_db
+from ...utils.auth import get_current_user, get_db_with_org
 from ..services.ringing_service import RingingService
+from ...database.user_models import User
 
 router = APIRouter()
 
@@ -49,14 +50,20 @@ class RingingUpdate(BaseModel):
 
 
 @router.get("/ringings/count")
-async def get_ringings_count(db: Session = Depends(get_db)):
+async def get_ringings_count(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
+):
     """Get total count of ringings"""
     service = RingingService(db)
     return {"count": service.get_ringings_count()}
 
 
 @router.get("/ringings/statistics")
-async def get_ringings_statistics(db: Session = Depends(get_db)):
+async def get_ringings_statistics(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
+):
     """Get ringings statistics"""
     service = RingingService(db)
     return service.get_statistics()
@@ -67,7 +74,8 @@ async def get_autocomplete_suggestions(
     field: str,
     q: str = Query(..., description="Query string"),
     limit: int = Query(10, ge=1, le=50, description="Maximum number of suggestions"),
-    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
 ):
     """Get autocomplete suggestions for a field"""
     service = RingingService(db)
@@ -84,7 +92,8 @@ async def get_ringings(
     species: str | None = Query(None, description="Species filter"),
     place: str | None = Query(None, description="Place filter"),
     ringer: str | None = Query(None, description="Ringer filter"),
-    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
 ):
     """Get ringings with optional filtering and pagination"""
     service = RingingService(db)
@@ -136,7 +145,8 @@ async def get_ringings_entry_list(
     place: str | None = Query(None, description="Place filter"),
     ring: str | None = Query(None, description="Ring filter"),
     ringer: str | None = Query(None, description="Ringer filter"),
-    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
 ):
     """Get ringings for entry list with server-side filtering for specific species"""
     service = RingingService(db)
@@ -167,7 +177,11 @@ async def get_ringings_entry_list(
 
 
 @router.get("/ringing/{ring}")
-async def get_ringing_by_ring(ring: str, db: Session = Depends(get_db)):
+async def get_ringing_by_ring(
+    ring: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
+):
     """Get ringing information by ring number"""
     service = RingingService(db)
     ringing = service.get_ringing_by_ring(ring)
@@ -177,7 +191,11 @@ async def get_ringing_by_ring(ring: str, db: Session = Depends(get_db)):
 
 
 @router.post("/ringing")
-async def upsert_ringing(ringing_data: RingingCreate, db: Session = Depends(get_db)):
+async def upsert_ringing(
+    ringing_data: RingingCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
+):
     """Create or update a ringing record"""
     service = RingingService(db)
     try:
@@ -188,7 +206,11 @@ async def upsert_ringing(ringing_data: RingingCreate, db: Session = Depends(get_
 
 
 @router.put("/ringing")
-async def update_ringing(ringing_data: RingingUpdate, db: Session = Depends(get_db)):
+async def update_ringing(
+    ringing_data: RingingUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
+):
     """Update an existing ringing record"""
     service = RingingService(db)
     try:
@@ -200,7 +222,11 @@ async def update_ringing(ringing_data: RingingUpdate, db: Session = Depends(get_
 
 
 @router.delete("/ringing/{ring}")
-async def delete_ringing(ring: str, db: Session = Depends(get_db)):
+async def delete_ringing(
+    ring: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
+):
     """Delete a ringing record"""
     service = RingingService(db)
     try:

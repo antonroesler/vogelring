@@ -1,13 +1,14 @@
 """
 Sightings API router
 """
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
 from datetime import date as DateType
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from ...database.connection import get_db
+from ...utils.auth import get_current_user, get_db_with_org
+from ...database.user_models import User
 from ..services.sighting_service import SightingService
 
 router = APIRouter()
@@ -15,6 +16,7 @@ router = APIRouter()
 
 class SightingCreate(BaseModel):
     """Pydantic model for creating sightings"""
+
     excel_id: int | None = None
     comment: str | None = None
     species: str | None = None
@@ -43,6 +45,7 @@ class SightingCreate(BaseModel):
 
 class SightingUpdate(BaseModel):
     """Pydantic model for updating sightings"""
+
     id: str
     excel_id: int | None = None
     comment: str | None = None
@@ -71,7 +74,10 @@ class SightingUpdate(BaseModel):
 
 
 @router.get("/sightings/count")
-async def get_sightings_count(db: Session = Depends(get_db)):
+async def get_sightings_count(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
+):
     """Get total count of sightings"""
     service = SightingService(db)
     return {"count": service.get_sightings_count()}
@@ -82,7 +88,8 @@ async def get_sightings_by_radius(
     lat: float = Query(..., description="Latitude"),
     lon: float = Query(..., description="Longitude"),
     radius_m: int = Query(..., description="Radius in meters"),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
 ):
     """Get sightings within a radius of a location"""
     service = SightingService(db)
@@ -91,7 +98,10 @@ async def get_sightings_by_radius(
 
 
 @router.get("/sightings/statistics")
-async def get_sightings_statistics(db: Session = Depends(get_db)):
+async def get_sightings_statistics(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
+):
     """Get sightings statistics"""
     service = SightingService(db)
     return service.get_statistics()
@@ -102,7 +112,8 @@ async def get_autocomplete_suggestions(
     field: str,
     q: str = Query(..., description="Query string"),
     limit: int = Query(10, ge=1, le=50, description="Maximum number of suggestions"),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
 ):
     """Get autocomplete suggestions for a field"""
     service = SightingService(db)
@@ -113,7 +124,8 @@ async def get_autocomplete_suggestions(
 @router.get("/sightings/{id}")
 async def get_sighting_by_id(
     id: str,
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
 ):
     """Get a specific sighting by ID"""
     service = SightingService(db)
@@ -133,38 +145,39 @@ async def get_sightings(
     place: str | None = Query(None, description="Place filter"),
     ring: str | None = Query(None, description="Ring filter"),
     enriched: bool = Query(False, description="Include ringing data"),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
 ):
     """Get sightings - returns array for Lambda API compatibility"""
     service = SightingService(db)
-    
+
     # Calculate offset
     offset = (page - 1) * per_page
-    
+
     # Build filters
     filters = {}
     if start_date:
-        filters['start_date'] = start_date
+        filters["start_date"] = start_date
     if end_date:
-        filters['end_date'] = end_date
+        filters["end_date"] = end_date
     if species:
-        filters['species'] = species
+        filters["species"] = species
     if place:
-        filters['place'] = place
+        filters["place"] = place
     if ring:
-        filters['ring'] = ring
-    
+        filters["ring"] = ring
+
     # Get sightings
     if filters:
         sightings = service.search_sightings(filters)
         # Apply pagination manually for filtered results
-        sightings = sightings[offset:offset + per_page]
+        sightings = sightings[offset : offset + per_page]
     else:
         if enriched:
             sightings = service.get_enriched_sightings(limit=per_page, offset=offset)
         else:
             sightings = service.get_sightings(limit=per_page, offset=offset)
-    
+
     # Return just the array for compatibility with original Lambda API
     return sightings
 
@@ -172,7 +185,8 @@ async def get_sightings(
 @router.post("/sightings")
 async def add_sighting(
     sighting_data: SightingCreate,
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
 ):
     """Create a new sighting"""
     service = SightingService(db)
@@ -186,13 +200,14 @@ async def add_sighting(
 @router.put("/sightings")
 async def update_sighting(
     sighting_data: SightingUpdate,
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
 ):
     """Update an existing sighting"""
     service = SightingService(db)
     try:
         sighting_id = sighting_data.id
-        update_data = sighting_data.model_dump(exclude={'id'}, exclude_unset=True)
+        update_data = sighting_data.model_dump(exclude={"id"}, exclude_unset=True)
         sighting = service.update_sighting(sighting_id, update_data)
         if not sighting:
             raise HTTPException(status_code=404, detail="Sighting not found")
@@ -206,7 +221,8 @@ async def update_sighting(
 @router.delete("/sightings/{id}")
 async def delete_sighting(
     id: str,
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db_with_org),
 ):
     """Delete a sighting"""
     service = SightingService(db)
