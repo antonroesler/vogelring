@@ -81,25 +81,25 @@ async def get_current_user_dev(db: Session = Depends(get_db)) -> User:
 async def get_current_user_prod(
     request: Request, db: Session = Depends(get_db)
 ) -> User:
-    """Production user provider - extracts user from Cloudflare headers"""
-    cf_email = request.headers.get("CF-Access-Authenticated-User-Email")
-    cf_jwt = request.headers.get("CF-Access-JWT")
+    """Production user provider - extracts user from Cloudflare cookie"""
+    cf_jwt = request.cookies.get("CF_Authorization")
 
-    if not cf_email or not cf_jwt:
-        logger.warning("Missing Cloudflare authentication headers")
+    if not cf_jwt:
+        logger.warning("Missing Cloudflare authentication cookie")
         raise HTTPException(
             status_code=401,
-            detail="Authentication required - missing Cloudflare headers",
+            detail="Authentication required - missing Cloudflare cookie",
         )
 
     try:
-        # Decode JWT to get sub claim
+        # Decode JWT to get email and sub claim
         jwt_payload = decode_cf_jwt(cf_jwt)
         cf_sub = jwt_payload.get("sub")
+        cf_email = jwt_payload.get("email")
 
-        if not cf_sub:
+        if not cf_sub or not cf_email:
             raise HTTPException(
-                status_code=401, detail="Invalid JWT - missing sub claim"
+                status_code=401, detail="Invalid JWT - missing sub or email claim"
             )
 
         # Get or create user using repository
