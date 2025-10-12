@@ -95,8 +95,8 @@ class BirdService:
             )
 
         # Get partners from family tree (placeholder for now)
-        partners = self.family_repository.get_partners(ring)
-        children = self.family_repository.get_children(ring)
+        partners = self.family_repository.get_partners(org_id=org_id, bird_ring=ring)
+        children = self.family_repository.get_children(org_id=org_id, parent_ring=ring)
 
         return {
             "ring": ring,
