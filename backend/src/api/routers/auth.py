@@ -9,7 +9,8 @@ from typing import Optional
 
 from ...database.connection import get_db
 from ...database.user_models import User
-from ...utils.auth import get_current_user, get_db_with_org
+from ...utils.auth import get_current_user
+from ...database.connection import get_db
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -83,7 +84,7 @@ async def auth_status(request: Request):
 @router.get("/test-org-data")
 async def test_org_data(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db_with_org),
+    db: Session = Depends(get_db),
 ):
     """Test endpoint to verify organization data isolation"""
     from ...database.user_aware_repositories import (

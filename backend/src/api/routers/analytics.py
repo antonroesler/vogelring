@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session
 from typing import List, Dict, Any
 
 from ...database.connection import get_db
-from ...utils.auth import get_current_user, get_db_with_org
+from ...utils.auth import get_current_user
+from ...database.connection import get_db
 from ...database.user_models import User
 from ..services.analytics_service import AnalyticsService
 
@@ -18,11 +19,11 @@ router = APIRouter()
 async def get_all_sightings_from_ring(
     ring: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db_with_org),
+    db: Session = Depends(get_db),
 ):
     """Get all sightings history for a specific ring"""
     service = AnalyticsService(db)
-    sightings = service.get_all_sightings_from_ring(ring)
+    sightings = service.get_all_sightings_from_ring(ring, current_user.org_id)
     return sightings
 
 
@@ -34,7 +35,7 @@ async def get_friends_from_ring(
 ):
     """Get friends analysis for a specific ring"""
     service = AnalyticsService(db)
-    friends_data = service.get_friends_from_ring(ring, min_shared_sightings)
+    friends_data = service.get_friends_from_ring(ring, current_user.org_id, min_shared_sightings)
     return friends_data
 
 
@@ -46,15 +47,18 @@ async def get_groups_from_ring(
 ):
     """Get groups/friends analysis for a specific ring (alias for friends endpoint)"""
     service = AnalyticsService(db)
-    friends_data = service.get_friends_from_ring(ring, min_shared_sightings)
+    friends_data = service.get_friends_from_ring(ring, current_user.org_id, min_shared_sightings)
     return friends_data
 
 
 @router.get("/seasonal-analysis")
-async def get_seasonal_analysis(db: Session = Depends(get_db)):
+async def get_seasonal_analysis(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     """Get seasonal analysis data"""
     service = AnalyticsService(db)
-    analysis = service.get_seasonal_analysis()
+    analysis = service.get_seasonal_analysis(current_user.org_id)
 
     # Convert SeasonalCount objects to dictionaries
     result = {}

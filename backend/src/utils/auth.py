@@ -141,28 +141,3 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)) -> U
         return await get_current_user_dev(db)
     else:
         return await get_current_user_prod(request, db)
-
-
-def get_org_db_session(org_id: str, db: Session) -> Session:
-    """Set organization context in database session for RLS"""
-    try:
-        db.execute(text("SET app.current_org_id = :org_id"), {"org_id": str(org_id)})
-        return db
-    except Exception as e:
-        logger.error(f"Failed to set organization context: {e}")
-        raise
-
-
-async def get_db_with_org(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
-):
-    """Get database session with organization context for RLS"""
-    logger.info(
-        f"Getting database session with organization context for user: {current_user.id}"
-    )
-    # Set LOCAL works within transaction - SQLAlchemy will start transaction on first query
-    db.execute(
-        text("SET LOCAL app.current_org_id = :org_id"),
-        {"org_id": str(current_user.org_id)},
-    )
-    return db

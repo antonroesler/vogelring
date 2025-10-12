@@ -83,18 +83,15 @@ export interface SuggestionBird {
 }
 
 export interface Dashboard {
-  total_sightings: number;  // total number of sightings
-  total_birds: number;  // total number of individual birds
-  bird_count_today: number;  // number of birds seen today
-  bird_count_yesterday: number;  // number of birds seen yesterday
-  bird_count_this_week: number;  // number of birds seen this week
-  bird_count_last_week: number;  // number of birds seen last week
-  strike_day_count: number;  // number of consecutive days with sightings until today
-  rolling_year_count_per_month_per_species: {
-    [species: string]: RollingYearCountPerMonth[];
-  };  // number of sightings per month for the last 12 month per species
-  top_3_birds_this_year: SimpleBirdMeta[];  // top 3 birds by number of sightings
-  top_3_places_this_year: SimplePlaceMeta[];  // top 3 places by number of sightings
+  count_sightings_this_week: number;
+  count_sightings_last_week: number;
+  count_sightings_today: number;
+  count_sightings_yesterday: number;
+  day_streak: number;
+  count_total_sightings: number;
+  count_total_unique_birds: number;
+  top_species: { [species: string]: number };
+  top_locations: { [location: string]: number };
 }
 
 export interface Ringing {

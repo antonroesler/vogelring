@@ -7,7 +7,8 @@ from sqlalchemy.orm import Session
 from datetime import date as DateType
 from pydantic import BaseModel
 
-from ...utils.auth import get_current_user, get_db_with_org
+from ...utils.auth import get_current_user
+from ...database.connection import get_db
 from ...database.user_models import User
 from ..services.sighting_service import SightingService
 
@@ -76,11 +77,11 @@ class SightingUpdate(BaseModel):
 @router.get("/sightings/count")
 async def get_sightings_count(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db_with_org),
+    db: Session = Depends(get_db),
 ):
     """Get total count of sightings"""
     service = SightingService(db)
-    return {"count": service.get_sightings_count()}
+    return {"count": service.get_sightings_count(current_user.org_id)}
 
 
 @router.get("/sightings/radius")
@@ -89,18 +90,18 @@ async def get_sightings_by_radius(
     lon: float = Query(..., description="Longitude"),
     radius_m: int = Query(..., description="Radius in meters"),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db_with_org),
+    db: Session = Depends(get_db),
 ):
     """Get sightings within a radius of a location"""
     service = SightingService(db)
-    sightings = service.get_sightings_by_radius(lat, lon, radius_m)
+    sightings = service.get_sightings_by_radius(lat, lon, radius_m, current_user.org_id)
     return sightings
 
 
 @router.get("/sightings/statistics")
 async def get_sightings_statistics(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db_with_org),
+    db: Session = Depends(get_db),
 ):
     """Get sightings statistics"""
     service = SightingService(db)
@@ -113,7 +114,7 @@ async def get_autocomplete_suggestions(
     q: str = Query(..., description="Query string"),
     limit: int = Query(10, ge=1, le=50, description="Maximum number of suggestions"),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db_with_org),
+    db: Session = Depends(get_db),
 ):
     """Get autocomplete suggestions for a field"""
     service = SightingService(db)
@@ -125,11 +126,11 @@ async def get_autocomplete_suggestions(
 async def get_sighting_by_id(
     id: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db_with_org),
+    db: Session = Depends(get_db),
 ):
     """Get a specific sighting by ID"""
     service = SightingService(db)
-    sighting = service.get_sighting_by_id(id)
+    sighting = service.get_sighting_by_id(id, current_user.org_id)
     if not sighting:
         raise HTTPException(status_code=404, detail="Sighting not found")
     return sighting
@@ -146,7 +147,7 @@ async def get_sightings(
     ring: str | None = Query(None, description="Ring filter"),
     enriched: bool = Query(False, description="Include ringing data"),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db_with_org),
+    db: Session = Depends(get_db),
 ):
     """Get sightings - returns array for Lambda API compatibility"""
     service = SightingService(db)
@@ -169,14 +170,14 @@ async def get_sightings(
 
     # Get sightings
     if filters:
-        sightings = service.search_sightings(filters)
+        sightings = service.search_sightings(filters, current_user.org_id)
         # Apply pagination manually for filtered results
         sightings = sightings[offset : offset + per_page]
     else:
         if enriched:
-            sightings = service.get_enriched_sightings(limit=per_page, offset=offset)
+            sightings = service.get_enriched_sightings(current_user.org_id, limit=per_page, offset=offset)
         else:
-            sightings = service.get_sightings(limit=per_page, offset=offset)
+            sightings = service.get_sightings(current_user.org_id, limit=per_page, offset=offset)
 
     # Return just the array for compatibility with original Lambda API
     return sightings
@@ -186,12 +187,12 @@ async def get_sightings(
 async def add_sighting(
     sighting_data: SightingCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db_with_org),
+    db: Session = Depends(get_db),
 ):
     """Create a new sighting"""
     service = SightingService(db)
     try:
-        sighting = service.add_sighting(sighting_data.model_dump(exclude_unset=True))
+        sighting = service.add_sighting(current_user.org_id, sighting_data.model_dump(exclude_unset=True))
         return sighting
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -201,14 +202,14 @@ async def add_sighting(
 async def update_sighting(
     sighting_data: SightingUpdate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db_with_org),
+    db: Session = Depends(get_db),
 ):
     """Update an existing sighting"""
     service = SightingService(db)
     try:
         sighting_id = sighting_data.id
         update_data = sighting_data.model_dump(exclude={"id"}, exclude_unset=True)
-        sighting = service.update_sighting(sighting_id, update_data)
+        sighting = service.update_sighting(sighting_id, current_user.org_id, update_data)
         if not sighting:
             raise HTTPException(status_code=404, detail="Sighting not found")
         return sighting
@@ -222,12 +223,12 @@ async def update_sighting(
 async def delete_sighting(
     id: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db_with_org),
+    db: Session = Depends(get_db),
 ):
     """Delete a sighting"""
     service = SightingService(db)
     try:
-        success = service.delete_sighting(id)
+        success = service.delete_sighting(id, current_user.org_id)
         if not success:
             raise HTTPException(status_code=404, detail="Sighting not found")
         return {"message": "Sighting deleted successfully"}

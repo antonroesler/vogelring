@@ -23,13 +23,13 @@ class BirdService:
         self.ringing_repository = RingingRepository(db)
         self.family_repository = FamilyRepository(db)
 
-    def get_bird_meta_by_ring(self, ring: str) -> Dict[str, Any]:
+    def get_bird_meta_by_ring(self, ring: str, org_id: str) -> Dict[str, Any]:
         """Get bird metadata for a specific ring in the shape expected by the frontend"""
         # Get all sightings for this ring
-        sightings = self.sighting_repository.get_by_ring(ring)
+        sightings = self.sighting_repository.get_by_ring(ring, org_id)
 
         # Get ringing data if available
-        ringing = self.ringing_repository.get_by_ring(ring)
+        ringing = self.ringing_repository.get_by_ring(ring, org_id)
 
         if not sightings and not ringing:
             return {
@@ -113,7 +113,7 @@ class BirdService:
         }
 
     def get_bird_suggestions_by_partial_reading(
-        self, partial_reading: str
+        self, partial_reading: str, org_id: str
     ) -> List[Dict[str, Any]]:
         """Return a list of bird suggestions by partial ring reading.
         Partial reading can be only front, back, outer or middle reading."""
@@ -122,7 +122,7 @@ class BirdService:
         partial_reading = partial_reading.replace("...", "*").replace("…", "*")
 
         # Get all sightings from the database
-        all_sightings = self.sighting_repository.get_all()
+        all_sightings = self.sighting_repository.get_all(org_id)
 
         suggestions = {}
 

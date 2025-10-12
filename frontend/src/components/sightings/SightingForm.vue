@@ -795,6 +795,9 @@ const handleFamilyConfirm = async () => {
     
     showFamilyConfirmationDialog.value = false;
     
+    // Emit the submit event to trigger the toast notification
+    emit('submit', mainSighting);
+    
     // Reset form using the same field clearing logic as individual sightings
     if (props.clearFieldsSettings) {
       localSighting.value = createClearedSighting(pendingSighting.value, props.clearFieldsSettings);
@@ -808,6 +811,7 @@ const handleFamilyConfirm = async () => {
     
   } catch (error) {
     console.error('Error creating family sighting:', error);
+    throw error;
   }
 };
 

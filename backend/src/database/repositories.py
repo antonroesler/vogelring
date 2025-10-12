@@ -22,13 +22,17 @@ class BaseRepository:
         self.db = db
         self.model_class = model_class
 
-    def get_by_id(self, id: str):
-        """Get record by ID"""
-        return self.db.query(self.model_class).filter(self.model_class.id == id).first()
+    def get_by_id(self, id: str, org_id: str):
+        """Get record by ID within organization"""
+        return self.db.query(self.model_class).filter(
+            self.model_class.id == id,
+            self.model_class.org_id == org_id
+        ).first()
 
-    def create(self, **kwargs):
+    def create(self, org_id: str, **kwargs):
         """Create new record"""
         try:
+            kwargs['org_id'] = org_id
             instance = self.model_class(**kwargs)
             self.db.add(instance)
             self.db.commit()
@@ -38,10 +42,10 @@ class BaseRepository:
             logger.error(f"Error creating {self.model_class.__name__}: {e}")
             raise
 
-    def update(self, id: str, **kwargs):
-        """Update record by ID"""
+    def update(self, id: str, org_id: str, **kwargs):
+        """Update record by ID within organization"""
         try:
-            instance = self.get_by_id(id)
+            instance = self.get_by_id(id, org_id)
             if not instance:
                 return None
 
@@ -50,17 +54,16 @@ class BaseRepository:
                     setattr(instance, key, value)
 
             self.db.commit()
-            self.db.refresh(instance)
             return instance
         except IntegrityError as e:
             self.db.rollback()
             logger.error(f"Error updating {self.model_class.__name__}: {e}")
             raise
 
-    def delete(self, id: str):
-        """Delete record by ID"""
+    def delete(self, id: str, org_id: str):
+        """Delete record by ID within organization"""
         try:
-            instance = self.get_by_id(id)
+            instance = self.get_by_id(id, org_id)
             if instance:
                 self.db.delete(instance)
                 self.db.commit()
@@ -79,10 +82,10 @@ class SightingRepository(BaseRepository):
         super().__init__(db, Sighting)
 
     def get_all(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
+        self, org_id: str, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[Sighting]:
         """Get all sightings with optional pagination"""
-        query = self.db.query(Sighting).order_by(
+        query = self.db.query(Sighting).filter(Sighting.org_id == org_id).order_by(
             desc(Sighting.date), desc(Sighting.created_at)
         )
 
@@ -94,11 +97,12 @@ class SightingRepository(BaseRepository):
         return query.all()
 
     def get_enriched_sightings(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
+        self, org_id: str, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[Sighting]:
         """Get sightings with ringing data joined"""
         query = (
             self.db.query(Sighting)
+            .filter(Sighting.org_id == org_id)
             .outerjoin(
                 Ringing, and_(Sighting.ring == Ringing.ring, Sighting.ring.isnot(None))
             )
@@ -113,45 +117,45 @@ class SightingRepository(BaseRepository):
 
         return query.all()
 
-    def get_by_ring(self, ring: str) -> List[Sighting]:
+    def get_by_ring(self, ring: str, org_id: str) -> List[Sighting]:
         """Get all sightings for a specific ring"""
         return (
             self.db.query(Sighting)
-            .filter(Sighting.ring == ring)
+            .filter(Sighting.ring == ring, Sighting.org_id == org_id)
             .order_by(desc(Sighting.date))
             .all()
         )
 
-    def get_by_species(self, species: str) -> List[Sighting]:
+    def get_by_species(self, species: str, org_id: str) -> List[Sighting]:
         """Get all sightings for a specific species"""
         return (
             self.db.query(Sighting)
-            .filter(Sighting.species == species)
+            .filter(Sighting.species == species, Sighting.org_id == org_id)
             .order_by(desc(Sighting.date))
             .all()
         )
 
-    def get_by_place(self, place: str) -> List[Sighting]:
+    def get_by_place(self, place: str, org_id: str) -> List[Sighting]:
         """Get all sightings for a specific place"""
         return (
             self.db.query(Sighting)
-            .filter(Sighting.place == place)
+            .filter(Sighting.place == place, Sighting.org_id == org_id)
             .order_by(desc(Sighting.date))
             .all()
         )
 
-    def get_by_date_range(self, start_date: date, end_date: date) -> List[Sighting]:
+    def get_by_date_range(self, start_date: date, end_date: date, org_id: str) -> List[Sighting]:
         """Get sightings within a date range"""
         return (
             self.db.query(Sighting)
-            .filter(and_(Sighting.date >= start_date, Sighting.date <= end_date))
+            .filter(and_(Sighting.date >= start_date, Sighting.date <= end_date, Sighting.org_id == org_id))
             .order_by(desc(Sighting.date))
             .all()
         )
 
-    def search_sightings(self, filters: Dict[str, Any]) -> List[Sighting]:
+    def search_sightings(self, filters: Dict[str, Any], org_id: str) -> List[Sighting]:
         """Search sightings with multiple filters using optimized queries"""
-        query = self.db.query(Sighting)
+        query = self.db.query(Sighting).filter(Sighting.org_id == org_id)
 
         # Apply filters with case-insensitive search for better performance
         if filters.get("species"):
@@ -320,10 +324,10 @@ class RingingRepository(BaseRepository):
         super().__init__(db, Ringing)
 
     def get_all(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
+        self, org_id: str, limit: Optional[int] = None, offset: Optional[int] = None
     ) -> List[Ringing]:
         """Get all ringings with optional pagination"""
-        query = self.db.query(Ringing).order_by(
+        query = self.db.query(Ringing).filter(Ringing.org_id == org_id).order_by(
             desc(Ringing.date), desc(Ringing.created_at)
         )
 
@@ -334,49 +338,49 @@ class RingingRepository(BaseRepository):
 
         return query.all()
 
-    def get_by_ring(self, ring: str) -> Optional[Ringing]:
+    def get_by_ring(self, ring: str, org_id: str) -> Optional[Ringing]:
         """Get ringing by ring number"""
-        return self.db.query(Ringing).filter(Ringing.ring == ring).first()
+        return self.db.query(Ringing).filter(Ringing.ring == ring, Ringing.org_id == org_id).first()
 
-    def get_by_species(self, species: str) -> List[Ringing]:
+    def get_by_species(self, species: str, org_id: str) -> List[Ringing]:
         """Get all ringings for a specific species"""
         return (
             self.db.query(Ringing)
-            .filter(Ringing.species == species)
+            .filter(Ringing.species == species, Ringing.org_id == org_id)
             .order_by(desc(Ringing.date))
             .all()
         )
 
-    def get_by_ringer(self, ringer: str) -> List[Ringing]:
+    def get_by_ringer(self, ringer: str, org_id: str) -> List[Ringing]:
         """Get all ringings by a specific ringer"""
         return (
             self.db.query(Ringing)
-            .filter(Ringing.ringer == ringer)
+            .filter(Ringing.ringer == ringer, Ringing.org_id == org_id)
             .order_by(desc(Ringing.date))
             .all()
         )
 
-    def get_by_place(self, place: str) -> List[Ringing]:
+    def get_by_place(self, place: str, org_id: str) -> List[Ringing]:
         """Get all ringings at a specific place"""
         return (
             self.db.query(Ringing)
-            .filter(Ringing.place == place)
+            .filter(Ringing.place == place, Ringing.org_id == org_id)
             .order_by(desc(Ringing.date))
             .all()
         )
 
-    def get_by_date_range(self, start_date: date, end_date: date) -> List[Ringing]:
+    def get_by_date_range(self, start_date: date, end_date: date, org_id: str) -> List[Ringing]:
         """Get ringings within a date range"""
         return (
             self.db.query(Ringing)
-            .filter(and_(Ringing.date >= start_date, Ringing.date <= end_date))
+            .filter(and_(Ringing.date >= start_date, Ringing.date <= end_date, Ringing.org_id == org_id))
             .order_by(desc(Ringing.date))
             .all()
         )
 
-    def search_ringings(self, filters: Dict[str, Any]) -> List[Ringing]:
+    def search_ringings(self, filters: Dict[str, Any], org_id: str) -> List[Ringing]:
         """Search ringings with multiple filters using optimized queries"""
-        query = self.db.query(Ringing)
+        query = self.db.query(Ringing).filter(Ringing.org_id == org_id)
 
         # Apply filters with case-insensitive search for better performance
         if filters.get("species"):
@@ -423,10 +427,10 @@ class RingingRepository(BaseRepository):
         else:
             return query.order_by(desc(Ringing.date)).all()
 
-    def upsert_ringing(self, ring: str, **kwargs) -> Ringing:
+    def upsert_ringing(self, ring: str, org_id: str, **kwargs) -> Ringing:
         """Insert or update ringing data"""
         try:
-            existing = self.get_by_ring(ring)
+            existing = self.get_by_ring(ring, org_id)
 
             if existing:
                 # Update existing record
@@ -435,12 +439,11 @@ class RingingRepository(BaseRepository):
                         setattr(existing, key, value)
 
                 self.db.commit()
-                self.db.refresh(existing)
                 return existing
             else:
                 # Create new record
                 kwargs["ring"] = ring
-                return self.create(**kwargs)
+                return self.create(org_id, **kwargs)
 
         except IntegrityError as e:
             self.db.rollback()
@@ -528,6 +531,7 @@ class RingingRepository(BaseRepository):
     def get_entry_list_ringings(
         self,
         filters: Dict[str, Any],
+        org_id: str,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
     ) -> List[Ringing]:
@@ -542,8 +546,9 @@ class RingingRepository(BaseRepository):
             "Weißwangengans",
         ]
 
-        # Start with base query filtering to target species
+        # Start with base query filtering to target species and org
         query = self.db.query(Ringing).filter(
+            Ringing.org_id == org_id,
             or_(
                 Ringing.species.in_(target_species_codes),
                 Ringing.species.in_(target_species_names),
@@ -588,7 +593,7 @@ class RingingRepository(BaseRepository):
 
         return query.all()
 
-    def get_entry_list_ringings_count(self, filters: Dict[str, Any]) -> int:
+    def get_entry_list_ringings_count(self, filters: Dict[str, Any], org_id: str) -> int:
         """Get count of ringings for entry list filtered to target species"""
         # Target species codes and names
         target_species_codes = ["01660", "01610", "01520", "01700", "01670"]
@@ -600,8 +605,9 @@ class RingingRepository(BaseRepository):
             "Weißwangengans",
         ]
 
-        # Start with base query filtering to target species
+        # Start with base query filtering to target species and org
         query = self.db.query(Ringing).filter(
+            Ringing.org_id == org_id,
             or_(
                 Ringing.species.in_(target_species_codes),
                 Ringing.species.in_(target_species_names),

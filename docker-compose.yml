@@ -58,8 +58,8 @@ services:
       S3_SECRET_KEY: ${S3_SECRET_KEY}
       # Development authentication
       DEVELOPMENT_MODE: "true"
-      DEV_USER_EMAIL: ${DEV_USER_EMAIL:-dev@vogelring.local}
-      DEV_USER_NAME: ${DEV_USER_NAME:-Local Developer}
+      DEV_USER_EMAIL: ${DEV_USER_EMAIL:-dev2@vogelring.local}
+      DEV_USER_NAME: ${DEV_USER_NAME:-Local 2 Developer}
     depends_on:
       postgres:
         condition: service_healthy

@@ -1,219 +1,214 @@
 <template>
-  <v-card class="mt-4">
-    <v-card-text>
-      <v-row>
-        <!-- Weekly Stats Card -->
-        <v-col cols="12" md="6" lg="3">
-          <v-card>
-            <v-card-text class="text-center">
-              <div class="text-h6 mb-2">Diese Woche</div>
-              <div class="text-h4 mb-2">{{ dashboardData?.bird_count_this_week || 0 }}</div>
-              <div :class="[
-                'text-subtitle-1',
-                weeklyTrend > 0 ? 'text-success' : weeklyTrend < 0 ? 'text-error' : ''
-              ]">
-                <v-icon :icon="weeklyTrend > 0 ? 'mdi-arrow-up' : weeklyTrend < 0 ? 'mdi-arrow-down' : 'mdi-minus'"></v-icon>
-                {{ weeklyTrend > 0 ? '+' : ''}}{{ dashboardData?.bird_count_this_week - (dashboardData?.bird_count_last_week || 0) }}
-              </div>
-              <div class="text-caption">Letzte Woche: {{ dashboardData?.bird_count_last_week || 0 }}</div>
-            </v-card-text>
-          </v-card>
-        </v-col>
+  <v-container class="pa-6">
+    <div class="text-h4 mb-8 font-weight-light">Dashboard</div>
+    
+    <!-- Stats Grid -->
+    <v-row class="mb-8">
+      <!-- This Week -->
+      <v-col cols="12" sm="6" md="3">
+        <v-card class="pa-4 text-center" elevation="2">
+          <div class="text-h3 font-weight-bold primary--text mb-2">
+            {{ dashboardData?.count_sightings_this_week || 0 }}
+          </div>
+          <div class="text-subtitle-1 text-medium-emphasis">Diese Woche</div>
+          <div class="text-caption mt-1">
+            <span :class="weeklyTrendClass">
+              <v-icon size="small" :icon="weeklyTrendIcon" class="me-1"></v-icon>
+              {{ weeklyTrendText }}
+            </span>
+          </div>
+        </v-card>
+      </v-col>
 
-        <!-- Daily Stats Card -->
-        <v-col cols="12" md="6" lg="3">
-          <v-card>
-            <v-card-text class="text-center">
-              <div class="text-h6 mb-2">Heute</div>
-              <div class="text-h4 mb-2">{{ dashboardData?.bird_count_today || 0 }}</div>
-              <div :class="[
-                'text-subtitle-1',
-                dailyTrend > 0 ? 'text-success' : dailyTrend < 0 ? 'text-error' : ''
-              ]">
-                <v-icon :icon="dailyTrend > 0 ? 'mdi-arrow-up' : dailyTrend < 0 ? 'mdi-arrow-down' : 'mdi-minus'"></v-icon>
-                {{ dailyTrend > 0 ? '+' : ''}}{{ dashboardData?.bird_count_today - (dashboardData?.bird_count_yesterday || 0) }}
-              </div>
-              <div class="text-caption">Gestern: {{ dashboardData?.bird_count_yesterday || 0 }}</div>
-            </v-card-text>
-          </v-card>
-        </v-col>
+      <!-- Today -->
+      <v-col cols="12" sm="6" md="3">
+        <v-card class="pa-4 text-center" elevation="2">
+          <div class="text-h3 font-weight-bold success--text mb-2">
+            {{ dashboardData?.count_sightings_today || 0 }}
+          </div>
+          <div class="text-subtitle-1 text-medium-emphasis">Heute</div>
+          <div class="text-caption mt-1">
+            <span :class="dailyTrendClass">
+              <v-icon size="small" :icon="dailyTrendIcon" class="me-1"></v-icon>
+              {{ dailyTrendText }}
+            </span>
+          </div>
+        </v-card>
+      </v-col>
 
-        <!-- Strike Days Card -->
-        <v-col cols="12" md="6" lg="3">
-          <v-card>
-            <v-card-text class="text-center">
-              <div class="text-h6 mb-2">Beobachtungs-Streak</div>
-              <div class="text-h4 mb-2">
-                <v-icon color="warning" icon="mdi-fire" class="me-2"></v-icon>
-                {{ dashboardData?.strike_day_count || 0 }}
-              </div>
-              <div class="text-subtitle-1">Tage in Folge</div>
-            </v-card-text>
-          </v-card>
-        </v-col>
+      <!-- Streak -->
+      <v-col cols="12" sm="6" md="3">
+        <v-card class="pa-4 text-center" elevation="2">
+          <div class="text-h3 font-weight-bold warning--text mb-2">
+            <v-icon color="warning" icon="mdi-fire" class="me-2"></v-icon>
+            {{ dashboardData?.day_streak || 0 }}
+          </div>
+          <div class="text-subtitle-1 text-medium-emphasis">Tage Streak</div>
+        </v-card>
+      </v-col>
 
-        <!-- Total Stats Card -->
-        <v-col cols="12" md="6" lg="3">
-          <v-card>
-            <v-card-text class="text-center">
-              <div class="text-h6 mb-2">Gesamt</div>
-              <div class="text-h4 mb-2">
-                <v-icon icon="mdi-bird" class="me-2"></v-icon>
-                {{ dashboardData?.total_birds || 0 }}
-              </div>
-              <div class="text-subtitle-1">
-                <v-icon icon="mdi-eye" class="me-1"></v-icon>
-                {{ dashboardData?.total_sightings || 0 }} Sichtungen
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
+      <!-- Total -->
+      <v-col cols="12" sm="6" md="3">
+        <v-card class="pa-4 text-center" elevation="2">
+          <div class="text-h3 font-weight-bold info--text mb-2">
+            {{ dashboardData?.count_total_sightings || 0 }}
+          </div>
+          <div class="text-subtitle-1 text-medium-emphasis">Gesamt</div>
+          <div class="text-caption mt-1">
+            {{ dashboardData?.count_total_unique_birds || 0 }} Vögel
+          </div>
+        </v-card>
+      </v-col>
+    </v-row>
 
-        <!-- Species Chart -->
-        <v-col cols="12">
-          <v-card>
-            <v-card-title class="d-flex align-center">
-              <v-icon icon="mdi-chart-line" class="me-2"></v-icon>
-              Sichtungen pro Art (12 Monate)
-            </v-card-title>
-            <v-card-text>
-              <v-chart class="chart" :option="speciesTimelineOption" autoresize></v-chart>
-            </v-card-text>
-          </v-card>
-        </v-col>
-      </v-row>
-    </v-card-text>
-  </v-card>
+    <!-- Top Lists -->
+    <v-row>
+      <!-- Top Species -->
+      <v-col cols="12" md="6">
+        <v-card elevation="2">
+          <v-card-title class="text-h6 font-weight-medium">
+            <v-icon icon="mdi-bird" class="me-2"></v-icon>
+            Top Arten
+          </v-card-title>
+          <v-card-text class="pa-0">
+            <v-list density="compact">
+              <v-list-item
+                v-for="([species, count], index) in topSpeciesList"
+                :key="species"
+                class="px-4"
+              >
+                <template #prepend>
+                  <div class="text-h6 font-weight-bold me-4" style="min-width: 24px;">
+                    {{ index + 1 }}
+                  </div>
+                </template>
+                <v-list-item-title>{{ species }}</v-list-item-title>
+                <template #append>
+                  <v-chip size="small" color="primary" variant="tonal">
+                    {{ count }}
+                  </v-chip>
+                </template>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <!-- Top Locations -->
+      <v-col cols="12" md="6">
+        <v-card elevation="2">
+          <v-card-title class="text-h6 font-weight-medium">
+            <v-icon icon="mdi-map-marker" class="me-2"></v-icon>
+            Top Orte
+          </v-card-title>
+          <v-card-text class="pa-0">
+            <v-list density="compact">
+              <v-list-item
+                v-for="([location, count], index) in topLocationsList"
+                :key="location"
+                class="px-4"
+              >
+                <template #prepend>
+                  <div class="text-h6 font-weight-bold me-4" style="min-width: 24px;">
+                    {{ index + 1 }}
+                  </div>
+                </template>
+                <v-list-item-title>{{ location }}</v-list-item-title>
+                <template #append>
+                  <v-chip size="small" color="success" variant="tonal">
+                    {{ count }}
+                  </v-chip>
+                </template>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import type { Dashboard } from '@/types';
-import * as api from '@/api';
-import VChart from 'vue-echarts';
-import { use } from 'echarts/core';
-import { CanvasRenderer } from 'echarts/renderers';
-import { LineChart } from 'echarts/charts';
-import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/components';
-import { getSpeciesColor } from '@/utils/colors';
-
-use([
-  CanvasRenderer,
-  LineChart,
-  GridComponent,
-  TooltipComponent,
-  LegendComponent
-]);
+import * as api from '../../api';
+import type { Dashboard } from '../../types';
 
 const dashboardData = ref<Dashboard | null>(null);
 
-const weeklyTrend = computed(() => {
-  if (!dashboardData.value) return 0;
-  const thisWeek = dashboardData.value.bird_count_this_week;
-  const lastWeek = dashboardData.value.bird_count_last_week;
-  if (lastWeek === 0) return 100;
-  return Math.round(((thisWeek - lastWeek) / lastWeek) * 100);
+const weeklyTrendClass = computed(() => {
+  const thisWeek = dashboardData.value?.count_sightings_this_week || 0;
+  const lastWeek = dashboardData.value?.count_sightings_last_week || 0;
+  if (thisWeek > lastWeek) return 'text-success';
+  if (thisWeek < lastWeek) return 'text-error';
+  return 'text-medium-emphasis';
 });
 
-const dailyTrend = computed(() => {
-  if (!dashboardData.value) return 0;
-  const today = dashboardData.value.bird_count_today;
-  const yesterday = dashboardData.value.bird_count_yesterday;
-  if (yesterday === 0) return 100;
-  return Math.round(((today - yesterday) / yesterday) * 100);
+const weeklyTrendIcon = computed(() => {
+  const thisWeek = dashboardData.value?.count_sightings_this_week || 0;
+  const lastWeek = dashboardData.value?.count_sightings_last_week || 0;
+  if (thisWeek > lastWeek) return 'mdi-arrow-up';
+  if (thisWeek < lastWeek) return 'mdi-arrow-down';
+  return 'mdi-minus';
 });
 
-const speciesTimelineOption = computed(() => {
-  if (!dashboardData.value) return {};
-
-  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
-  const data = dashboardData.value.rolling_year_count_per_month_per_species;
-  
-  // Get all months in the last year as x-axis labels
-  const today = new Date();
-  const xAxisData = Array.from({ length: 12 }, (_, i) => {
-    const d = new Date(today.getFullYear(), today.getMonth() - (11 - i));
-    return `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
-  });
-
-  // Prepare series data
-  const series = Object.entries(data).map(([species, counts]) => {
-    const monthData = new Array(12).fill(0);
-    
-    // Create a map of year-month to count for easier lookup
-    const countMap = new Map(
-      counts.map(count => [`${count.year}-${count.month}`, count.count])
-    );
-
-    // Fill the data array by matching the actual months
-    xAxisData.forEach((label, index) => {
-      const [month, year] = label.split(' ');
-      const monthIndex = monthNames.indexOf(month) + 1;
-      const key = `${year}-${monthIndex}`;
-      monthData[index] = countMap.get(key) || 0;
-    });
-
-    return {
-      name: species,
-      type: 'line',
-      data: monthData,
-      smooth: true,
-      itemStyle: {
-        color: getSpeciesColor(species)
-      }
-    };
-  });
-
-  return {
-    tooltip: {
-      trigger: 'axis',
-      axisPointer: {
-        type: 'shadow'
-      }
-    },
-    legend: {
-      type: 'scroll',
-      orient: 'horizontal',
-      top: 'bottom'
-    },
-    grid: {
-      left: '3%',
-      right: '4%',
-      bottom: '15%',
-      containLabel: true
-    },
-    xAxis: {
-      type: 'category',
-      data: xAxisData
-    },
-    yAxis: {
-      type: 'value'
-    },
-    series
-  };
+const weeklyTrendText = computed(() => {
+  const thisWeek = dashboardData.value?.count_sightings_this_week || 0;
+  const lastWeek = dashboardData.value?.count_sightings_last_week || 0;
+  const diff = thisWeek - lastWeek;
+  if (diff > 0) return `+${diff} vs. letzte Woche`;
+  if (diff < 0) return `${diff} vs. letzte Woche`;
+  return 'Keine Änderung';
 });
 
-onMounted(async () => {
+const dailyTrendClass = computed(() => {
+  const today = dashboardData.value?.count_sightings_today || 0;
+  const yesterday = dashboardData.value?.count_sightings_yesterday || 0;
+  if (today > yesterday) return 'text-success';
+  if (today < yesterday) return 'text-error';
+  return 'text-medium-emphasis';
+});
+
+const dailyTrendIcon = computed(() => {
+  const today = dashboardData.value?.count_sightings_today || 0;
+  const yesterday = dashboardData.value?.count_sightings_yesterday || 0;
+  if (today > yesterday) return 'mdi-arrow-up';
+  if (today < yesterday) return 'mdi-arrow-down';
+  return 'mdi-minus';
+});
+
+const dailyTrendText = computed(() => {
+  const today = dashboardData.value?.count_sightings_today || 0;
+  const yesterday = dashboardData.value?.count_sightings_yesterday || 0;
+  const diff = today - yesterday;
+  if (diff > 0) return `+${diff} vs. gestern`;
+  if (diff < 0) return `${diff} vs. gestern`;
+  return 'Keine Änderung';
+});
+
+const topSpeciesList = computed(() => {
+  if (!dashboardData.value?.top_species) return [];
+  return Object.entries(dashboardData.value.top_species)
+    .filter(([species]) => species !== 'null')
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5);
+});
+
+const topLocationsList = computed(() => {
+  if (!dashboardData.value?.top_locations) return [];
+  return Object.entries(dashboardData.value.top_locations)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5);
+});
+
+const fetchDashboardData = async () => {
   try {
-    console.log('Fetching dashboard data...');
     dashboardData.value = await api.getDashboard();
-    console.log('Dashboard data received:', dashboardData.value);
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
   }
+};
+
+onMounted(() => {
+  fetchDashboardData();
 });
 </script>
-
-<style scoped>
-.text-success {
-  color: #4CAF50 !important;
-}
-
-.text-error {
-  color: #FF5252 !important;
-}
-
-.chart {
-  height: 400px;
-}
-</style> 

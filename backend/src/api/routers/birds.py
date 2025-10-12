@@ -5,7 +5,8 @@ Birds API router
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from ...utils.auth import get_current_user, get_db_with_org
+from ...utils.auth import get_current_user
+from ...database.connection import get_db
 from ...database.user_models import User
 from ..services.bird_service import BirdService
 
@@ -16,7 +17,7 @@ router = APIRouter()
 async def get_bird_by_ring(
     ring: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db_with_org),
+    db: Session = Depends(get_db),
 ):
     """Get bird information by ring number
 
@@ -31,7 +32,7 @@ async def get_bird_by_ring(
     - partners (list, currently empty placeholder)
     """
     service = BirdService(db)
-    bird = service.get_bird_meta_by_ring(ring)
+    bird = service.get_bird_meta_by_ring(ring, current_user.org_id)
     if not bird:
         # Fallback empty response
         return {
@@ -51,7 +52,7 @@ async def get_bird_by_ring(
 async def get_bird_suggestions_by_partial_reading(
     partial_reading: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db_with_org),
+    db: Session = Depends(get_db),
 ):
     """Get bird suggestions by partial ring reading"""
     if not partial_reading or len(partial_reading) < 2:
@@ -65,6 +66,6 @@ async def get_bird_suggestions_by_partial_reading(
 
     # Get bird suggestions using the service
     service = BirdService(db)
-    suggestions = service.get_bird_suggestions_by_partial_reading(partial_reading)
+    suggestions = service.get_bird_suggestions_by_partial_reading(partial_reading, current_user.org_id)
 
     return suggestions

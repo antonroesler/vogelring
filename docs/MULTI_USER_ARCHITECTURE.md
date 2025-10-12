@@ -2,7 +2,7 @@
 
 ## Overview
 
-Vogelring has been enhanced to support multiple organizations with complete data isolation using PostgreSQL Row Level Security (RLS). Each organization has its own private dataset, and users belong to organizations. Data is isolated at the organization level, providing scalable multi-tenancy with admin capabilities.
+Vogelring has been enhanced to support multiple organizations with complete data isolation using **application-level filtering**. Each organization has its own private dataset, and users belong to organizations. Data is isolated at the organization level using explicit `org_id` filtering in all database queries, providing scalable multi-tenancy with admin capabilities.
 
 ## Authentication Architecture
 
@@ -33,7 +33,8 @@ CREATE TABLE users (
     cf_sub VARCHAR(255) UNIQUE NOT NULL,     -- Cloudflare subject ID
     email VARCHAR(255) UNIQUE NOT NULL,      -- User email
     display_name VARCHAR(100),               -- Display name
-    organization VARCHAR(100),               -- Organization (future use)
+    org_id UUID REFERENCES organizations(id) NOT NULL, -- Organization membership
+    is_admin BOOLEAN DEFAULT false NOT NULL, -- Admin privileges
     is_active BOOLEAN DEFAULT true,          -- Account status
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_login TIMESTAMP,                    -- Last login time
@@ -43,6 +44,8 @@ CREATE TABLE users (
 -- Indexes
 CREATE INDEX idx_users_cf_sub ON users(cf_sub);
 CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_org_id ON users(org_id);
+CREATE INDEX idx_users_is_active ON users(is_active);
 ```
 
 ### Organization Schema
@@ -63,62 +66,74 @@ CREATE TABLE organizations (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Indexes
+CREATE INDEX idx_organizations_name ON organizations(name);
+CREATE INDEX idx_organizations_is_active ON organizations(is_active);
 ```
 
 ### Organization Columns
 
-All data tables now include `org_id` columns for organization-based isolation:
+All data tables include `org_id` columns for organization-based isolation:
 
 ```sql
 -- Ringings table
-ALTER TABLE ringings ADD COLUMN org_id UUID REFERENCES organizations(id);
+ALTER TABLE ringings ADD COLUMN org_id UUID REFERENCES organizations(id) NOT NULL;
 CREATE INDEX idx_ringings_org_id ON ringings(org_id);
+CREATE INDEX idx_ringings_org_species_date ON ringings(org_id, species, date);
+CREATE INDEX idx_ringings_org_place ON ringings(org_id, place);
 
 -- Sightings table
-ALTER TABLE sightings ADD COLUMN org_id UUID REFERENCES organizations(id);
+ALTER TABLE sightings ADD COLUMN org_id UUID REFERENCES organizations(id) NOT NULL;
 CREATE INDEX idx_sightings_org_id ON sightings(org_id);
+CREATE INDEX idx_sightings_org_species_date ON sightings(org_id, species, date);
+CREATE INDEX idx_sightings_org_ring_date ON sightings(org_id, ring, date);
+CREATE INDEX idx_sightings_org_place ON sightings(org_id, place);
 
 -- Bird relationships table
-ALTER TABLE bird_relationships ADD COLUMN org_id UUID REFERENCES organizations(id);
+ALTER TABLE bird_relationships ADD COLUMN org_id UUID REFERENCES organizations(id) NOT NULL;
 CREATE INDEX idx_bird_relationships_org_id ON bird_relationships(org_id);
-
--- Users table (belongs to organization)
-ALTER TABLE users ADD COLUMN org_id UUID REFERENCES organizations(id);
-ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT false NOT NULL;
+CREATE INDEX idx_bird_relationships_org_type ON bird_relationships(org_id, relationship_type);
+CREATE INDEX idx_bird_relationships_org_bird1 ON bird_relationships(org_id, bird1_ring);
+CREATE INDEX idx_bird_relationships_org_bird2 ON bird_relationships(org_id, bird2_ring);
 ```
 
-## Row Level Security (RLS)
+## Data Isolation Strategy
 
-### RLS Policies (Implemented)
+### Application-Level Filtering (Current Implementation)
 
-```sql
--- Enable RLS on all organization tables
-ALTER TABLE ringings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE sightings ENABLE ROW LEVEL SECURITY;
-ALTER TABLE bird_relationships ENABLE ROW LEVEL SECURITY;
+**Approach**: All database queries explicitly filter by `org_id` at the application level.
 
--- Create policies that use current_setting for organization context
-CREATE POLICY org_ringings_policy ON ringings
-    FOR ALL TO vogelring
-    USING (org_id::text = current_setting('app.current_org_id', true));
+**Benefits**:
+- Simple and predictable
+- Easy to debug and troubleshoot
+- No transaction boundary issues
+- Works with connection pooling
+- Clear audit trail
 
-CREATE POLICY org_sightings_policy ON sightings
-    FOR ALL TO vogelring
-    USING (org_id::text = current_setting('app.current_org_id', true));
-
-CREATE POLICY org_relationships_policy ON bird_relationships
-    FOR ALL TO vogelring
-    USING (org_id::text = current_setting('app.current_org_id', true));
-```
-
-### Session Context Management
-
-Each database session sets the current organization context:
-
+**Implementation**:
 ```python
-# Set organization context for RLS
-db.execute(text("SET app.current_org_id = :org_id"), {"org_id": str(org_id)})
+# All repository methods include org_id filtering
+def get_all_sightings(self, org_id: str, limit: Optional[int] = None):
+    return self.db.query(Sighting).filter(Sighting.org_id == org_id).limit(limit).all()
+
+def create_sighting(self, org_id: str, **kwargs):
+    kwargs['org_id'] = org_id
+    instance = Sighting(**kwargs)
+    self.db.add(instance)
+    self.db.commit()
+    return instance
 ```
+
+### Previous RLS Implementation (Deprecated)
+
+**Issue**: Row Level Security (RLS) with `SET LOCAL` caused transaction boundary problems:
+- Context lost after `commit()` operations
+- Refresh operations failed
+- Complex multi-operation workflows broke
+- Connection pooling complications
+
+**Migration**: Moved from RLS to explicit application-level filtering for reliability.
 
 ## Backend Implementation
 
@@ -127,65 +142,140 @@ db.execute(text("SET app.current_org_id = :org_id"), {"org_id": str(org_id)})
 **File**: `backend/src/utils/auth.py`
 
 Key functions:
-
 - `get_current_user()` - Environment-aware user provider
 - `get_current_user_dev()` - Development mock user
 - `get_current_user_prod()` - Production Cloudflare user
-- `get_db_with_user()` - Database session with user context
+
+**Removed**: `get_db_with_org()` - No longer needed with application-level filtering
+
+### Repository Pattern
+
+**File**: `backend/src/database/repositories.py`
+
+```python
+class BaseRepository:
+    def __init__(self, db: Session, model_class):
+        self.db = db
+        self.model_class = model_class
+
+    def get_by_id(self, id: str, org_id: str):
+        """Get record by ID within organization"""
+        return self.db.query(self.model_class).filter(
+            self.model_class.id == id,
+            self.model_class.org_id == org_id
+        ).first()
+
+    def create(self, org_id: str, **kwargs):
+        """Create new record"""
+        kwargs['org_id'] = org_id
+        instance = self.model_class(**kwargs)
+        self.db.add(instance)
+        self.db.commit()
+        return instance
+```
+
+### Service Layer
+
+**Files**: `backend/src/api/services/`
+
+All services updated to accept and pass `org_id`:
+
+```python
+class SightingService:
+    def get_sightings(self, org_id: str, limit: Optional[int] = None):
+        return self.repository.get_all(org_id, limit=limit)
+    
+    def add_sighting(self, org_id: str, sighting_data: Dict[str, Any]):
+        return self.repository.create(org_id, **sighting_data)
+```
+
+### API Endpoints
+
+**Pattern**: All endpoints receive `current_user` and pass `current_user.org_id` to services:
+
+```python
+@router.get("/sightings")
+async def get_sightings(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    service = SightingService(db)
+    return service.get_sightings(current_user.org_id)
+```
+
+## Updated Services and Routers
+
+### Completed Migrations
+
+✅ **SightingService + Router**
+- All methods accept `org_id` parameter
+- All database queries filter by `org_id`
+- Router passes `current_user.org_id` to all service calls
+
+✅ **RingingService + Router**
+- All methods accept `org_id` parameter
+- All database queries filter by `org_id`
+- Router passes `current_user.org_id` to all service calls
+
+✅ **BirdService + Router**
+- `get_bird_meta_by_ring(ring, org_id)`
+- `get_bird_suggestions_by_partial_reading(partial_reading, org_id)`
+- Router passes `current_user.org_id` to all service calls
+
+✅ **SuggestionService + Router**
+- All methods accept `org_id` parameter
+- All database queries filter by `org_id`
+- Router passes `current_user.org_id` to all service calls
+
+✅ **AnalyticsService + Router**
+- `get_all_sightings_from_ring(ring, org_id)`
+- `get_friends_from_ring(ring, org_id, min_shared_sightings)`
+- `get_seasonal_analysis(org_id)`
+- Router passes `current_user.org_id` to all service calls
+
+✅ **Dashboard Router**
+- All database queries filter by `current_user.org_id`
+- No separate service class - direct DB queries updated
+
+✅ **FamilyRepository + Router**
+- All methods accept `org_id` parameter
+- All database queries filter by `org_id`
+- Router passes `current_user.org_id` to all repository calls
+
+## API Endpoints
 
 ### Authentication Endpoints
 
-**File**: `backend/src/api/routers/auth.py`
+| Method | Endpoint                  | Description                                   |
+| ------ | ------------------------- | --------------------------------------------- |
+| GET    | `/api/auth/me`            | Get current user information                  |
+| GET    | `/api/auth/status`        | Authentication status and debug info          |
 
-Endpoints:
+### Data Endpoints (All Organization-Filtered)
 
-- `GET /api/auth/me` - Get current user information
-- `GET /api/auth/status` - Authentication status and debug info
+| Method | Endpoint                    | Description                              |
+| ------ | --------------------------- | ---------------------------------------- |
+| GET    | `/api/sightings`            | Get sightings for user's organization    |
+| POST   | `/api/sightings`            | Create sighting in user's organization   |
+| GET    | `/api/ringings`             | Get ringings for user's organization     |
+| POST   | `/api/ringing`              | Create ringing in user's organization    |
+| GET    | `/api/birds/{ring}`         | Get bird data from user's organization   |
+| GET    | `/api/suggestions/species`  | Get species from user's organization     |
+| GET    | `/api/dashboard`            | Get dashboard for user's organization    |
+| GET    | `/api/family/relationships` | Get relationships in user's organization |
 
-### User Model
+### Admin Endpoints
 
-**File**: `backend/src/database/user_models.py`
-
-```python
-class User(Base):
-    __tablename__ = "users"
-
-    id = Column(GUID(), primary_key=True, default=uuid4)
-    cf_sub = Column(String(255), unique=True, nullable=False, index=True)
-    email = Column(String(255), unique=True, nullable=False, index=True)
-    display_name = Column(String(100))
-    organization = Column(String(100))
-    is_active = Column(Boolean, default=True)
-    created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
-    last_login = Column(TIMESTAMP)
-    preferences = Column(get_json_type(), default={})
-```
-
-### User-Aware Repositories
-
-**Files**:
-
-- `backend/src/database/user_repository.py` - User management repository
-- `backend/src/database/user_aware_repositories.py` - User-aware data repositories
-
-Key repository classes:
-
-- `UserAwareRepository<T>` - Base class with automatic user filtering
-- `UserAwareSightingRepository` - User-filtered sighting operations
-- `UserAwareRingingRepository` - User-filtered ringing operations
-- `UserAwareFamilyRepository` - User-filtered family relationship operations
-
-```python
-class UserAwareRepository(Generic[T]):
-    def __init__(self, db: Session, model_class, current_user: User):
-        self.db = db
-        self.model_class = model_class
-        self.current_user = current_user
-        self._set_user_context()  # Sets RLS context
-
-    def _get_user_filter(self):
-        return self.model_class.user_id == self.current_user.id
-```
+| Method | Endpoint                               | Description                              |
+| ------ | -------------------------------------- | ---------------------------------------- |
+| GET    | `/api/admin/organizations`             | List all organizations (admin only)      |
+| POST   | `/api/admin/organizations`             | Create new organization (admin only)     |
+| GET    | `/api/admin/organizations/{id}`        | Get organization details (admin only)    |
+| PUT    | `/api/admin/organizations/{id}`        | Update organization (admin only)         |
+| DELETE | `/api/admin/organizations/{id}`        | Delete organization (admin only)         |
+| GET    | `/api/admin/organizations/{id}/users`  | List organization users (admin only)     |
+| POST   | `/api/admin/users/assign-organization` | Assign user to organization (admin only) |
+| GET    | `/api/admin/users`                     | List all users (admin only)              |
 
 ## Frontend Implementation
 
@@ -198,7 +288,9 @@ interface User {
   id: string;
   email: string;
   display_name?: string;
-  organization?: string;
+  org_id: string;
+  organization_name?: string;
+  is_admin: boolean;
   is_active: boolean;
 }
 
@@ -225,8 +317,9 @@ const useAuthStore = defineStore("auth", {
 
 **File**: `frontend/src/App.vue`
 
-- **User Menu**: Dropdown in header showing user info
-- **Display Name**: Shows user's display name or email prefix
+- **User Menu**: Dropdown in header showing user info and organization
+- **Organization Display**: Shows user's organization name
+- **Admin Features**: Admin-only UI elements for organization management
 - **Error Handling**: Shows authentication errors
 - **Responsive**: Works on mobile devices
 
@@ -257,323 +350,201 @@ DB_PASSWORD=defaultpassword
 LOG_LEVEL=DEBUG
 ```
 
-## API Endpoints
+## Database Migrations
 
-### Authentication Endpoints
+### Migration Files
 
-| Method | Endpoint                  | Description                                   |
-| ------ | ------------------------- | --------------------------------------------- |
-| GET    | `/api/auth/me`            | Get current user information                  |
-| GET    | `/api/auth/status`        | Authentication status and debug info          |
-| GET    | `/api/auth/test-org-data` | Test endpoint for organization data isolation |
+**Current Migration**: `005_organization_structure_no_rls.sql`
+- Creates organizations and users tables
+- Adds org_id columns to all data tables
+- Migrates existing data to default organization
+- Creates all necessary indexes
+- **No RLS policies** - uses application-level filtering
 
-### Admin Endpoints
+**Revert Migration**: `010_revert_rls.sql`
+- Removes any existing RLS policies
+- Disables RLS on all tables
+- Removes triggers and functions
+- Clean removal of all RLS components
 
-| Method | Endpoint                               | Description                              |
-| ------ | -------------------------------------- | ---------------------------------------- |
-| GET    | `/api/admin/organizations`             | List all organizations (admin only)      |
-| POST   | `/api/admin/organizations`             | Create new organization (admin only)     |
-| GET    | `/api/admin/organizations/{id}`        | Get organization details (admin only)    |
-| PUT    | `/api/admin/organizations/{id}`        | Update organization (admin only)         |
-| DELETE | `/api/admin/organizations/{id}`        | Delete organization (admin only)         |
-| GET    | `/api/admin/organizations/{id}/users`  | List organization users (admin only)     |
-| POST   | `/api/admin/users/assign-organization` | Assign user to organization (admin only) |
-| GET    | `/api/admin/users`                     | List all users (admin only)              |
-| GET    | `/api/admin/status`                    | Admin dashboard status (admin only)      |
+### Migration Strategy
 
-### Response Examples
+1. **Apply organization structure** (production-ready)
+2. **Migrate existing data** to default organization
+3. **Update application code** to use org_id filtering
+4. **Remove RLS components** if previously implemented
 
-**GET /api/auth/me**
+## Security Considerations
 
-```json
-{
-  "id": "123e4567-e89b-12d3-a456-426614174000",
-  "email": "dev@vogelring.local",
-  "display_name": "Local Developer",
-  "org_id": "456e7890-e89b-12d3-a456-426614174001",
-  "organization_name": "Development Organization",
-  "is_admin": false,
-  "is_active": true
-}
-```
+### Data Isolation Security
 
-**GET /api/auth/test-org-data**
+- **Application-Level Filtering**: All queries explicitly filter by `org_id`
+- **Parameter Validation**: `org_id` validated against user's organization
+- **Index Security**: Organization-specific indexes prevent performance-based data leakage
+- **Audit Trail**: All operations logged with organization context
 
-```json
-{
-  "user": {
-    "id": "123e4567-e89b-12d3-a456-426614174000",
-    "email": "dev@vogelring.local",
-    "display_name": "Local Developer",
-    "is_admin": false
-  },
-  "organization": {
-    "id": "456e7890-e89b-12d3-a456-426614174001",
-    "name": "Development Organization"
-  },
-  "data_counts": {
-    "sightings": 0,
-    "ringings": 0
-  }
-}
-```
+### Authentication Security
 
-**GET /api/auth/status**
+- **JWT Validation**: Cloudflare JWT tokens validated
+- **User Context**: User's organization membership enforced at application level
+- **Error Handling**: Authentication errors logged but not exposed to users
 
-```json
-{
-  "development_mode": true,
-  "headers_present": {
-    "cf_email": false,
-    "cf_jwt": false
-  },
-  "safe_headers": {
-    /* filtered headers */
-  }
-}
-```
+## Performance Considerations
 
-## Data Isolation Strategy
+### Database Performance
 
-### Current Implementation Status
+- **Composite Indexes**: Organization-specific indexes on all filtered columns
+  - `idx_sightings_org_species_date`
+  - `idx_ringings_org_place`
+  - `idx_bird_relationships_org_type`
+- **Query Optimization**: All queries use organization indexes
+- **Connection Pooling**: Standard connection pooling without session variables
 
-✅ **Completed:**
+### Application Performance
 
-- User model and authentication
-- Development environment setup
-- Frontend user display
-- Authentication endpoints
-
-🔄 **In Progress:**
-
-- User ID columns on existing tables
-- RLS policy implementation
-- Repository updates for user filtering
-
-⏳ **Pending:**
-
-- Data migration for existing records
-- Comprehensive testing
-- Production deployment
-
-### Data Flow
-
-1. **User Authentication**: User logs in via Cloudflare (prod) or mock system (dev)
-2. **User Creation**: User record created/updated in database
-3. **Session Context**: Database session sets `app.current_user_id`
-4. **RLS Enforcement**: PostgreSQL automatically filters queries by user
-5. **Data Isolation**: Each user sees only their own data
+- **Service Layer**: Efficient org_id parameter passing
+- **Repository Pattern**: Consistent filtering across all data access
+- **Frontend Caching**: User and organization data cached in frontend stores
 
 ## Testing Strategy
 
 ### Development Testing
 
 ```bash
-# Test different users
-DEV_USER_EMAIL=alice@test.com docker-compose up
-DEV_USER_EMAIL=bob@test.com docker-compose up
+# Test different organizations by switching users
+DEV_USER_EMAIL=alice@org1.com docker-compose up
+DEV_USER_EMAIL=bob@org2.com docker-compose up
 
-# Verify user isolation
+# Verify organization isolation
 curl http://localhost/api/auth/me
+curl http://localhost/api/sightings
 ```
 
 ### API Testing
 
 ```bash
-# Check authentication
+# Check authentication and organization
 curl http://localhost/api/auth/me
 
-# Debug authentication status
-curl http://localhost/api/auth/status
-
-# Test user-specific data (after RLS implementation)
+# Test organization-specific data
 curl http://localhost/api/sightings
 curl http://localhost/api/ringings
+curl http://localhost/api/family/relationships
 ```
-
-## Security Considerations
-
-### Authentication Security
-
-- **JWT Validation**: Cloudflare JWT tokens validated (signature verification needed for production)
-- **User Context**: Database session variables prevent cross-user data access
-- **Error Handling**: Authentication errors logged but not exposed to users
-
-### Data Security
-
-- **RLS Enforcement**: PostgreSQL enforces row-level security at database level
-- **Index Security**: User-specific indexes prevent performance-based data leakage
-- **Session Isolation**: Each request has isolated database session with user context
-
-## Migration Strategy
-
-### Phase 1: Foundation (✅ Complete)
-
-- User model creation
-- Authentication system
-- Development environment
-- Frontend user display
-
-### Phase 2: Data Schema (🔄 In Progress)
-
-- Add user_id columns to existing tables
-- Create database migration scripts
-- Implement RLS policies
-
-### Phase 3: Application Logic (⏳ Pending)
-
-- Update repositories for user filtering
-- Modify API endpoints for user context
-- Update frontend for user-specific data
-
-### Phase 4: Data Migration (⏳ Pending)
-
-- Migrate existing data to system user
-- Test data isolation
-- Performance optimization
-
-### Phase 5: Production Deployment (⏳ Pending)
-
-- Cloudflare Zero Trust configuration
-- Production testing
-- User onboarding
-
-## Performance Considerations
-
-### Database Performance
-
-- **Indexes**: User-specific indexes on all filtered columns
-- **Connection Pooling**: Optimized for multi-user load
-- **Query Optimization**: RLS policies designed for index usage
-
-### Application Performance
-
-- **Session Caching**: User context cached per request
-- **Connection Reuse**: Database connections reused with context switching
-- **Frontend Caching**: User data cached in frontend stores
 
 ## Troubleshooting
 
 ### Common Issues
 
-**User not showing in header:**
+**User not showing correct organization:**
+- Check `/api/auth/me` endpoint response
+- Verify user's `org_id` in database
+- Ensure organization exists and is active
 
-- Check `/api/auth/me` endpoint
-- Verify `DEVELOPMENT_MODE=true` in environment
-- Check browser console for errors
+**Data not filtered by organization:**
+- Verify all repository methods accept `org_id`
+- Check that services pass `current_user.org_id`
+- Ensure database queries include `org_id` filter
 
-**Authentication errors:**
-
-- Check API logs: `docker-compose logs api`
-- Verify database connection
-- Ensure user table exists
-
-**Data isolation not working:**
-
-- Verify RLS policies are enabled
-- Check `app.current_user_id` session variable
-- Test with different users
+**Performance issues:**
+- Check that composite indexes exist
+- Verify queries use organization indexes
+- Monitor query execution plans
 
 ### Debug Commands
 
 ```bash
-# Check user creation
-docker-compose exec postgres psql -U vogelring -d vogelring -c "SELECT * FROM users;"
+# Check user and organization data
+docker-compose exec postgres psql -U vogelring -d vogelring -c "
+SELECT u.email, u.display_name, o.name as org_name 
+FROM users u 
+JOIN organizations o ON u.org_id = o.id;
+"
 
-# Check RLS policies
-docker-compose exec postgres psql -U vogelring -d vogelring -c "\d+ ringings"
+# Check data distribution by organization
+docker-compose exec postgres psql -U vogelring -d vogelring -c "
+SELECT o.name, 
+       COUNT(s.id) as sightings, 
+       COUNT(r.id) as ringings 
+FROM organizations o 
+LEFT JOIN sightings s ON o.id = s.org_id 
+LEFT JOIN ringings r ON o.id = r.org_id 
+GROUP BY o.id, o.name;
+"
 
-# Check session variables
-docker-compose exec postgres psql -U vogelring -d vogelring -c "SHOW app.current_user_id;"
+# Check indexes
+docker-compose exec postgres psql -U vogelring -d vogelring -c "\d+ sightings"
 ```
+
+## Migration from RLS to Application-Level Filtering
+
+### Why the Change?
+
+**RLS Issues Encountered**:
+- Transaction boundary problems with `SET LOCAL`
+- Context lost after `commit()` operations
+- `refresh()` operations failing
+- Complex multi-operation workflows breaking
+- Connection pooling complications
+
+**Application-Level Benefits**:
+- Predictable and reliable
+- Easy to debug and troubleshoot
+- No transaction boundary issues
+- Works seamlessly with connection pooling
+- Clear and explicit data access patterns
+
+### Migration Steps Completed
+
+1. ✅ **Updated BaseRepository** - Added `org_id` parameters to all methods
+2. ✅ **Updated All Services** - Modified to accept and pass `org_id`
+3. ✅ **Updated All Routers** - Changed to use `get_db` and pass `current_user.org_id`
+4. ✅ **Removed RLS Dependencies** - Eliminated `get_db_with_org` and RLS context
+5. ✅ **Created Clean Migration** - Single migration without RLS components
+6. ✅ **Updated Documentation** - Reflected new architecture
 
 ## Future Enhancements
 
 ### Planned Features
 
-- **User Management**: Admin interface for user management
-- **Organization Support**: Multi-tenant organization structure
-- **Permission System**: Role-based access control
-- **Data Sharing**: Controlled data sharing between users
-- **Audit Logging**: User action tracking and audit trails
+- **Enhanced Admin Interface**: Web-based organization management
+- **User Invitation System**: Invite users to organizations
+- **Data Export/Import**: Organization-specific data management
+- **Audit Logging**: Detailed organization activity tracking
+- **API Rate Limiting**: Organization-based rate limiting
 
 ### Scalability Considerations
 
-- **Database Sharding**: Horizontal scaling for large user bases
-- **Caching Strategy**: Redis for user session and data caching
-- **CDN Integration**: Static asset delivery optimization
-- **Monitoring**: User-specific performance monitoring
+- **Database Sharding**: Horizontal scaling by organization
+- **Caching Strategy**: Organization-specific caching layers
+- **CDN Integration**: Organization-branded asset delivery
+- **Monitoring**: Organization-specific performance metrics
 
 ---
 
-## Testing and Verification
-
-### Migration Runner
-
-**File**: `run_migration.py`
-
-```bash
-# Run complete organization migration
-python run_migration.py
-```
-
-**Migration File**: `backend/database/migrations/005_complete_organization_migration.sql`
-
-- Combined migration that replaces 003 and 004
-- Handles organization creation, user assignment, and data migration
-- Fixes column name issues with relationship_type
-- Creates complete organization-based multi-tenancy
-
-### Test Suite
-
-**File**: `test_multi_user.py`
-
-```bash
-# Test multi-user implementation
-python test_multi_user.py
-```
-
-The test suite verifies:
-
-- Authentication endpoints
-- User data isolation
-- Database connectivity
-- RLS policy enforcement
-
-### Manual Testing
-
-```bash
-# Test with different users
-DEV_USER_EMAIL=alice@test.com docker-compose restart api
-python test_multi_user.py
-
-DEV_USER_EMAIL=bob@test.com docker-compose restart api
-python test_multi_user.py
-```
-
----
-
-**Last Updated**: October 2, 2025
-**Status**: Organization-Based Multi-Tenancy Complete
-**Next Steps**: Update existing API endpoints to use organization-aware repositories
+**Last Updated**: October 11, 2025
+**Status**: Application-Level Multi-Tenancy Complete
+**Architecture**: Organization-based isolation with explicit `org_id` filtering
 
 ## Summary
 
-The organization-based multi-tenancy implementation is now complete with:
+The organization-based multi-tenancy implementation is now complete with **application-level filtering**:
 
 ✅ **Organization Model**: Complete organization management with metadata
-✅ **User-Organization Relationship**: Users belong to organizations with admin privileges
-✅ **Data Isolation**: All data tables use org_id for organization-based isolation
-✅ **Row Level Security**: PostgreSQL RLS policies enforce organization boundaries
+✅ **User-Organization Relationship**: Users belong to organizations with admin privileges  
+✅ **Data Isolation**: All data tables use `org_id` with explicit filtering
+✅ **Application-Level Security**: All queries filter by `org_id` at application level
+✅ **All Services Updated**: Every service and router uses organization filtering
 ✅ **Admin System**: Comprehensive admin endpoints for organization management
 ✅ **Frontend Integration**: Organization info and admin features in UI
 ✅ **Development Environment**: Easy testing with mock organizations
-✅ **Migration Scripts**: Complete database migration from user-based to org-based
+✅ **Clean Migration**: Single migration script without RLS complexity
+✅ **Performance Optimized**: Composite indexes for efficient organization queries
 
-The system now provides scalable multi-tenancy where:
-
+The system provides reliable multi-tenancy where:
 - Each organization has completely isolated data
-- Users belong to one organization
-- Admins can manage organizations and assign users
-- Data access is automatically filtered by organization
-- Security is enforced at the database level with RLS
+- Users belong to one organization  
+- Data access is filtered by `org_id` at the application level
+- Security is enforced through explicit query filtering
+- Performance is optimized with organization-specific indexes
+- No complex RLS or session variable dependencies

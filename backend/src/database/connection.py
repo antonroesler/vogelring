@@ -17,9 +17,7 @@ logger = logging.getLogger(__name__)
 current_org_id: ContextVar[str | None] = ContextVar("current_org_id", default=None)
 
 # Database URL from environment variable
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql://vogelring:password@localhost:5432/vogelring"
-)
+DATABASE_URL = str(os.getenv("DATABASE_URL"))
 
 # Create SQLAlchemy engine with optimized settings for Raspberry Pi
 engine = create_engine(
@@ -138,18 +136,6 @@ def create_performance_indexes():
     except Exception as e:
         logger.warning(f"Error creating performance indexes (may already exist): {e}")
         # Don't raise here as indexes might already exist
-
-
-def drop_tables():
-    """
-    Drop all database tables (use with caution!)
-    """
-    try:
-        Base.metadata.drop_all(bind=engine)
-        logger.info("Database tables dropped successfully")
-    except Exception as e:
-        logger.error(f"Error dropping database tables: {e}")
-        raise
 
 
 def check_connection():
