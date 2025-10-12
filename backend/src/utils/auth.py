@@ -119,8 +119,6 @@ async def get_current_user_prod(
             cf_sub=cf_sub,
             email=cf_email,
             default_org_id=default_org.id,
-            display_name=cf_email.split("@")[0],
-            is_active=True,
         )
 
         # Update last login
