@@ -5,6 +5,25 @@ All notable changes to Vogelring will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0](https://github.com/antonroesler/vogelring/compare/v2.5.0...v2.6.0) (2025-10-12)
+
+
+### ✨ Features
+
+* multi user setup ([#55](https://github.com/antonroesler/vogelring/issues/55)) ([8e56458](https://github.com/antonroesler/vogelring/commit/8e56458d55efb246c3c57560a271009a2b72fa42))
+
+
+### 🐛 Bug Fixes
+
+* **auth:** update Cloudflare authentication method to use cookie instead of headers ([b326d04](https://github.com/antonroesler/vogelring/commit/b326d04e93ba2057626b16fa1827c98a97796bc8))
+* **backend:** family relationships filter not working ([6a91e7b](https://github.com/antonroesler/vogelring/commit/6a91e7bcebc2b804fc5c538fd97e9698afc8731d))
+
+
+### ♻️ Code Refactoring
+
+* **auth:** remove unused parameters from get_current_user_prod function ([adace31](https://github.com/antonroesler/vogelring/commit/adace31db08c1bec40ad0122af3c8dbdb7cc922a))
+* **bird_service:** update family repository method calls to include organization ID ([5d6436e](https://github.com/antonroesler/vogelring/commit/5d6436ee92e399ca5bf8287c7c05845286523301))
+
 ## [2.5.0](https://github.com/antonroesler/vogelring/compare/v2.4.0...v2.5.0) (2025-09-28)
 
 
