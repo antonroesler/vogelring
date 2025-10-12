@@ -11,6 +11,8 @@ from pydantic import BaseModel, Field
 from enum import Enum
 
 from ...database.connection import get_db
+from ...utils.auth import get_current_user
+from ...database.user_models import User
 from ...database.family_repository import FamilyRepository
 from ...database.family_models import (
     RelationshipType as DBRelationshipType,
@@ -195,7 +197,8 @@ class BreedingEventResponse(BaseModel):
 
 @router.post("/relationships", response_model=RelationshipResponse)
 async def create_relationship(
-    relationship_data: RelationshipCreate, db: Session = Depends(get_db)
+    relationship_data: RelationshipCreate, 
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """Create a new bird relationship"""
     repo = FamilyRepository(db)
@@ -207,6 +210,7 @@ async def create_relationship(
 
     try:
         relationship = repo.create_relationship(
+            org_id=current_user.org_id,
             bird1_ring=relationship_data.bird1_ring,
             bird2_ring=relationship_data.bird2_ring,
             relationship_type=db_relationship_type,
@@ -242,7 +246,7 @@ async def create_relationship(
 
 @router.post("/relationships/symmetric")
 async def create_symmetric_relationship(
-    relationship_data: SymmetricRelationshipCreate, db: Session = Depends(get_db)
+    relationship_data: SymmetricRelationshipCreate, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """Create a symmetric relationship (creates entries in both directions)"""
     repo = FamilyRepository(db)
@@ -263,8 +267,7 @@ async def create_symmetric_relationship(
     ]
 
     try:
-        rel1, rel2 = repo.create_symmetric_relationship(
-            bird1_ring=relationship_data.bird1_ring,
+        rel1, rel2 = repo.create_symmetric_relationship(org_id=current_user.org_id, bird1_ring=relationship_data.bird1_ring,
             bird2_ring=relationship_data.bird2_ring,
             relationship_type=db_relationship_type,
             year=relationship_data.year,
@@ -299,7 +302,7 @@ async def get_bird_relationships(
     bird_ring: str,
     relationship_type: Optional[RelationshipType] = None,
     year: Optional[int] = None,
-    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db),
 ):
     """Get all relationships for a specific bird"""
     repo = FamilyRepository(db)
@@ -309,8 +312,7 @@ async def get_bird_relationships(
     if relationship_type:
         db_relationship_type = DBRelationshipType[relationship_type.value.upper()]
 
-    relationships = repo.get_bird_relationships(
-        bird_ring=bird_ring, relationship_type=db_relationship_type, year=year
+    relationships = repo.get_bird_relationships(org_id=current_user.org_id, bird_ring=bird_ring, relationship_type=db_relationship_type, year=year
     )
 
     return [
@@ -340,32 +342,31 @@ async def get_bird_partners(
     year: Optional[int] = None,
     unique_per_year: bool = Query(
         True, description="Return only unique partners per year"
-    ),
-    db: Session = Depends(get_db),
+    ), current_user: User = Depends(get_current_user), db: Session = Depends(get_db),
 ):
     """Get all breeding partners of a bird"""
     repo = FamilyRepository(db)
-    partners = repo.get_partners(bird_ring, year, unique_per_year)
+    partners = repo.get_partners(current_user.org_id, bird_ring, year, unique_per_year)
     return partners
 
 
 @router.get("/children/{bird_ring}", response_model=List[BirdChild])
 async def get_bird_children(
-    bird_ring: str, year: Optional[int] = None, db: Session = Depends(get_db)
+    bird_ring: str, year: Optional[int] = None, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """Get all children of a bird"""
     repo = FamilyRepository(db)
-    children = repo.get_children(bird_ring, year)
+    children = repo.get_children(current_user.org_id, bird_ring, year)
     return children
 
 
 @router.get("/parents/{bird_ring}", response_model=List[BirdParent])
 async def get_bird_parents(
-    bird_ring: str, year: Optional[int] = None, db: Session = Depends(get_db)
+    bird_ring: str, year: Optional[int] = None, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """Get all parents of a bird"""
     repo = FamilyRepository(db)
-    parents = repo.get_parents(bird_ring, year)
+    parents = repo.get_parents(current_user.org_id, bird_ring, year)
     return parents
 
 
@@ -373,12 +374,11 @@ async def get_bird_parents(
 async def get_bird_siblings(
     bird_ring: str,
     year: Optional[int] = None,
-    include_half_siblings: bool = Query(False, description="Include half-siblings"),
-    db: Session = Depends(get_db),
+    include_half_siblings: bool = Query(False, description="Include half-siblings"), current_user: User = Depends(get_current_user), db: Session = Depends(get_db),
 ):
     """Get all siblings of a bird"""
     repo = FamilyRepository(db)
-    siblings = repo.get_siblings(bird_ring, year, include_half_siblings)
+    siblings = repo.get_siblings(current_user.org_id, bird_ring, year, include_half_siblings)
     return siblings
 
 
@@ -387,26 +387,25 @@ async def get_family_tree(
     bird_ring: str,
     max_generations: int = Query(
         3, ge=1, le=5, description="Maximum generations to retrieve"
-    ),
-    db: Session = Depends(get_db),
+    ), current_user: User = Depends(get_current_user), db: Session = Depends(get_db),
 ):
     """Get complete family tree for a bird"""
     repo = FamilyRepository(db)
 
     try:
-        family_tree = repo.get_family_tree(bird_ring, max_generations)
+        family_tree = repo.get_family_tree(current_user.org_id, bird_ring, max_generations)
         return FamilyTreeResponse(**family_tree)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/statistics/{bird_ring}", response_model=RelationshipStatistics)
-async def get_relationship_statistics(bird_ring: str, db: Session = Depends(get_db)):
+async def get_relationship_statistics(bird_ring: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Get statistics about a bird's relationships"""
     repo = FamilyRepository(db)
 
     try:
-        stats = repo.get_relationship_statistics(bird_ring)
+        stats = repo.get_relationship_statistics(current_user.org_id, bird_ring)
         return RelationshipStatistics(**stats)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -417,13 +416,12 @@ async def get_breeding_events(
     bird_ring: Optional[str] = None,
     year: Optional[int] = None,
     location: Optional[str] = None,
-    limit: int = Query(100, ge=1, le=1000),
-    db: Session = Depends(get_db),
+    limit: int = Query(100, ge=1, le=1000), current_user: User = Depends(get_current_user), db: Session = Depends(get_db),
 ):
     """Get breeding events with optional filters"""
     repo = FamilyRepository(db)
 
-    events = repo.get_breeding_events(
+    events = repo.get_breeding_events(current_user.org_id, 
         bird_ring=bird_ring, year=year, location=location
     )[:limit]
 
@@ -450,14 +448,13 @@ async def update_relationship(
     relationship_data: RelationshipUpdate,
     update_symmetric: bool = Query(
         False, description="Also update symmetric relationship if it exists"
-    ),
-    db: Session = Depends(get_db),
+    ), current_user: User = Depends(get_current_user), db: Session = Depends(get_db),
 ):
     """Update a specific relationship"""
     repo = FamilyRepository(db)
 
     # Get existing relationship
-    existing_relationship = repo.get_relationship_by_id(relationship_id)
+    existing_relationship = repo.get_relationship_by_id(current_user.org_id, relationship_id)
     if not existing_relationship:
         raise HTTPException(status_code=404, detail="Relationship not found")
 
@@ -551,6 +548,7 @@ async def get_all_relationships(
     bird_ring: Optional[str] = None,
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get all relationships with optional filters"""
@@ -561,7 +559,7 @@ async def get_all_relationships(
     if relationship_type:
         db_relationship_type = DBRelationshipType[relationship_type.value.upper()]
 
-    relationships = repo.get_all_relationships(
+    relationships = repo.get_all_relationships(current_user.org_id, 
         relationship_type=db_relationship_type,
         year=year,
         bird_ring=bird_ring,
@@ -595,14 +593,13 @@ async def delete_relationship(
     relationship_id: UUID,
     delete_symmetric: bool = Query(
         False, description="Also delete symmetric relationship if it exists"
-    ),
-    db: Session = Depends(get_db),
+    ), current_user: User = Depends(get_current_user), db: Session = Depends(get_db),
 ):
     """Delete a specific relationship"""
     repo = FamilyRepository(db)
 
     # Get the relationship before deleting to check for symmetric counterpart
-    relationship = repo.get_relationship_by_id(relationship_id)
+    relationship = repo.get_relationship_by_id(current_user.org_id, relationship_id)
     if not relationship:
         raise HTTPException(status_code=404, detail="Relationship not found")
 
@@ -612,7 +609,7 @@ async def delete_relationship(
     relationship_type = relationship.relationship_type
 
     # Delete the main relationship
-    if repo.delete_relationship(relationship_id):
+    if repo.delete_relationship(current_user.org_id, relationship_id):
         # Handle symmetric deletion if requested and relationship type is symmetric
         if delete_symmetric and relationship_type in [
             DBRelationshipType.BREEDING_PARTNER,

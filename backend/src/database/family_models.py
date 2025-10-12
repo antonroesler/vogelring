@@ -90,6 +90,9 @@ class BirdRelationship(Base):
         String(100)
     )  # e.g., "field_observation", "nest_monitoring", "ringing"
 
+    # Multi-tenant support
+    org_id = Column(GUID(), ForeignKey("organizations.id"), nullable=False, index=True)
+
     # Audit fields
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
     created_by = Column(String(100))  # User who created the record
@@ -146,6 +149,10 @@ class BirdRelationship(Base):
             "year",
             "relationship_type",
         ),
+        # Multi-tenant indexes
+        Index("idx_bird_relationships_org_type", "org_id", "relationship_type"),
+        Index("idx_bird_relationships_org_bird1", "org_id", "bird1_ring"),
+        Index("idx_bird_relationships_org_bird2", "org_id", "bird2_ring"),
     )
 
     def __repr__(self):

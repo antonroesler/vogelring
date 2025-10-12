@@ -14,6 +14,7 @@ from sqlalchemy import (
     TIMESTAMP,
     Index,
     JSON,
+    ForeignKey,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PostgresUUID
 from sqlalchemy.types import TypeDecorator, CHAR
@@ -85,6 +86,10 @@ class Ringing(Base):
     age = Column(Integer, nullable=False)
     status = Column(String(10))
     comment = Column(Text)
+
+    # Multi-tenant support
+    org_id = Column(GUID(), ForeignKey("organizations.id"), nullable=False, index=True)
+
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
     updated_at = Column(
         TIMESTAMP,
@@ -105,6 +110,8 @@ class Ringing(Base):
         Index("idx_ringings_species_date", "species", "date"),
         Index("idx_ringings_place_date", "place", "date"),
         Index("idx_ringings_ringer", "ringer"),
+        Index("idx_ringings_org_species_date", "org_id", "species", "date"),
+        Index("idx_ringings_org_place", "org_id", "place"),
     )
 
 
@@ -138,6 +145,10 @@ class Sighting(Base):
     is_exact_location = Column(Boolean, default=False)
     habitat = Column(String(100))
     field_fruit = Column(String(100))
+
+    # Multi-tenant support
+    org_id = Column(GUID(), ForeignKey("organizations.id"), nullable=False, index=True)
+
     created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
     updated_at = Column(
         TIMESTAMP,
@@ -160,4 +171,7 @@ class Sighting(Base):
         Index("idx_sightings_species_date", "species", "date"),
         Index("idx_sightings_place_date", "place", "date"),
         Index("idx_sightings_ring_date", "ring", "date"),
+        Index("idx_sightings_org_species_date", "org_id", "species", "date"),
+        Index("idx_sightings_org_ring_date", "org_id", "ring", "date"),
+        Index("idx_sightings_org_place", "org_id", "place"),
     )

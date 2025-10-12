@@ -55,17 +55,17 @@ class AnalyticsService:
         self.sighting_repository = SightingRepository(db)
         self.ringing_repository = RingingRepository(db)
 
-    def get_all_sightings_from_ring(self, ring: str) -> List[SightingDB]:
+    def get_all_sightings_from_ring(self, ring: str, org_id: str) -> List[SightingDB]:
         """Get all sightings for a specific ring, sorted by date"""
-        sightings = self.sighting_repository.get_by_ring(ring)
+        sightings = self.sighting_repository.get_by_ring(ring, org_id)
         return sorted(sightings, key=lambda x: x.date or date.min)
 
     def get_friends_from_ring(
-        self, ring: str, min_shared_sightings: int = 2
+        self, ring: str, org_id: str, min_shared_sightings: int = 2
     ) -> Dict[str, Any]:
         """Get friends analysis for a specific ring"""
         # Get all sightings for the target ring
-        target_sightings = self.get_all_sightings_from_ring(ring)
+        target_sightings = self.get_all_sightings_from_ring(ring, org_id)
 
         # Create list of (place, date) tuples for the target ring
         place_dates = [
@@ -76,7 +76,7 @@ class AnalyticsService:
 
         if not place_dates:
             return {
-                "bird": BirdService(self.db).get_bird_meta_by_ring(ring),
+                "bird": BirdService(self.db).get_bird_meta_by_ring(ring, org_id),
                 "friends": [],
                 "seen_status": {},
             }
@@ -91,6 +91,7 @@ class AnalyticsService:
                 self.db.query(SightingDB)
                 .filter(
                     and_(
+                        SightingDB.org_id == org_id,
                         SightingDB.place == place,
                         SightingDB.date == date_val,
                         SightingDB.ring != ring,
@@ -115,13 +116,13 @@ class AnalyticsService:
         # Build friend metadata
         friend_metas = []
         for friend_ring, places in top_friends:
-            friend_meta = BirdService(self.db).get_bird_meta_by_ring(friend_ring)
+            friend_meta = BirdService(self.db).get_bird_meta_by_ring(friend_ring, org_id)
             friend_meta["count"] = len(places)
             friend_meta["places"] = list(set(places))
             friend_metas.append(friend_meta)
 
         # Get bird metadata for the target ring
-        bird_meta = BirdService(self.db).get_bird_meta_by_ring(ring)
+        bird_meta = BirdService(self.db).get_bird_meta_by_ring(ring, org_id)
 
         # Build seen status
         seen_status = {}
@@ -140,12 +141,16 @@ class AnalyticsService:
 
         return {"bird": bird_meta, "friends": friend_metas, "seen_status": seen_status}
 
-    def get_seasonal_analysis(self) -> SeasonalAnalysis:
+    def get_seasonal_analysis(self, org_id: str) -> SeasonalAnalysis:
         """Get seasonal analysis of sightings"""
         # Get all sightings with species and date
         sightings = (
             self.db.query(SightingDB)
-            .filter(and_(SightingDB.species.isnot(None), SightingDB.date.isnot(None)))
+            .filter(and_(
+                SightingDB.org_id == org_id,
+                SightingDB.species.isnot(None), 
+                SightingDB.date.isnot(None)
+            ))
             .all()
         )
 

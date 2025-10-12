@@ -25,6 +25,7 @@ class FamilyRepository:
 
     def create_relationship(
         self,
+        org_id: str,
         bird1_ring: str,
         bird2_ring: str,
         relationship_type: RelationshipType,
@@ -40,6 +41,7 @@ class FamilyRepository:
     ) -> BirdRelationship:
         """Create a new bird relationship"""
         relationship = BirdRelationship(
+            org_id=org_id,
             bird1_ring=bird1_ring,
             bird2_ring=bird2_ring,
             relationship_type=relationship_type,
@@ -58,9 +60,7 @@ class FamilyRepository:
         self.db.refresh(relationship)
         return relationship
 
-    def create_symmetric_relationship(
-        self,
-        bird1_ring: str,
+    def create_symmetric_relationship(self, org_id: str, bird1_ring: str,
         bird2_ring: str,
         relationship_type: RelationshipType,
         year: int,
@@ -72,6 +72,7 @@ class FamilyRepository:
         """
         # Create first direction
         rel1 = self.create_relationship(
+            org_id=org_id,
             bird1_ring=bird1_ring,
             bird2_ring=bird2_ring,
             relationship_type=relationship_type,
@@ -90,6 +91,7 @@ class FamilyRepository:
 
         # Create reverse direction
         rel2 = self.create_relationship(
+            org_id=org_id,
             bird1_ring=bird2_ring,
             bird2_ring=bird1_ring,
             relationship_type=relationship_type,
@@ -99,19 +101,18 @@ class FamilyRepository:
 
         return rel1, rel2
 
-    def get_relationship_by_id(
-        self, relationship_id: UUID
+    def get_relationship_by_id(self, org_id: str, relationship_id: UUID
     ) -> Optional[BirdRelationship]:
         """Get a specific relationship by ID"""
         return (
-            self.db.query(BirdRelationship)
+            self.db.query(BirdRelationship).filter(BirdRelationship.org_id == org_id)
             .filter(BirdRelationship.id == relationship_id)
             .first()
         )
 
-    def delete_relationship(self, relationship_id: UUID) -> bool:
+    def delete_relationship(self, org_id: str, relationship_id: UUID) -> bool:
         """Delete a relationship by ID"""
-        relationship = self.get_relationship_by_id(relationship_id)
+        relationship = self.get_relationship_by_id(org_id, relationship_id)
         if relationship:
             self.db.delete(relationship)
             self.db.commit()
@@ -120,14 +121,12 @@ class FamilyRepository:
 
     # ============= Query Methods =============
 
-    def get_bird_relationships(
-        self,
-        bird_ring: str,
+    def get_bird_relationships(self, org_id: str, bird_ring: str,
         relationship_type: Optional[RelationshipType] = None,
         year: Optional[int] = None,
     ) -> List[BirdRelationship]:
         """Get all relationships for a specific bird"""
-        query = self.db.query(BirdRelationship).filter(
+        query = self.db.query(BirdRelationship).filter(BirdRelationship.org_id == org_id, 
             or_(
                 BirdRelationship.bird1_ring == bird_ring,
                 BirdRelationship.bird2_ring == bird_ring,
@@ -144,16 +143,14 @@ class FamilyRepository:
 
         return query.order_by(BirdRelationship.year.desc()).all()
 
-    def get_all_relationships(
-        self,
-        relationship_type: Optional[RelationshipType] = None,
+    def get_all_relationships(self, org_id: str, relationship_type: Optional[RelationshipType] = None,
         year: Optional[int] = None,
         bird_ring: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
     ) -> List[BirdRelationship]:
         """Get all relationships with optional filters"""
-        query = self.db.query(BirdRelationship)
+        query = self.db.query(BirdRelationship).filter(BirdRelationship.org_id == org_id)
 
         if relationship_type:
             query = query.filter(
@@ -178,11 +175,10 @@ class FamilyRepository:
             .all()
         )
 
-    def get_partners(
-        self, bird_ring: str, year: Optional[int] = None, unique_per_year: bool = True
+    def get_partners(self, org_id: str, bird_ring: str, year: Optional[int] = None, unique_per_year: bool = True
     ) -> List[Dict[str, Any]]:
         """Get all breeding partners of a bird"""
-        query = self.db.query(BirdRelationship).filter(
+        query = self.db.query(BirdRelationship).filter(BirdRelationship.org_id == org_id, 
             BirdRelationship.bird1_ring == bird_ring,
             BirdRelationship._relationship_type
             == RelationshipType.BREEDING_PARTNER.value,
@@ -227,12 +223,11 @@ class FamilyRepository:
             for rel in relationships
         ]
 
-    def get_children(
-        self, parent_ring: str, year: Optional[int] = None
+    def get_children(self, org_id: str, parent_ring: str, year: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """Get all children of a bird"""
 
-        query = self.db.query(BirdRelationship).filter(
+        query = self.db.query(BirdRelationship).filter(BirdRelationship.org_id == org_id, 
             BirdRelationship.bird1_ring == parent_ring,
             BirdRelationship._relationship_type == RelationshipType.PARENT_OF.value,
         )
@@ -255,11 +250,10 @@ class FamilyRepository:
             for rel in relationships
         ]
 
-    def get_parents(
-        self, child_ring: str, year: Optional[int] = None
+    def get_parents(self, org_id: str, child_ring: str, year: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """Get all parents of a bird"""
-        query = self.db.query(BirdRelationship).filter(
+        query = self.db.query(BirdRelationship).filter(BirdRelationship.org_id == org_id, 
             BirdRelationship.bird1_ring == child_ring,
             BirdRelationship._relationship_type == RelationshipType.CHILD_OF.value,
         )
@@ -280,9 +274,7 @@ class FamilyRepository:
             for rel in relationships
         ]
 
-    def get_siblings(
-        self,
-        bird_ring: str,
+    def get_siblings(self, org_id: str, bird_ring: str,
         year: Optional[int] = None,
         include_half_siblings: bool = False,
     ) -> List[Dict[str, Any]]:
@@ -292,7 +284,7 @@ class FamilyRepository:
         """
         if include_half_siblings:
             # Get parents of the bird
-            parents = self.get_parents(bird_ring, year)
+            parents = self.get_parents(org_id, bird_ring, year)
             parent_rings = [p["ring"] for p in parents]
 
             if not parent_rings:
@@ -301,7 +293,7 @@ class FamilyRepository:
             # Get all children of those parents
             siblings = set()
             for parent_ring in parent_rings:
-                children = self.get_children(parent_ring, year)
+                children = self.get_children(org_id, parent_ring, year)
                 for child in children:
                     if child["ring"] != bird_ring:  # Exclude self
                         siblings.add((child["ring"], child["year"]))
@@ -309,7 +301,7 @@ class FamilyRepository:
             return [{"ring": ring, "year": year} for ring, year in siblings]
         else:
             # Direct sibling relationships only
-            query = self.db.query(BirdRelationship).filter(
+            query = self.db.query(BirdRelationship).filter(BirdRelationship.org_id == org_id, 
                 BirdRelationship.bird1_ring == bird_ring,
                 BirdRelationship._relationship_type
                 == RelationshipType.SIBLING_OF.value,

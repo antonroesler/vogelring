@@ -9,7 +9,6 @@ from .connection import (
     get_db,
     get_db_session,
     create_tables,
-    drop_tables,
     check_connection,
 )
 from .models import Sighting, Ringing
@@ -25,7 +24,6 @@ __all__ = [
     "get_db",
     "get_db_session",
     "create_tables",
-    "drop_tables",
     "check_connection",
     # Models
     "Sighting",

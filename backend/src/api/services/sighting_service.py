@@ -20,46 +20,46 @@ class SightingService:
         self.db = db
         self.repository = SightingRepository(db)
     
-    def get_sighting_by_id(self, sighting_id: str) -> Optional[SightingDB]:
+    def get_sighting_by_id(self, sighting_id: str, org_id: str) -> Optional[SightingDB]:
         """Get sighting by ID"""
-        return self.repository.get_by_id(sighting_id)
+        return self.repository.get_by_id(sighting_id, org_id)
     
-    def get_sightings(self, limit: Optional[int] = None, offset: Optional[int] = None) -> List[SightingDB]:
+    def get_sightings(self, org_id: str, limit: Optional[int] = None, offset: Optional[int] = None) -> List[SightingDB]:
         """Get all sightings with optional pagination"""
-        return self.repository.get_all(limit=limit, offset=offset)
+        return self.repository.get_all(org_id, limit=limit, offset=offset)
     
-    def get_enriched_sightings(self, limit: Optional[int] = None, offset: Optional[int] = None) -> List[SightingDB]:
+    def get_enriched_sightings(self, org_id: str, limit: Optional[int] = None, offset: Optional[int] = None) -> List[SightingDB]:
         """Get sightings with ringing data joined"""
-        return self.repository.get_enriched_sightings(limit=limit, offset=offset)
+        return self.repository.get_enriched_sightings(org_id, limit=limit, offset=offset)
     
-    def get_sightings_count(self) -> int:
+    def get_sightings_count(self, org_id: str) -> int:
         """Get total count of sightings"""
-        return self.db.query(SightingDB).count()
+        return self.db.query(SightingDB).filter(SightingDB.org_id == org_id).count()
     
-    def get_sightings_by_species(self, species: str) -> List[SightingDB]:
+    def get_sightings_by_species(self, species: str, org_id: str) -> List[SightingDB]:
         """Get all sightings for a specific species"""
-        return self.repository.get_by_species(species)
+        return self.repository.get_by_species(species, org_id)
     
-    def get_sightings_by_ring(self, ring: str) -> List[SightingDB]:
+    def get_sightings_by_ring(self, ring: str, org_id: str) -> List[SightingDB]:
         """Get all sightings for a specific ring"""
-        return self.repository.get_by_ring(ring)
+        return self.repository.get_by_ring(ring, org_id)
     
-    def get_sightings_by_place(self, place: str) -> List[SightingDB]:
+    def get_sightings_by_place(self, place: str, org_id: str) -> List[SightingDB]:
         """Get all sightings for a specific place"""
-        return self.repository.get_by_place(place)
+        return self.repository.get_by_place(place, org_id)
     
-    def get_sightings_by_date(self, date_filter: date) -> List[SightingDB]:
+    def get_sightings_by_date(self, date_filter: date, org_id: str) -> List[SightingDB]:
         """Get all sightings for a specific date"""
-        return self.repository.get_by_date_range(date_filter, date_filter)
+        return self.repository.get_by_date_range(date_filter, date_filter, org_id)
     
-    def get_sightings_by_date_range(self, start_date: date, end_date: date) -> List[SightingDB]:
+    def get_sightings_by_date_range(self, start_date: date, end_date: date, org_id: str) -> List[SightingDB]:
         """Get sightings within a date range"""
-        return self.repository.get_by_date_range(start_date, end_date)
+        return self.repository.get_by_date_range(start_date, end_date, org_id)
     
-    def get_sightings_by_radius(self, lat: float, lon: float, radius_m: int) -> List[SightingDB]:
+    def get_sightings_by_radius(self, lat: float, lon: float, radius_m: int, org_id: str) -> List[SightingDB]:
         """Get sightings within a radius of a location"""
         # Get all sightings with location data
-        all_sightings = self.repository.get_all()
+        all_sightings = self.repository.get_all(org_id)
         
         # Filter by radius using Haversine formula
         from ...utils.distance import calculate_distance
@@ -75,27 +75,33 @@ class SightingService:
         
         return result
     
-    def search_sightings(self, filters: Dict[str, Any]) -> List[SightingDB]:
+    def search_sightings(self, filters: Dict[str, Any], org_id: str) -> List[SightingDB]:
         """Search sightings with multiple filters"""
-        return self.repository.search_sightings(filters)
+        return self.repository.search_sightings(filters, org_id)
     
-    def add_sighting(self, sighting_data: Dict[str, Any]) -> SightingDB:
+    def add_sighting(self, org_id: str, sighting_data: Dict[str, Any]) -> SightingDB:
         """Create a new sighting"""
         try:
             # Generate ID if not provided
             if 'id' not in sighting_data or not sighting_data['id']:
                 sighting_data['id'] = str(uuid4())
             
-            sighting = self.repository.create(**sighting_data)
+            sighting = self.repository.create(org_id, **sighting_data)
             logger.info(f"Created sighting {sighting.id}")
             
             # Handle partner relationship if specified
             if sighting.ring and sighting.partner and sighting.date:
                 try:
-                    from .family_service import FamilyService
-                    family_service = FamilyService(self.db)
-                    family_service.add_partner_relationship_from_sighting(
-                        sighting.ring, sighting.partner, sighting.date.year
+                    from ...database.family_repository import FamilyRepository
+                    from ...database.family_models import RelationshipType
+                    family_repo = FamilyRepository(self.db)
+                    family_repo.create_relationship(
+                        org_id=org_id,
+                        bird1_ring=sighting.ring,
+                        bird2_ring=sighting.partner,
+                        relationship_type=RelationshipType.BREEDING_PARTNER,
+                        year=sighting.date.year,
+                        source="sighting_observation"
                     )
                     logger.info(f"Added partner relationship: {sighting.ring} <-> {sighting.partner} ({sighting.date.year})")
                 except Exception as e:
@@ -107,16 +113,16 @@ class SightingService:
             logger.error(f"Error creating sighting: {e}")
             raise
     
-    def update_sighting(self, sighting_id: str, sighting_data: Dict[str, Any]) -> Optional[SightingDB]:
+    def update_sighting(self, sighting_id: str, org_id: str, sighting_data: Dict[str, Any]) -> Optional[SightingDB]:
         """Update an existing sighting"""
         try:
             # Get old sighting for partner relationship comparison
-            old_sighting = self.repository.get_by_id(sighting_id)
+            old_sighting = self.repository.get_by_id(sighting_id, org_id)
             if not old_sighting:
                 return None
             
             # Update the sighting
-            updated_sighting = self.repository.update(sighting_id, **sighting_data)
+            updated_sighting = self.repository.update(sighting_id, org_id, **sighting_data)
             if not updated_sighting:
                 return None
             
@@ -126,10 +132,16 @@ class SightingService:
             if (updated_sighting.ring and updated_sighting.partner and updated_sighting.date and
                 (not old_sighting.partner or old_sighting.partner != updated_sighting.partner)):
                 try:
-                    from .family_service import FamilyService
-                    family_service = FamilyService(self.db)
-                    family_service.add_partner_relationship_from_sighting(
-                        updated_sighting.ring, updated_sighting.partner, updated_sighting.date.year
+                    from ...database.family_repository import FamilyRepository
+                    from ...database.family_models import RelationshipType
+                    family_repo = FamilyRepository(self.db)
+                    family_repo.create_relationship(
+                        org_id=org_id,
+                        bird1_ring=updated_sighting.ring,
+                        bird2_ring=updated_sighting.partner,
+                        relationship_type=RelationshipType.BREEDING_PARTNER,
+                        year=updated_sighting.date.year,
+                        source="sighting_observation"
                     )
                     logger.info(f"Added partner relationship: {updated_sighting.ring} <-> {updated_sighting.partner} ({updated_sighting.date.year})")
                 except Exception as e:
@@ -141,10 +153,10 @@ class SightingService:
             logger.error(f"Error updating sighting {sighting_id}: {e}")
             raise
     
-    def delete_sighting(self, sighting_id: str) -> bool:
+    def delete_sighting(self, sighting_id: str, org_id: str) -> bool:
         """Delete a sighting"""
         try:
-            result = self.repository.delete(sighting_id)
+            result = self.repository.delete(sighting_id, org_id)
             if result:
                 logger.info(f"Deleted sighting {sighting_id}")
             return result

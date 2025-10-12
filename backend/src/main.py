@@ -20,6 +20,8 @@ from .api.routers import (
     reports,
     suggestions,
     health,
+    auth,
+    admin,
 )
 from .database.connection import engine, get_db, create_tables, check_connection
 from .database.models import Base
@@ -34,6 +36,11 @@ from .utils.version import get_package_version
 # Setup logging configuration
 setup_logging(log_level=get_log_level_from_env(), log_file=get_log_file_from_env())
 logger = logging.getLogger("vogelring.main")
+
+# Check if we're in development mode
+DEVELOPMENT_MODE = os.getenv("DEVELOPMENT_MODE", "false").lower() == "true"
+if DEVELOPMENT_MODE:
+    logger.info("Running in DEVELOPMENT MODE - authentication bypass enabled")
 
 # Create database tables (only if not in test mode)
 if not os.getenv("TESTING", False):
@@ -51,6 +58,9 @@ app = FastAPI(
     docs_url="/swagger",
     redoc_url="/redoc",
 )
+
+# Store development mode in app state for access in routes
+app.state.development_mode = DEVELOPMENT_MODE
 
 # Configure CORS for frontend compatibility
 # Note: Authentication is handled by Cloudflare Zero Trust before requests reach this application
@@ -73,6 +83,8 @@ app.include_router(dashboard.router, prefix="/api", tags=["dashboard"])
 app.include_router(family.router, prefix="/api", tags=["family"])
 app.include_router(reports.router, prefix="/api", tags=["reports"])
 app.include_router(suggestions.router, prefix="/api", tags=["suggestions"])
+app.include_router(auth.router, prefix="/api", tags=["auth"])
+app.include_router(admin.router, prefix="/api", tags=["admin"])
 app.include_router(health.router, tags=["health"])
 
 # Setup request logging middleware

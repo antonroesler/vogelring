@@ -100,6 +100,61 @@
 
       <!-- Right section -->
       <div class="navigation-buttons pe-4">
+        <!-- User Menu -->
+        <v-menu offset-y>
+          <template v-slot:activator="{ props }">
+            <v-btn
+              v-bind="props"
+              variant="text"
+              class="nav-btn user-btn"
+              size="small"
+            >
+              <v-icon size="small" class="me-1">mdi-account-circle</v-icon>
+              <span class="user-text">{{ authStore.displayName }}</span>
+              <v-icon size="small" class="ms-1">mdi-chevron-down</v-icon>
+            </v-btn>
+          </template>
+          <v-list density="compact" min-width="300">
+            <v-list-item>
+              <template v-slot:prepend>
+                <v-icon>mdi-account</v-icon>
+              </template>
+              <v-list-item-title>{{ authStore.displayName }}</v-list-item-title>
+              <v-list-item-subtitle>{{ authStore.userEmail }}</v-list-item-subtitle>
+            </v-list-item>
+            <v-list-item>
+              <template v-slot:prepend>
+                <v-icon>mdi-domain</v-icon>
+              </template>
+              <v-list-item-title>{{ authStore.organizationName }}</v-list-item-title>
+              <v-list-item-subtitle>Organization</v-list-item-subtitle>
+            </v-list-item>
+            <v-list-item v-if="authStore.isAdmin">
+              <template v-slot:prepend>
+                <v-icon color="primary">mdi-shield-crown</v-icon>
+              </template>
+              <v-list-item-title>Administrator</v-list-item-title>
+              <v-list-item-subtitle>Admin privileges enabled</v-list-item-subtitle>
+            </v-list-item>
+            <v-divider></v-divider>
+            <v-list-item v-if="authStore.isAdmin" @click="navigateToAdmin">
+              <template v-slot:prepend>
+                <v-icon>mdi-cog</v-icon>
+              </template>
+              <v-list-item-title>Admin Panel</v-list-item-title>
+              <v-list-item-subtitle>Manage organizations & users</v-list-item-subtitle>
+            </v-list-item>
+            <v-divider v-if="authStore.error"></v-divider>
+            <v-list-item v-if="authStore.error" class="text-error">
+              <template v-slot:prepend>
+                <v-icon>mdi-alert-circle</v-icon>
+              </template>
+              <v-list-item-title>Authentication Error</v-list-item-title>
+              <v-list-item-subtitle>{{ authStore.error }}</v-list-item-subtitle>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+
         <!-- Version/Changelog Menu -->
         <v-menu offset-y>
           <template v-slot:activator="{ props }">
@@ -141,51 +196,14 @@
             </v-list-item>
           </v-list>
         </v-menu>
-        <v-btn 
-          to="/new-entry" 
-          variant="text"
-          class="nav-btn"
-        >
-          <v-icon icon="mdi-plus" class="me-1"></v-icon>
-          Neuer Eintrag
-        </v-btn>
-        <v-btn 
-          to="/entries" 
-          variant="text"
-          class="nav-btn"
-        >
-          <v-icon icon="mdi-format-list-bulleted" class="me-1"></v-icon>
-          Eintragliste
-        </v-btn>
-        <v-btn 
-          to="/ringing" 
-          variant="text"
-          class="nav-btn"
-        >
-          <v-icon icon="mdi-ring" class="me-1"></v-icon>
-          Beringungen
-        </v-btn>
-        <v-btn 
-          to="/family-relations" 
-          variant="text"
-          class="nav-btn"
-        >
-          <v-icon icon="mdi-family-tree" class="me-1"></v-icon>
-          Familienbeziehungen
-        </v-btn>
-        <v-btn 
-          to="/statistics" 
-          variant="text"
-          class="nav-btn"
-        >
-          <v-icon icon="mdi-chart-line" class="me-1"></v-icon>
-          Statistiken
-        </v-btn>
       </div>
     </v-app-bar>
 
     <v-main>
-      <v-container class="px-6">
+      <!-- Secondary Navigation -->
+      <SecondaryNavigation />
+      
+      <v-container class="px-6 pt-6">
         <router-view :key="$route.fullPath"></router-view>
       </v-container>
     </v-main>
@@ -209,7 +227,9 @@ import { useRouter } from 'vue-router';
 import debounce from 'lodash/debounce';
 import { SuggestionBird } from './types';
 import { useVersionStore } from './stores/version';
+import { useAuthStore } from './stores/auth';
 import ChangelogDialog from './components/dialogs/ChangelogDialog.vue';
+import SecondaryNavigation from './components/SecondaryNavigation.vue';
 
 
 // Use the SuggestionBird type directly instead of redefining it
@@ -217,6 +237,7 @@ type BirdSuggestion = SuggestionBird;
 
 const router = useRouter();
 const versionStore = useVersionStore();
+const authStore = useAuthStore();
 const version = ref<string>();
 const searchQuery = ref('');
 const suggestions = ref<BirdSuggestion[]>([]);
@@ -309,6 +330,12 @@ const navigateToHome = () => {
   router.push('/');
 };
 
+// Navigate to admin panel
+const navigateToAdmin = () => {
+  // For now, we'll just show an alert - you can implement the admin panel later
+  alert('Admin Panel - Coming Soon!\n\nThis will provide:\n- Organization management\n- User assignment\n- System administration');
+};
+
 onMounted(async () => {
   try {
     const response = await api.get('/');
@@ -318,8 +345,11 @@ onMounted(async () => {
     version.value = 'local';
   }
   
-  // Initialize version store to check for new versions and show changelog
-  await versionStore.initialize();
+  // Initialize stores
+  await Promise.all([
+    versionStore.initialize(),
+    authStore.initialize()
+  ]);
 });
 </script>
 
@@ -589,7 +619,15 @@ onMounted(async () => {
   background-color: #ffffff !important;
 }
 
-/* Version menu styling */
+/* User button styling */
+.user-btn .user-text {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Menu styling */
 .v-menu .v-list {
   background: rgba(255, 255, 255, 0.95) !important;
   backdrop-filter: blur(10px);
@@ -604,32 +642,36 @@ onMounted(async () => {
 /* Responsive adjustments */
 @media (max-width: 960px) {
   .search-container {
-    display: none;
+    max-width: 300px;
+    margin: 0 16px;
   }
   
   .navigation-buttons {
     gap: 4px;
   }
   
-  .nav-btn .v-icon {
-    display: none;
-  }
-  
-  /* Keep version menu visible on mobile */
-  .nav-btn .version-text {
-    display: inline !important;
+  /* Adjust user text width on mobile */
+  .user-btn .user-text {
+    max-width: 80px;
   }
 }
 
 @media (max-width: 600px) {
+  .search-container {
+    display: none;
+  }
+  
   .navigation-buttons {
-    flex-direction: column;
     gap: 2px;
   }
   
   .nav-btn {
     font-size: 0.875rem !important;
-    padding: 0 12px !important;
+    padding: 0 8px !important;
+  }
+  
+  .user-btn .user-text {
+    max-width: 60px;
   }
 }
 </style>

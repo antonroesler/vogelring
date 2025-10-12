@@ -8,8 +8,10 @@ from typing import Dict, Any, List
 from datetime import date as DateType
 from pydantic import BaseModel
 
+from ...utils.auth import get_current_user
 from ...database.connection import get_db
 from ..services.ringing_service import RingingService
+from ...database.user_models import User
 
 router = APIRouter()
 
@@ -49,14 +51,20 @@ class RingingUpdate(BaseModel):
 
 
 @router.get("/ringings/count")
-async def get_ringings_count(db: Session = Depends(get_db)):
+async def get_ringings_count(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Get total count of ringings"""
     service = RingingService(db)
-    return {"count": service.get_ringings_count()}
+    return {"count": service.get_ringings_count(current_user.org_id)}
 
 
 @router.get("/ringings/statistics")
-async def get_ringings_statistics(db: Session = Depends(get_db)):
+async def get_ringings_statistics(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Get ringings statistics"""
     service = RingingService(db)
     return service.get_statistics()
@@ -67,6 +75,7 @@ async def get_autocomplete_suggestions(
     field: str,
     q: str = Query(..., description="Query string"),
     limit: int = Query(10, ge=1, le=50, description="Maximum number of suggestions"),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get autocomplete suggestions for a field"""
@@ -84,6 +93,7 @@ async def get_ringings(
     species: str | None = Query(None, description="Species filter"),
     place: str | None = Query(None, description="Place filter"),
     ringer: str | None = Query(None, description="Ringer filter"),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get ringings with optional filtering and pagination"""
@@ -107,13 +117,15 @@ async def get_ringings(
 
     # Get ringings
     if filters:
-        ringings = service.search_ringings(filters)
+        ringings = service.search_ringings(filters, current_user.org_id)
         # Apply pagination manually for filtered results
         total = len(ringings)
         ringings = ringings[offset : offset + per_page]
     else:
-        ringings = service.get_all_ringings(limit=per_page, offset=offset)
-        total = service.get_ringings_count()
+        ringings = service.get_all_ringings(
+            current_user.org_id, limit=per_page, offset=offset
+        )
+        total = service.get_ringings_count(current_user.org_id)
 
     return {
         "ringings": ringings,
@@ -136,6 +148,7 @@ async def get_ringings_entry_list(
     place: str | None = Query(None, description="Place filter"),
     ring: str | None = Query(None, description="Ring filter"),
     ringer: str | None = Query(None, description="Ringer filter"),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get ringings for entry list with server-side filtering for specific species"""
@@ -160,51 +173,71 @@ async def get_ringings_entry_list(
         filters["ringer"] = ringer
 
     # Get filtered ringings for target species
-    ringings = service.get_entry_list_ringings(filters, limit=per_page, offset=offset)
-    total = service.get_entry_list_ringings_count(filters)
+    ringings = service.get_entry_list_ringings(
+        filters, current_user.org_id, limit=per_page, offset=offset
+    )
+    total = service.get_entry_list_ringings_count(filters, current_user.org_id)
 
     return ringings  # Return just the array for compatibility with sightings API
 
 
 @router.get("/ringing/{ring}")
-async def get_ringing_by_ring(ring: str, db: Session = Depends(get_db)):
+async def get_ringing_by_ring(
+    ring: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Get ringing information by ring number"""
     service = RingingService(db)
-    ringing = service.get_ringing_by_ring(ring)
+    ringing = service.get_ringing_by_ring(ring, current_user.org_id)
     if not ringing:
         raise HTTPException(status_code=404, detail="Ringing not found")
     return ringing
 
 
 @router.post("/ringing")
-async def upsert_ringing(ringing_data: RingingCreate, db: Session = Depends(get_db)):
+async def upsert_ringing(
+    ringing_data: RingingCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Create or update a ringing record"""
     service = RingingService(db)
     try:
-        ringing = service.upsert_ringing(ringing_data.model_dump())
+        ringing = service.upsert_ringing(current_user.org_id, ringing_data.model_dump())
         return ringing
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.put("/ringing")
-async def update_ringing(ringing_data: RingingUpdate, db: Session = Depends(get_db)):
+async def update_ringing(
+    ringing_data: RingingUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Update an existing ringing record"""
     service = RingingService(db)
     try:
         # Use upsert functionality for updates
-        ringing = service.upsert_ringing(ringing_data.model_dump(exclude_unset=True))
+        ringing = service.upsert_ringing(
+            current_user.org_id, ringing_data.model_dump(exclude_unset=True)
+        )
         return ringing
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.delete("/ringing/{ring}")
-async def delete_ringing(ring: str, db: Session = Depends(get_db)):
+async def delete_ringing(
+    ring: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """Delete a ringing record"""
     service = RingingService(db)
     try:
-        success = service.delete_ringing(ring)
+        success = service.delete_ringing(ring, current_user.org_id)
         return {"message": "Ringing deleted successfully", "success": success}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
