@@ -3,7 +3,7 @@ Organization-aware repository implementations for multi-tenant data access
 """
 
 import logging
-from typing import List, Optional, Dict, Any, TypeVar, Generic
+from typing import List, Optional, TypeVar, Generic
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, text
 from sqlalchemy.exc import IntegrityError
@@ -286,4 +286,4 @@ class UserRepository:
 
     def get_admin_users(self) -> List[User]:
         """Get all admin users"""
-        return self.db.query(User).filter(User.is_admin == True).all()
+        return self.db.query(User).filter(User.is_admin).all()

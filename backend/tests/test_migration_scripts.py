@@ -3,14 +3,11 @@ Tests for migration scripts and data validation
 """
 
 import pytest
-import json
 import pickle
-import tempfile
-import os
 from datetime import date, datetime
 from decimal import Decimal
 from uuid import uuid4
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 
 from src.database.models import Sighting, Ringing
 
@@ -346,14 +343,14 @@ class TestMigrationBatchProcessing:
                     errors += 1
                     if not skip_errors:
                         raise ValueError("Invalid ringing data")
-            except Exception as e:
+            except Exception:
                 errors += 1
                 if not skip_errors:
                     raise
 
         try:
             db.commit()
-        except Exception as e:
+        except Exception:
             db.rollback()
             raise
 
@@ -374,14 +371,14 @@ class TestMigrationBatchProcessing:
                     errors += 1
                     if not skip_errors:
                         raise ValueError("Invalid sighting data")
-            except Exception as e:
+            except Exception:
                 errors += 1
                 if not skip_errors:
                     raise
 
         try:
             db.commit()
-        except Exception as e:
+        except Exception:
             db.rollback()
             raise
 

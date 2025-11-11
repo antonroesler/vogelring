@@ -3,15 +3,15 @@ Analytics service layer - migrated from AWS Lambda to use PostgreSQL
 """
 
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from datetime import datetime, date
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, extract
-from collections import defaultdict, Counter
+from sqlalchemy import and_
+from collections import defaultdict
 
 from ...database.repositories import SightingRepository, RingingRepository
 from .bird_service import BirdService
-from ...database.models import Sighting as SightingDB, Ringing as RingingDB
+from ...database.models import Sighting as SightingDB
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +116,9 @@ class AnalyticsService:
         # Build friend metadata
         friend_metas = []
         for friend_ring, places in top_friends:
-            friend_meta = BirdService(self.db).get_bird_meta_by_ring(friend_ring, org_id)
+            friend_meta = BirdService(self.db).get_bird_meta_by_ring(
+                friend_ring, org_id
+            )
             friend_meta["count"] = len(places)
             friend_meta["places"] = list(set(places))
             friend_metas.append(friend_meta)
@@ -146,11 +148,13 @@ class AnalyticsService:
         # Get all sightings with species and date
         sightings = (
             self.db.query(SightingDB)
-            .filter(and_(
-                SightingDB.org_id == org_id,
-                SightingDB.species.isnot(None), 
-                SightingDB.date.isnot(None)
-            ))
+            .filter(
+                and_(
+                    SightingDB.org_id == org_id,
+                    SightingDB.species.isnot(None),
+                    SightingDB.date.isnot(None),
+                )
+            )
             .all()
         )
 

@@ -3,7 +3,7 @@ User-aware repository base classes and utilities
 """
 
 import logging
-from typing import List, Optional, Dict, Any, TypeVar, Generic
+from typing import List, Optional, TypeVar, Generic
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, text
 from sqlalchemy.exc import IntegrityError

@@ -4,10 +4,9 @@ Organization-aware repository implementations for multi-tenant data access
 
 import logging
 from typing import List, Optional, Dict, Any, Tuple
-from datetime import date, datetime, timedelta
-from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_, or_, func, desc, asc, text
-from sqlalchemy.exc import IntegrityError
+from datetime import date
+from sqlalchemy.orm import Session
+from sqlalchemy import and_, or_, func, desc
 
 from .models import Sighting, Ringing
 from .family_models import BirdRelationship

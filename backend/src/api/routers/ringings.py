@@ -4,7 +4,6 @@ Ringings API router
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from typing import Dict, Any, List
 from datetime import date as DateType
 from pydantic import BaseModel
 
@@ -174,9 +173,8 @@ async def get_ringings_entry_list(
 
     # Get filtered ringings for target species
     ringings = service.get_entry_list_ringings(
-        filters, current_user.org_id, limit=per_page, offset=offset
+        filters, org_id=str(current_user.org_id), limit=per_page, offset=offset
     )
-    total = service.get_entry_list_ringings_count(filters, current_user.org_id)
 
     return ringings  # Return just the array for compatibility with sightings API
 

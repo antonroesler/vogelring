@@ -1,6 +1,7 @@
 """
 API routers package
 """
+
 from . import (
     sightings,
     ringings,
@@ -11,12 +12,12 @@ from . import (
     dashboard,
     family,
     reports,
-    suggestions
+    suggestions,
 )
 
 __all__ = [
     "sightings",
-    "ringings", 
+    "ringings",
     "analytics",
     "birds",
     "places",
@@ -24,5 +25,5 @@ __all__ = [
     "dashboard",
     "family",
     "reports",
-    "suggestions"
+    "suggestions",
 ]

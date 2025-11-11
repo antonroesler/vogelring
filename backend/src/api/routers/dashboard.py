@@ -4,16 +4,13 @@ Dashboard API router
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from typing import Dict, Any
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from sqlalchemy import func, desc
 
 from ...database.connection import get_db
 from ...utils.auth import get_current_user
-from ...database.connection import get_db
 from ...database.user_models import User
-from ...database.models import Sighting, Ringing
-from ..services.analytics_service import AnalyticsService
+from ...database.models import Sighting
 
 router = APIRouter()
 

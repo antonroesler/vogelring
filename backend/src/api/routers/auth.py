@@ -10,7 +10,6 @@ from typing import Optional
 from ...database.connection import get_db
 from ...database.user_models import User
 from ...utils.auth import get_current_user
-from ...database.connection import get_db
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 

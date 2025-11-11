@@ -3,8 +3,6 @@ Database setup and teardown utilities for testing
 """
 
 import pytest
-import tempfile
-import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -267,7 +265,7 @@ class TestDatabaseSetupUtils:
         session = DatabaseTestUtils.create_test_session(engine)
 
         # Create sample data
-        sample_counts = DatabaseTestUtils.create_sample_data(session)
+        DatabaseTestUtils.create_sample_data(session)
 
         # Verify data was created
         counts_before = DatabaseTestUtils.get_table_counts(session)

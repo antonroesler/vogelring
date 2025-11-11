@@ -5,15 +5,12 @@ Authentication utilities for development and production
 import os
 import jwt
 import logging
-from typing import Optional
 from fastapi import Request, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import text
 from sqlalchemy.sql import func
 
 from ..database.connection import get_db
 from ..database.user_models import User
-from ..database.organization_models import Organization
 from ..database.organization_repository import UserRepository, OrganizationRepository
 
 logger = logging.getLogger(__name__)

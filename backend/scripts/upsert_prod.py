@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Script to upsert ringing data from CSV files with proper environment variable handling.
+Production upsert script for pi-server.local database
 """
 
 import os
@@ -14,12 +14,18 @@ import logging
 # Add src to path so we can import modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
-# Set up database URL from environment variables
-DB_HOST = os.getenv("DB_HOST", "localhost")
-DB_PORT = os.getenv("DB_PORT", "5432")
-DB_NAME = os.getenv("DB_NAME", "vogelring")
-DB_USER = os.getenv("DB_USER", "vogelring")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "password")
+# Production database configuration
+DB_HOST = "pi-server.local"
+DB_PORT = "5432"
+DB_NAME = "vogelring"
+DB_USER = "vogelring"
+# You'll need to provide the production password
+DB_PASSWORD = os.getenv("PROD_DB_PASSWORD", "")
+
+if not DB_PASSWORD:
+    print("ERROR: Please set PROD_DB_PASSWORD environment variable")
+    print("Usage: PROD_DB_PASSWORD='your_password' python upsert_prod.py")
+    sys.exit(1)
 
 # Override the DATABASE_URL environment variable
 os.environ["DATABASE_URL"] = (
@@ -29,6 +35,7 @@ os.environ["DATABASE_URL"] = (
 from src.database.connection import get_db_session
 from src.database.models import Ringing
 from src.api.services.ringing_service import RingingService
+from sqlalchemy import text
 
 # Configure logging
 logging.basicConfig(
@@ -100,7 +107,6 @@ def parse_age(age_str: str) -> int:
     except ValueError:
         # Handle non-numeric age values
         age_str = age_str.upper().strip()
-        # You might want to add specific mappings here if needed
         return 0  # Unknown
 
 
@@ -120,7 +126,7 @@ def convert_csv_row_to_ringing(
         # Clean and validate data
         ring = clean_ring_number(row[RingingCols.ring.value])
         if not ring:
-            logger.warning(f"Empty ring number in row, skipping")
+            logger.warning("Empty ring number in row, skipping")
             return None
 
         # Parse coordinates
@@ -186,10 +192,22 @@ def upsert_ringing_with_comment_only(
 
 def dry_run_analysis(csv_file: str, places_file: str, max_rows: int = None):
     """Dry run to analyze what would happen during upsert"""
-    logger.info("Starting dry run analysis...")
+    logger.info("Starting PRODUCTION dry run analysis...")
     logger.info(
         f"Database URL: postgresql://{DB_USER}:***@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     )
+
+    # Test connection first
+    try:
+        with get_db_session() as db:
+            # Test query
+            result = db.execute(text("SELECT COUNT(*) FROM ringings")).fetchone()
+            logger.info(
+                f"✅ Connected to production database. Current ringings: {result[0]}"
+            )
+    except Exception as e:
+        logger.error(f"❌ Failed to connect to production database: {e}")
+        return None
 
     # Read places mapping
     place_map = read_places(places_file)
@@ -250,10 +268,8 @@ def dry_run_analysis(csv_file: str, places_file: str, max_rows: int = None):
                                             "new_comment": ringing.comment,
                                         }
                                     )
-                                logger.debug(f"Would update comment for {ringing.ring}")
                             else:
                                 stats["would_skip_no_change"] += 1
-                                logger.debug(f"No change needed for {ringing.ring}")
                         else:
                             # Ring doesn't exist: would create new
                             stats["would_create_new"] += 1
@@ -266,7 +282,6 @@ def dry_run_analysis(csv_file: str, places_file: str, max_rows: int = None):
                                         "comment": ringing.comment,
                                     }
                                 )
-                            logger.debug(f"Would create new ringing for {ringing.ring}")
 
                     except Exception as e:
                         logger.error(
@@ -284,7 +299,7 @@ def dry_run_analysis(csv_file: str, places_file: str, max_rows: int = None):
 
     # Print analysis results
     logger.info("=" * 60)
-    logger.info("DRY RUN ANALYSIS RESULTS")
+    logger.info("PRODUCTION DRY RUN ANALYSIS RESULTS")
     logger.info("=" * 60)
     logger.info(f"Total rows analyzed: {stats['total_rows']}")
     logger.info(f"Skipped rows: {stats['skipped_rows']}")
@@ -314,10 +329,22 @@ def dry_run_analysis(csv_file: str, places_file: str, max_rows: int = None):
 
 def upsert_ringings_from_csv(csv_file: str, places_file: str):
     """Main function to upsert ringings from CSV"""
-    logger.info("Starting ringing upsert process...")
+    logger.info("Starting PRODUCTION ringing upsert process...")
     logger.info(
         f"Database URL: postgresql://{DB_USER}:***@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     )
+
+    # Test connection first
+    try:
+        with get_db_session() as db:
+            # Test query
+            result = db.execute(text("SELECT COUNT(*) FROM ringings")).fetchone()
+            logger.info(
+                f"✅ Connected to production database. Current ringings: {result[0]}"
+            )
+    except Exception as e:
+        logger.error(f"❌ Failed to connect to production database: {e}")
+        return None
 
     # Read places mapping
     place_map = read_places(places_file)
@@ -416,7 +443,7 @@ def upsert_ringings_from_csv(csv_file: str, places_file: str):
 
     # Print final statistics
     logger.info("=" * 60)
-    logger.info("UPSERT COMPLETED")
+    logger.info("PRODUCTION UPSERT COMPLETED")
     logger.info("=" * 60)
     logger.info(f"Total rows processed: {stats['total_rows']}")
     logger.info(f"Skipped rows: {stats['skipped_rows']}")
@@ -439,24 +466,46 @@ if __name__ == "__main__":
             max_rows = int(sys.argv[2]) if len(sys.argv) > 2 else None
             try:
                 stats = dry_run_analysis(csv_file, places_file, max_rows)
-                logger.info("Dry run completed successfully!")
+                if stats:
+                    logger.info("Production dry run completed successfully!")
+                else:
+                    logger.error("Production dry run failed!")
+                    sys.exit(1)
             except Exception as e:
-                logger.error(f"Dry run failed: {e}")
+                logger.error(f"Production dry run failed: {e}")
                 sys.exit(1)
         else:
-            logger.error("Usage: python upsert_with_env.py [dry-run [max_rows]]")
+            logger.error(
+                "Usage: PROD_DB_PASSWORD='password' python upsert_prod.py [dry-run [max_rows]]"
+            )
             sys.exit(1)
     else:
         # Full upsert
+        logger.warning(
+            "⚠️  PRODUCTION UPSERT - This will modify the production database!"
+        )
+        logger.warning("⚠️  Press Ctrl+C within 10 seconds to cancel...")
+        import time
+
+        for i in range(10, 0, -1):
+            print(f"Starting in {i} seconds...", end="\r")
+            time.sleep(1)
+        print("\nStarting production upsert...")
+
         try:
             stats = upsert_ringings_from_csv(csv_file, places_file)
 
-            if stats["errors"] > 0:
-                logger.warning(f"Completed with {stats['errors']} errors")
+            if stats and stats["errors"] == 0:
+                logger.info("✅ Production upsert completed successfully!")
+            elif stats:
+                logger.warning(
+                    f"⚠️ Production upsert completed with {stats['errors']} errors"
+                )
                 sys.exit(1)
             else:
-                logger.info("All ringings processed successfully!")
+                logger.error("❌ Production upsert failed!")
+                sys.exit(1)
 
         except Exception as e:
-            logger.error(f"Fatal error: {e}")
+            logger.error(f"❌ Production upsert failed: {e}")
             sys.exit(1)

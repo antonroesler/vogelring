@@ -175,9 +175,13 @@ async def get_sightings(
         sightings = sightings[offset : offset + per_page]
     else:
         if enriched:
-            sightings = service.get_enriched_sightings(current_user.org_id, limit=per_page, offset=offset)
+            sightings = service.get_enriched_sightings(
+                current_user.org_id, limit=per_page, offset=offset
+            )
         else:
-            sightings = service.get_sightings(current_user.org_id, limit=per_page, offset=offset)
+            sightings = service.get_sightings(
+                current_user.org_id, limit=per_page, offset=offset
+            )
 
     # Return just the array for compatibility with original Lambda API
     return sightings
@@ -192,7 +196,9 @@ async def add_sighting(
     """Create a new sighting"""
     service = SightingService(db)
     try:
-        sighting = service.add_sighting(current_user.org_id, sighting_data.model_dump(exclude_unset=True))
+        sighting = service.add_sighting(
+            current_user.org_id, sighting_data.model_dump(exclude_unset=True)
+        )
         return sighting
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -209,7 +215,9 @@ async def update_sighting(
     try:
         sighting_id = sighting_data.id
         update_data = sighting_data.model_dump(exclude={"id"}, exclude_unset=True)
-        sighting = service.update_sighting(sighting_id, current_user.org_id, update_data)
+        sighting = service.update_sighting(
+            sighting_id, current_user.org_id, update_data
+        )
         if not sighting:
             raise HTTPException(status_code=404, detail="Sighting not found")
         return sighting

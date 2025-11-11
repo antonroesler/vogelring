@@ -16,7 +16,6 @@ Options:
 """
 
 import sys
-import os
 import subprocess
 import argparse
 from pathlib import Path
@@ -24,13 +23,14 @@ from pathlib import Path
 # Add the src directory to Python path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
+
 def run_command(cmd, description):
     """Run a command and handle errors"""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"Running: {description}")
     print(f"Command: {' '.join(cmd)}")
-    print(f"{'='*60}")
-    
+    print(f"{'=' * 60}")
+
     try:
         result = subprocess.run(cmd, check=True, capture_output=False)
         print(f"\n✅ {description} completed successfully")
@@ -43,31 +43,33 @@ def run_command(cmd, description):
         print("Make sure pytest is installed: pip install -r requirements-test.txt")
         return False
 
+
 def install_test_dependencies():
     """Install test dependencies"""
     print("Installing test dependencies...")
     cmd = ["uv", "sync", "--extra", "test"]
     return run_command(cmd, "Installing test dependencies")
 
+
 def run_tests(test_type="all", coverage=False, verbose=False):
     """Run tests based on type"""
-    
+
     # Base pytest command
     cmd = ["uv", "run", "pytest"]
-    
+
     # Add coverage if requested
     if coverage:
         cmd.extend(["--cov=src", "--cov-report=html", "--cov-report=term"])
-    
+
     # Add verbosity
     if verbose:
         cmd.append("-v")
     else:
         cmd.append("-q")
-    
+
     # Exclude boto3-dependent tests by default
     cmd.extend(["-k", "not (test_dynamodb_migration_mock or test_s3_migration_mock)"])
-    
+
     # Add test selection based on type
     if test_type == "api":
         cmd.extend(["tests/test_api_*.py"])
@@ -84,30 +86,32 @@ def run_tests(test_type="all", coverage=False, verbose=False):
     else:
         print(f"❌ Unknown test type: {test_type}")
         return False
-    
+
     return run_command(cmd, description)
+
 
 def check_environment():
     """Check if the environment is set up correctly"""
     print("Checking environment...")
-    
+
     # Check if we're in the right directory
     if not Path("pyproject.toml").exists():
         print("❌ pyproject.toml not found. Make sure you're in the backend directory.")
         return False
-    
+
     # Check if src directory exists
     if not Path("src").exists():
         print("❌ src directory not found.")
         return False
-    
+
     # Check if tests directory exists
     if not Path("tests").exists():
         print("❌ tests directory not found.")
         return False
-    
+
     print("✅ Environment check passed")
     return True
+
 
 def main():
     """Main function"""
@@ -121,55 +125,49 @@ Examples:
     python run_tests.py --coverage         # Run with coverage
     python run_tests.py --verbose          # Run with verbose output
     python run_tests.py --type database --coverage --verbose
-        """
+        """,
     )
-    
+
     parser.add_argument(
         "--type",
         choices=["all", "api", "database", "migration"],
         default="all",
-        help="Type of tests to run (default: all)"
+        help="Type of tests to run (default: all)",
     )
-    
+
     parser.add_argument(
-        "--coverage",
-        action="store_true",
-        help="Run tests with coverage reporting"
+        "--coverage", action="store_true", help="Run tests with coverage reporting"
     )
-    
+
     parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Run tests with verbose output"
+        "--verbose", action="store_true", help="Run tests with verbose output"
     )
-    
+
     parser.add_argument(
         "--install-deps",
         action="store_true",
-        help="Install test dependencies before running tests"
+        help="Install test dependencies before running tests",
     )
-    
+
     args = parser.parse_args()
-    
+
     print("🧪 Vogelring Backend Test Runner")
     print("=" * 40)
-    
+
     # Check environment
     if not check_environment():
         sys.exit(1)
-    
+
     # Install dependencies if requested
     if args.install_deps:
         if not install_test_dependencies():
             sys.exit(1)
-    
+
     # Run tests
     success = run_tests(
-        test_type=args.type,
-        coverage=args.coverage,
-        verbose=args.verbose
+        test_type=args.type, coverage=args.coverage, verbose=args.verbose
     )
-    
+
     if success:
         print("\n🎉 All tests completed successfully!")
         if args.coverage:
@@ -177,6 +175,7 @@ Examples:
     else:
         print("\n💥 Some tests failed!")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

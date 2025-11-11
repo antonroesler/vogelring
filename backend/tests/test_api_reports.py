@@ -2,8 +2,7 @@
 API endpoint tests for reports
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from botocore.exceptions import ClientError, NoCredentialsError
 
 
@@ -272,15 +271,9 @@ class TestReportsAPI:
             "expiry_days": -1,  # Invalid negative value
         }
 
-        response = client.post("/api/report/shareable", json=invalid_request)
+        client.post("/api/report/shareable", json=invalid_request)
         # Should still work as pydantic will use default value or handle it
         # The actual validation depends on the Field constraints we set
-
-        # Test with very long title
-        long_title_request = {
-            "title": "A" * 1000,  # Very long title
-            "include_sightings": True,
-        }
 
         # This should still work unless we add specific length constraints
         # The test mainly ensures the API doesn't crash with edge cases

@@ -3,9 +3,9 @@ Suggestion service layer - migrated from AWS Lambda to use PostgreSQL
 """
 
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict
 from sqlalchemy.orm import Session
-from sqlalchemy import func, distinct
+from sqlalchemy import func
 from collections import Counter
 
 from ...database.repositories import SightingRepository, RingingRepository

@@ -9,11 +9,9 @@ from sqlalchemy import (
     Column,
     String,
     Integer,
-    Date,
     ForeignKey,
     UniqueConstraint,
     Index,
-    Enum as SQLEnum,
     TIMESTAMP,
 )
 from sqlalchemy.sql import func

@@ -274,7 +274,6 @@ async def list_all_users(
     db: Session = Depends(get_db),
 ):
     """List all users across all organizations (admin only)"""
-    from sqlalchemy import func
 
     # Get users with their organization names
     users_with_orgs = (

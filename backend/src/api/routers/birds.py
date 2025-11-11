@@ -66,6 +66,8 @@ async def get_bird_suggestions_by_partial_reading(
 
     # Get bird suggestions using the service
     service = BirdService(db)
-    suggestions = service.get_bird_suggestions_by_partial_reading(partial_reading, current_user.org_id)
+    suggestions = service.get_bird_suggestions_by_partial_reading(
+        partial_reading, current_user.org_id
+    )
 
     return suggestions

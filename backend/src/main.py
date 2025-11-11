@@ -4,9 +4,8 @@ FastAPI main application entry point
 
 import logging
 import os
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
 
 from .api.routers import (
     sightings,
@@ -23,8 +22,7 @@ from .api.routers import (
     auth,
     admin,
 )
-from .database.connection import engine, get_db, create_tables, check_connection
-from .database.models import Base
+from .database.connection import create_tables
 from .utils.logging_config import (
     setup_logging,
     get_log_level_from_env,

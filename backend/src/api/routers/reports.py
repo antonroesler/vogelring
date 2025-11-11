@@ -3,19 +3,13 @@ Reports API router
 """
 
 import os
-import json
 import boto3
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from typing import Dict, Any
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from botocore.exceptions import ClientError, NoCredentialsError
 from uuid import uuid4
 
-from ...database.connection import get_db
-from ..services.sighting_service import SightingService
-from ..services.ringing_service import RingingService
 
 router = APIRouter()
 

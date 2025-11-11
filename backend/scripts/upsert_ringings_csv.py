@@ -113,7 +113,7 @@ def convert_csv_row_to_ringing(
         # Clean and validate data
         ring = clean_ring_number(row[RingingCols.ring.value])
         if not ring:
-            logger.warning(f"Empty ring number in row, skipping")
+            logger.warning("Empty ring number in row, skipping")
             return None
 
         # Parse coordinates

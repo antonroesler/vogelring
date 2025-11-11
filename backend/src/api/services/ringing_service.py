@@ -6,7 +6,6 @@ import logging
 from typing import List, Optional, Dict, Any
 from datetime import date
 from sqlalchemy.orm import Session
-from uuid import uuid4
 
 from ...database.repositories import RingingRepository
 from ...database.models import Ringing as RingingDB

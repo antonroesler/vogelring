@@ -4,11 +4,9 @@ Analytics API router
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
 
 from ...database.connection import get_db
 from ...utils.auth import get_current_user
-from ...database.connection import get_db
 from ...database.user_models import User
 from ..services.analytics_service import AnalyticsService
 
@@ -32,10 +30,13 @@ async def get_friends_from_ring(
     ring: str,
     min_shared_sightings: int = Query(2, description="Minimum shared sightings"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Get friends analysis for a specific ring"""
     service = AnalyticsService(db)
-    friends_data = service.get_friends_from_ring(ring, current_user.org_id, min_shared_sightings)
+    friends_data = service.get_friends_from_ring(
+        ring, org_id=str(current_user.org_id), min_shared_sightings=min_shared_sightings
+    )
     return friends_data
 
 
@@ -44,21 +45,23 @@ async def get_groups_from_ring(
     ring: str,
     min_shared_sightings: int = Query(2, description="Minimum shared sightings"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Get groups/friends analysis for a specific ring (alias for friends endpoint)"""
     service = AnalyticsService(db)
-    friends_data = service.get_friends_from_ring(ring, current_user.org_id, min_shared_sightings)
+    friends_data = service.get_friends_from_ring(
+        ring, org_id=str(current_user.org_id), min_shared_sightings=min_shared_sightings
+    )
     return friends_data
 
 
 @router.get("/seasonal-analysis")
 async def get_seasonal_analysis(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """Get seasonal analysis data"""
     service = AnalyticsService(db)
-    analysis = service.get_seasonal_analysis(current_user.org_id)
+    analysis = service.get_seasonal_analysis(org_id=str(current_user.org_id))
 
     # Convert SeasonalCount objects to dictionaries
     result = {}
