@@ -5,6 +5,42 @@ All notable changes to Vogelring will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0](https://github.com/antonroesler/vogelring/compare/v2.5.0...v2.6.0) (2025-11-11)
+
+
+### ✨ Features
+
+* multi user setup ([#55](https://github.com/antonroesler/vogelring/issues/55)) ([8e56458](https://github.com/antonroesler/vogelring/commit/8e56458d55efb246c3c57560a271009a2b72fa42))
+
+
+### 🐛 Bug Fixes
+
+* **auth:** update Cloudflare authentication method to use cookie instead of headers ([b326d04](https://github.com/antonroesler/vogelring/commit/b326d04e93ba2057626b16fa1827c98a97796bc8))
+* **backend:** family relationships filter not working ([6a91e7b](https://github.com/antonroesler/vogelring/commit/6a91e7bcebc2b804fc5c538fd97e9698afc8731d))
+* branch naming ([cdd3bb5](https://github.com/antonroesler/vogelring/commit/cdd3bb5e76f300698bc1ca9dbe556a1677fb5da1))
+
+
+### 🔧 Miscellaneous
+
+* take out some trash ([6e04c26](https://github.com/antonroesler/vogelring/commit/6e04c2636daa3ae3b5ac6165fbff8de0fe3fca48))
+
+
+### 📚 Documentation
+
+* add CI badge to README for improved visibility of linting status ([225151d](https://github.com/antonroesler/vogelring/commit/225151d92e823c75a58465ba978591373923a548))
+
+
+### ♻️ Code Refactoring
+
+* **auth:** remove unused parameters from get_current_user_prod function ([adace31](https://github.com/antonroesler/vogelring/commit/adace31db08c1bec40ad0122af3c8dbdb7cc922a))
+* **bird_service:** update family repository method calls to include organization ID ([5d6436e](https://github.com/antonroesler/vogelring/commit/5d6436ee92e399ca5bf8287c7c05845286523301))
+* lint rules ([d5a50b0](https://github.com/antonroesler/vogelring/commit/d5a50b0e9a24bcd5c10e39d466ab56e7711918cd))
+
+
+### 👷 Continuous Integration
+
+* add backend linting check ([d1a7b5a](https://github.com/antonroesler/vogelring/commit/d1a7b5a2ab69a33b170ec445e0ec2cd2ddc5d1e2))
+
 ## [2.5.0](https://github.com/antonroesler/vogelring/compare/v2.4.0...v2.5.0) (2025-09-28)
 
 
