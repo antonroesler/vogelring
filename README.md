@@ -1,3 +1,5 @@
+[![Lint API](https://github.com/antonroesler/vogelring/actions/workflows/ci.yml/badge.svg)](https://github.com/antonroesler/vogelring/actions/workflows/ci.yml)
+
 # Vogelring 🦆
 
 A comprehensive bird tracking and sighting management system for ornithologists and bird watchers. Vogelring enables researchers to track ringed birds, manage sightings, analyze migration patterns, and maintain detailed records of bird populations.
