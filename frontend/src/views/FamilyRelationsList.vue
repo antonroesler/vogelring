@@ -67,7 +67,7 @@
                   density="compact"
                 ></v-text-field>
               </v-col>
-              <v-col cols="12" md="3">
+              <v-col cols="12" md="4">
                 <v-text-field
                   v-model="filters.bird_ring"
                   label="Ring"
@@ -76,18 +76,7 @@
                   density="compact"
                 ></v-text-field>
               </v-col>
-              <v-col cols="12" md="2">
-                <v-text-field
-                  v-model="filters.limit"
-                  label="Anzahl"
-                  type="number"
-                  variant="outlined"
-                  density="compact"
-                  :min="1"
-                  :max="1000"
-                ></v-text-field>
-              </v-col>
-              <v-col cols="12" md="2">
+              <v-col cols="12" md="3">
                 <v-btn
                   @click="loadRelationships"
                   color="primary"
@@ -328,7 +317,6 @@ const filters = ref({
   relationship_type: null as string | null,
   year: null as number | null,
   bird_ring: null as string | null,
-  limit: 100
 });
 
 const relationshipTypeOptions = [
@@ -376,9 +364,8 @@ const loadRelationships = async () => {
     if (filters.value.relationship_type) params.relationship_type = filters.value.relationship_type;
     if (filters.value.year) params.year = filters.value.year;
     if (filters.value.bird_ring) params.bird_ring = filters.value.bird_ring;
-    if (filters.value.limit) params.limit = filters.value.limit;
 
-    relationships.value = await getAllRelationships(params);
+    relationships.value = await getAllRelationships(Object.keys(params).length > 0 ? params : undefined);
   } catch (error) {
     console.error('Error loading relationships:', error);
     errorMessage.value = 'Fehler beim Laden der Familienbeziehungen';

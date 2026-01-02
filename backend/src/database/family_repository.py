@@ -156,10 +156,8 @@ class FamilyRepository:
         relationship_type: Optional[RelationshipType] = None,
         year: Optional[int] = None,
         bird_ring: Optional[str] = None,
-        limit: int = 100,
-        offset: int = 0,
     ) -> List[BirdRelationship]:
-        """Get all relationships with optional filters"""
+        """Get all relationships with optional filters. Returns all matching records."""
         query = self.db.query(BirdRelationship).filter(
             BirdRelationship.org_id == org_id
         )
@@ -180,12 +178,7 @@ class FamilyRepository:
                 )
             )
 
-        return (
-            query.order_by(BirdRelationship.created_at.desc())
-            .offset(offset)
-            .limit(limit)
-            .all()
-        )
+        return query.order_by(BirdRelationship.created_at.desc()).all()
 
     def get_partners(
         self,

@@ -85,62 +85,6 @@ async def get_autocomplete_suggestions(
 
 @router.get("/ringings")
 async def get_ringings(
-    page: int = Query(1, ge=1, description="Page number"),
-    per_page: int = Query(100, ge=1, le=1000, description="Items per page"),
-    start_date: DateType | None = Query(None, description="Start date filter"),
-    end_date: DateType | None = Query(None, description="End date filter"),
-    species: str | None = Query(None, description="Species filter"),
-    place: str | None = Query(None, description="Place filter"),
-    ringer: str | None = Query(None, description="Ringer filter"),
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    """Get ringings with optional filtering and pagination"""
-    service = RingingService(db)
-
-    # Calculate offset
-    offset = (page - 1) * per_page
-
-    # Build filters
-    filters = {}
-    if start_date:
-        filters["start_date"] = start_date
-    if end_date:
-        filters["end_date"] = end_date
-    if species:
-        filters["species"] = species
-    if place:
-        filters["place"] = place
-    if ringer:
-        filters["ringer"] = ringer
-
-    # Get ringings
-    if filters:
-        ringings = service.search_ringings(filters, current_user.org_id)
-        # Apply pagination manually for filtered results
-        total = len(ringings)
-        ringings = ringings[offset : offset + per_page]
-    else:
-        ringings = service.get_all_ringings(
-            current_user.org_id, limit=per_page, offset=offset
-        )
-        total = service.get_ringings_count(current_user.org_id)
-
-    return {
-        "ringings": ringings,
-        "pagination": {
-            "page": page,
-            "per_page": per_page,
-            "total": total,
-            "pages": (total + per_page - 1) // per_page,
-        },
-    }
-
-
-@router.get("/ringings/entry-list")
-async def get_ringings_entry_list(
-    page: int = Query(1, ge=1, description="Page number"),
-    per_page: int = Query(100, ge=1, le=10000, description="Items per page"),
     start_date: DateType | None = Query(None, description="Start date filter"),
     end_date: DateType | None = Query(None, description="End date filter"),
     species: str | None = Query(None, description="Species filter"),
@@ -150,13 +94,10 @@ async def get_ringings_entry_list(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Get ringings for entry list with server-side filtering for specific species"""
+    """Get all ringings with optional filters. Pagination is handled client-side."""
     service = RingingService(db)
 
-    # Calculate offset
-    offset = (page - 1) * per_page
-
-    # Build filters with species filtering for target species
+    # Build filters
     filters = {}
     if start_date:
         filters["start_date"] = start_date
@@ -171,12 +112,13 @@ async def get_ringings_entry_list(
     if ringer:
         filters["ringer"] = ringer
 
-    # Get filtered ringings for target species
-    ringings = service.get_entry_list_ringings(
-        filters, org_id=str(current_user.org_id), limit=per_page, offset=offset
-    )
+    # Get ringings
+    if filters:
+        ringings = service.search_ringings(filters, current_user.org_id)
+    else:
+        ringings = service.get_all_ringings(current_user.org_id)
 
-    return ringings  # Return just the array for compatibility with sightings API
+    return ringings
 
 
 @router.get("/ringing/{ring}")

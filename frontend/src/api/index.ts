@@ -41,29 +41,14 @@ api.interceptors.response.use(
 );
 
 export const getSightings = async (params?: {
-  page?: number;
-  per_page?: number;
   start_date?: string;
   end_date?: string;
   species?: string;
   place?: string;
+  ring?: string;
 }) => {
-  console.log('Fetching sightings with params:', params);
-  try {
-    const response = await api.get<Sighting[]>('/sightings', { params });
-    console.log('Received sightings:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('Error in getSightings:', error);
-    if (axios.isAxiosError(error)) {
-      console.error('Axios error details:', {
-        response: error.response,
-        request: error.request,
-        message: error.message
-      });
-    }
-    throw error;
-  }
+  const response = await api.get<Sighting[]>('/sightings', { params });
+  return response.data;
 };
 
 export const getSightingById = async (id: string) => {
@@ -276,12 +261,8 @@ export const getAllRelationships = async (params?: {
   relationship_type?: 'breeding_partner' | 'parent_of' | 'child_of' | 'sibling_of';
   year?: number;
   bird_ring?: string;
-  limit?: number;
-  offset?: number;
 }) => {
-  console.log('Fetching all relationships with params:', params);
   const response = await api.get('/family/relationships', { params });
-  console.log('Received all relationships:', response.data);
   return response.data;
 };
 
@@ -303,9 +284,7 @@ export const deleteRelationship = async (id: string) => {
   return response.data;
 };
 
-export const getRingingEntryList = async (params?: {
-  page?: number;
-  per_page?: number;
+export const getRingings = async (params?: {
   start_date?: string;
   end_date?: string;
   species?: string;
@@ -313,20 +292,6 @@ export const getRingingEntryList = async (params?: {
   ring?: string;
   ringer?: string;
 }) => {
-  console.log('Fetching ringing entry list with params:', params);
-  try {
-    const response = await api.get<Ringing[]>('/ringings/entry-list', { params });
-    console.log('Received ringing entry list:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('Error in getRingingEntryList:', error);
-    if (axios.isAxiosError(error)) {
-      console.error('Axios error details:', {
-        response: error.response,
-        request: error.request,
-        message: error.message
-      });
-    }
-    throw error;
-  }
+  const response = await api.get<Ringing[]>('/ringings', { params });
+  return response.data;
 };

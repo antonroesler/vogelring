@@ -581,12 +581,10 @@ async def get_all_relationships(
     relationship_type: Optional[RelationshipType] = None,
     year: Optional[int] = None,
     bird_ring: Optional[str] = None,
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Get all relationships with optional filters"""
+    """Get all relationships with optional filters. Pagination is handled client-side."""
     repo = FamilyRepository(db)
 
     # Convert API enum to DB enum if provided
@@ -599,8 +597,6 @@ async def get_all_relationships(
         relationship_type=db_relationship_type,
         year=year,
         bird_ring=bird_ring,
-        limit=limit,
-        offset=offset,
     )
 
     return [

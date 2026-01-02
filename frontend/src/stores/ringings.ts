@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import type { Ringing } from '@/types';
-import { getRingingEntryList, deleteRinging } from '@/api';
+import { getRingings, deleteRinging } from '@/api';
 
 export const useRingingStore = defineStore('ringings', () => {
   const ringings = ref<Ringing[]>([]);
@@ -63,11 +63,8 @@ export const useRingingStore = defineStore('ringings', () => {
     error.value = null;
 
     try {
-      const params: any = {
-        per_page: 10000  // Load all ringings like sightings does
-      };
+      const params: Record<string, string> = {};
 
-      // Add filters to params
       if (filters.value.startDate) params.start_date = filters.value.startDate;
       if (filters.value.endDate) params.end_date = filters.value.endDate;
       if (filters.value.species) params.species = filters.value.species;
@@ -75,12 +72,7 @@ export const useRingingStore = defineStore('ringings', () => {
       if (filters.value.ring) params.ring = filters.value.ring;
       if (filters.value.ringer) params.ringer = filters.value.ringer;
 
-      const data = await getRingingEntryList(params);
-      ringings.value = data;
-      
-      // Note: The API returns just the array, so we can't get total count
-      // This is similar to how sightings work
-      
+      ringings.value = await getRingings(Object.keys(params).length > 0 ? params : undefined);
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to load ringings';
       console.error('Error loading ringings:', err);

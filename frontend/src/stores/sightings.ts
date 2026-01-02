@@ -62,14 +62,9 @@ export const useSightingsStore = defineStore('sightings', {
     }) {
       this.loading = true;
       this.error = null;
-      
+
       try {
-        const response = await api.getSightings({
-          per_page: 10000,
-          ...params
-        });
-        
-        this.sightings = response;
+        this.sightings = await api.getSightings(params);
         this.initialized = true;
       } catch (err) {
         console.error('Error fetching sightings:', err);

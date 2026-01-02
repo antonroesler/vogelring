@@ -138,8 +138,6 @@ async def get_sighting_by_id(
 
 @router.get("/sightings")
 async def get_sightings(
-    page: int = Query(1, ge=1, description="Page number"),
-    per_page: int = Query(100, ge=1, le=10000, description="Items per page"),
     start_date: DateType | None = Query(None, description="Start date filter"),
     end_date: DateType | None = Query(None, description="End date filter"),
     species: str | None = Query(None, description="Species filter"),
@@ -149,11 +147,8 @@ async def get_sightings(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Get sightings - returns array for Lambda API compatibility"""
+    """Get all sightings with optional filters. Pagination is handled client-side."""
     service = SightingService(db)
-
-    # Calculate offset
-    offset = (page - 1) * per_page
 
     # Build filters
     filters = {}
@@ -171,19 +166,11 @@ async def get_sightings(
     # Get sightings
     if filters:
         sightings = service.search_sightings(filters, current_user.org_id)
-        # Apply pagination manually for filtered results
-        sightings = sightings[offset : offset + per_page]
+    elif enriched:
+        sightings = service.get_enriched_sightings(current_user.org_id)
     else:
-        if enriched:
-            sightings = service.get_enriched_sightings(
-                current_user.org_id, limit=per_page, offset=offset
-            )
-        else:
-            sightings = service.get_sightings(
-                current_user.org_id, limit=per_page, offset=offset
-            )
+        sightings = service.get_sightings(current_user.org_id)
 
-    # Return just the array for compatibility with original Lambda API
     return sightings
 
 
