@@ -89,6 +89,9 @@ class BirdService:
                     "partner": s.partner,
                     "status": s.status,
                     "age": s.age,
+                    "sex": s.sex,
+                    "large_group_size": s.large_group_size,
+                    "small_group_size": s.small_group_size,
                     "melder": s.melder,
                     "melded": s.melded,
                 }
