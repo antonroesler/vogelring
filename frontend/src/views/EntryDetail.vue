@@ -449,10 +449,6 @@ const generateStaticHTML = () => {
           <td>${sighting.value?.field_fruit || '-'}</td>
         </tr>
         <tr>
-          <td class="field-label">Gruppengröße</td>
-          <td>${sighting.value?.group_size || '-'}</td>
-        </tr>
-        <tr>
           <td class="field-label">Kleine Gruppe</td>
           <td>${sighting.value?.small_group_size || '-'}</td>
         </tr>
