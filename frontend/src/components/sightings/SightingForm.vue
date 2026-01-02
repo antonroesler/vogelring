@@ -390,7 +390,10 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
+  /** Emitted for updates to existing sightings - parent should call store.updateSighting() */
   'submit': [sighting: Partial<Sighting>];
+  /** Emitted after new sighting(s) created - parent should only show success feedback */
+  'created': [mainSighting: Sighting];
 }>();
 
 const localSighting = ref<Partial<Sighting>>({ ...props.sighting });
@@ -553,73 +556,95 @@ const handlePartnerSelect = (suggestion: SuggestionBird) => {
   localSighting.value.partner = suggestion.ring;
 };
 
-const handleSubmit = () => {
+/**
+ * Creates a single sighting via API, emits 'created' event, and resets the form.
+ * Used for new entries without family relationships.
+ */
+const createSingleSightingAndReset = async (sightingData: Partial<Sighting>) => {
+  const createdSighting = await createSighting(sightingData);
+  emit('created', createdSighting);
+
+  // Reset form using clear fields settings
+  if (props.clearFieldsSettings) {
+    localSighting.value = createClearedSighting(sightingData, props.clearFieldsSettings);
+  } else {
+    localSighting.value = createDefaultSighting();
+  }
+  children.value = [];
+  pendingSighting.value = null;
+};
+
+const handleSubmit = async () => {
   // Clean the data first
   const cleanedSighting = cleanSightingData(localSighting.value);
-  
+
   // Check if we need to show dialogs for missing data
   const missingRing = !cleanedSighting.ring;
   const missingSpecies = !cleanedSighting.species;
-  
+
   if (props.isNewEntry && (missingRing || missingSpecies)) {
     // Store the pending sighting
     pendingSighting.value = cleanedSighting;
-    
+
     // Show ring dialog first if ring is missing
     if (missingRing) {
       showMissingRingDialog.value = true;
       return;
     }
-    
+
     // If ring is present but species is missing, show species dialog
     if (missingSpecies) {
       showMissingSpeciesDialog.value = true;
       return;
     }
   }
-  
+
   // Check if we need family confirmation for new entries
   if (props.isNewEntry) {
-    const hasPartner = cleanedSighting.partner && 
-      cleanedSighting.partner.toLowerCase() !== 'ub' && 
+    const hasPartner = cleanedSighting.partner &&
+      cleanedSighting.partner.toLowerCase() !== 'ub' &&
       cleanedSighting.partner.toLowerCase() !== 'unberingt';
     const hasChildren = children.value.some(child => child.ring);
-    
+
     if (hasPartner || hasChildren) {
       pendingSighting.value = cleanedSighting;
       showFamilyConfirmationDialog.value = true;
       return;
     }
   }
-  
-  // If no dialogs needed or not a new entry, submit directly
+
+  // For new entries: create sighting directly and emit 'created'
+  if (props.isNewEntry) {
+    await createSingleSightingAndReset(cleanedSighting);
+    return;
+  }
+
+  // For updates: emit 'submit' so parent can handle the update
   emit('submit', cleanedSighting);
 };
 
 // Ring dialog handlers
-const handleCopyFromReading = () => {
+const handleCopyFromReading = async () => {
   if (pendingSighting.value && localSighting.value.reading) {
     localSighting.value.ring = localSighting.value.reading;
     pendingSighting.value.ring = localSighting.value.reading;
-    
+
     // Check if we still need to show species dialog
     if (!pendingSighting.value.species) {
       showMissingSpeciesDialog.value = true;
     } else {
-      emit('submit', pendingSighting.value);
-      pendingSighting.value = null;
+      await createSingleSightingAndReset(pendingSighting.value);
     }
   }
 };
 
-const handleContinueWithoutRing = () => {
+const handleContinueWithoutRing = async () => {
   if (pendingSighting.value) {
     // Check if we still need to show species dialog
     if (!pendingSighting.value.species) {
       showMissingSpeciesDialog.value = true;
     } else {
-      emit('submit', pendingSighting.value);
-      pendingSighting.value = null;
+      await createSingleSightingAndReset(pendingSighting.value);
     }
   }
 };
@@ -629,19 +654,17 @@ const handleCancelRingDialog = () => {
 };
 
 // Species dialog handlers
-const handleUseSuggestedSpecies = (species: string) => {
+const handleUseSuggestedSpecies = async (species: string) => {
   if (pendingSighting.value) {
     localSighting.value.species = species;
     pendingSighting.value.species = species;
-    emit('submit', pendingSighting.value);
-    pendingSighting.value = null;
+    await createSingleSightingAndReset(pendingSighting.value);
   }
 };
 
-const handleContinueWithoutSpecies = () => {
+const handleContinueWithoutSpecies = async () => {
   if (pendingSighting.value) {
-    emit('submit', pendingSighting.value);
-    pendingSighting.value = null;
+    await createSingleSightingAndReset(pendingSighting.value);
   }
 };
 
@@ -794,10 +817,10 @@ const handleFamilyConfirm = async () => {
     }
     
     showFamilyConfirmationDialog.value = false;
-    
-    // Emit the submit event to trigger the toast notification
-    emit('submit', mainSighting);
-    
+
+    // Emit 'created' event - sightings are already saved, parent just shows toast
+    emit('created', mainSighting);
+
     // Reset form using the same field clearing logic as individual sightings
     if (props.clearFieldsSettings) {
       localSighting.value = createClearedSighting(pendingSighting.value, props.clearFieldsSettings);

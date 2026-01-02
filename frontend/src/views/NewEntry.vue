@@ -17,7 +17,7 @@
         :show-place-suggestions="true"
         :show-coordinates="true"
         :clear-fields-settings="clearFieldsSettings"
-        @submit="saveSighting"
+        @created="onSightingCreated"
       />
     </v-card-text>
   </v-card>
@@ -41,13 +41,11 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useSightingsStore } from '@/stores/sightings';
 import type { Sighting } from '@/types';
 import SightingForm from '@/components/sightings/SightingForm.vue';
 import ClearFieldsSettings from '@/components/settings/ClearFieldsSettings.vue';
-import { createClearedSighting, createDefaultSighting } from '@/utils/fieldClearingUtils';
+import { createDefaultSighting } from '@/utils/fieldClearingUtils';
 
-const store = useSightingsStore();
 const loading = ref(false);
 const showSuccessSnackbar = ref(false);
 const showErrorSnackbar = ref(false);
@@ -56,20 +54,12 @@ const clearFieldsSettings = ref<Record<string, boolean>>({});
 
 const sighting = ref<Partial<Sighting>>(createDefaultSighting());
 
-const saveSighting = async (newSighting: Partial<Sighting>) => {
-  loading.value = true;
-  try {
-    await store.createSighting(newSighting);
-    showSuccessSnackbar.value = true;
-    
-    // Create new sighting object with fields cleared according to user settings
-    sighting.value = createClearedSighting(newSighting, clearFieldsSettings.value);
-  } catch (error) {
-    console.error('Error saving sighting:', error);
-    showErrorSnackbar.value = true;
-  } finally {
-    loading.value = false;
-  }
+/**
+ * Called when SightingForm has successfully created sighting(s).
+ * The form handles all API calls internally, so we just show success feedback.
+ */
+const onSightingCreated = (_createdSighting: Sighting) => {
+  showSuccessSnackbar.value = true;
 };
 </script>
 
