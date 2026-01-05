@@ -147,7 +147,7 @@ const uniquePartnerRelationships = computed(() => {
       unique.set(key, {
         otherBird,
         year: rel.year,
-        displayType: 'Brutpartner'
+        displayType: 'Partner'
       });
     }
   });

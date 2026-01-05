@@ -320,7 +320,7 @@ const filters = ref({
 });
 
 const relationshipTypeOptions = [
-  { value: 'breeding_partner', title: 'Brutpartner' },
+  { value: 'breeding_partner', title: 'Partner' },
   { value: 'parent_of', title: 'Elternteil von' },
   { value: 'child_of', title: 'Kind von' },
   { value: 'sibling_of', title: 'Geschwister von' }

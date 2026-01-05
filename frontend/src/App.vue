@@ -5,12 +5,51 @@
       <v-app-bar-title class="app-title">
         <div class="d-flex align-center" style="cursor: pointer" @click="navigateToHome">
           <v-icon icon="mdi-bird" size="32" class="logo-icon me-3"></v-icon>
-          <div>
-            <span class="title-text">Vogelring</span>
-            <span class="version-text" v-if="version">v{{ version }}</span>
-          </div>
+          <span class="title-text">Vogelring</span>
         </div>
       </v-app-bar-title>
+
+      <!-- Version/Changelog Menu -->
+      <v-menu offset-y>
+        <template v-slot:activator="{ props }">
+          <v-btn
+            v-bind="props"
+            variant="text"
+            class="nav-btn"
+            size="small"
+          >
+            <v-icon size="small" class="me-1">mdi-information-outline</v-icon>
+            <span>v{{ versionStore.currentVersion }}</span>
+            <v-icon size="small" class="ms-1">mdi-chevron-down</v-icon>
+          </v-btn>
+        </template>
+        <v-list density="compact" min-width="200">
+          <v-list-item @click="versionStore.showChangelog()">
+            <template v-slot:prepend>
+              <v-icon>mdi-update</v-icon>
+            </template>
+            <v-list-item-title>What's New</v-list-item-title>
+            <v-list-item-subtitle>View changelog</v-list-item-subtitle>
+          </v-list-item>
+          <v-list-item>
+            <template v-slot:prepend>
+              <v-icon>mdi-information</v-icon>
+            </template>
+            <v-list-item-title>Version Info</v-list-item-title>
+            <v-list-item-subtitle>Backend: v{{ versionStore.currentVersion }}</v-list-item-subtitle>
+          </v-list-item>
+          <v-divider></v-divider>
+          <v-list-item
+            v-if="versionStore.changelogDisabled"
+            @click="versionStore.enableChangelog()"
+          >
+            <template v-slot:prepend>
+              <v-icon>mdi-bell</v-icon>
+            </template>
+            <v-list-item-title>Enable Update Notifications</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </v-menu>
 
       <v-spacer></v-spacer>
 
@@ -100,6 +139,44 @@
 
       <!-- Right section -->
       <div class="navigation-buttons pe-4">
+        <!-- Sister Sites Menu -->
+        <v-menu offset-y>
+          <template v-slot:activator="{ props }">
+            <v-btn
+              v-bind="props"
+              variant="text"
+              class="nav-btn"
+              size="small"
+            >
+              <v-icon size="small" class="me-1">mdi-apps</v-icon>
+              <span>Apps</span>
+              <v-icon size="small" class="ms-1">mdi-chevron-down</v-icon>
+            </v-btn>
+          </template>
+          <v-list density="compact" min-width="220">
+            <v-list-item href="https://chat.vogelring.com" target="_blank">
+              <template v-slot:prepend>
+                <v-icon>mdi-chat</v-icon>
+              </template>
+              <v-list-item-title>Chat</v-list-item-title>
+              <v-list-item-subtitle>AI Assistent</v-list-item-subtitle>
+              <template v-slot:append>
+                <v-icon size="small">mdi-open-in-new</v-icon>
+              </template>
+            </v-list-item>
+            <v-list-item href="https://analytics.vogelring.com" target="_blank">
+              <template v-slot:prepend>
+                <v-icon>mdi-chart-line</v-icon>
+              </template>
+              <v-list-item-title>Analytics</v-list-item-title>
+              <v-list-item-subtitle>Erweiterte Analysen</v-list-item-subtitle>
+              <template v-slot:append>
+                <v-icon size="small">mdi-open-in-new</v-icon>
+              </template>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+
         <!-- User Menu -->
         <v-menu offset-y>
           <template v-slot:activator="{ props }">
@@ -154,48 +231,6 @@
             </v-list-item>
           </v-list>
         </v-menu>
-
-        <!-- Version/Changelog Menu -->
-        <v-menu offset-y>
-          <template v-slot:activator="{ props }">
-            <v-btn
-              v-bind="props"
-              variant="text"
-              class="nav-btn"
-              size="small"
-            >
-              <v-icon size="small" class="me-1">mdi-information-outline</v-icon>
-              <span class="version-text">v{{ versionStore.currentVersion }}</span>
-              <v-icon size="small" class="ms-1">mdi-chevron-down</v-icon>
-            </v-btn>
-          </template>
-          <v-list density="compact" min-width="200">
-            <v-list-item @click="versionStore.showChangelog()">
-              <template v-slot:prepend>
-                <v-icon>mdi-update</v-icon>
-              </template>
-              <v-list-item-title>What's New</v-list-item-title>
-              <v-list-item-subtitle>View changelog</v-list-item-subtitle>
-            </v-list-item>
-            <v-list-item>
-              <template v-slot:prepend>
-                <v-icon>mdi-information</v-icon>
-              </template>
-              <v-list-item-title>Version Info</v-list-item-title>
-              <v-list-item-subtitle>Backend: v{{ versionStore.currentVersion }}</v-list-item-subtitle>
-            </v-list-item>
-            <v-divider></v-divider>
-            <v-list-item 
-              v-if="versionStore.changelogDisabled"
-              @click="versionStore.enableChangelog()"
-            >
-              <template v-slot:prepend>
-                <v-icon>mdi-bell</v-icon>
-              </template>
-              <v-list-item-title>Enable Update Notifications</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
       </div>
     </v-app-bar>
 
@@ -238,7 +273,6 @@ type BirdSuggestion = SuggestionBird;
 const router = useRouter();
 const versionStore = useVersionStore();
 const authStore = useAuthStore();
-const version = ref<string>();
 const searchQuery = ref('');
 const suggestions = ref<BirdSuggestion[]>([]);
 const isLoading = ref(false);
@@ -337,15 +371,6 @@ const navigateToAdmin = () => {
 };
 
 onMounted(async () => {
-  try {
-    const response = await api.get('/');
-    version.value = response.data.version || 'local';
-  } catch (error) {
-    console.error('Failed to fetch version:', error);
-    version.value = 'local';
-  }
-  
-  // Initialize stores
   await Promise.all([
     versionStore.initialize(),
     authStore.initialize()
@@ -376,15 +401,6 @@ onMounted(async () => {
   font-size: 1.5rem;
   font-weight: 600;
   letter-spacing: -0.025em;
-}
-
-.version-text {
-  font-size: 0.75rem;
-  opacity: 0.7;
-  margin-left: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  padding: 2px 6px;
-  border-radius: 4px;
 }
 
 /* Navigation Buttons */

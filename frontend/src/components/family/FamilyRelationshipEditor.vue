@@ -10,28 +10,74 @@
           <v-row>
             <!-- Bird 1 -->
             <v-col cols="12" md="6">
-              <v-text-field
-                v-model="localRelationship.bird1_ring"
+              <v-combobox
+                :model-value="localRelationship.bird1_ring"
+                @update:model-value="onBird1Update"
+                :items="bird1Suggestions"
+                :loading="bird1Loading"
+                item-title="ring"
+                item-value="ring"
                 label="Vogel 1 Ring *"
                 :rules="[rules.required]"
                 variant="outlined"
                 :readonly="isEditing"
                 :hint="isEditing ? 'Kann bei bestehender Beziehung nicht geändert werden' : ''"
                 persistent-hint
-              ></v-text-field>
+                autocomplete="off"
+                :filter="() => true"
+                @update:search="searchBird1"
+              >
+                <template v-slot:item="{ item, props }">
+                  <v-list-item v-bind="props" :title="undefined">
+                    <div class="d-flex align-center">
+                      <v-icon icon="mdi-bird" color="primary" size="small" class="mr-2"></v-icon>
+                      <div>
+                        <div><strong>{{ item.raw.ring }}</strong> - {{ item.raw.species || 'Unbekannt' }}</div>
+                        <div class="text-caption text-medium-emphasis">
+                          {{ item.raw.sighting_count }} Sichtung{{ item.raw.sighting_count !== 1 ? 'en' : '' }}
+                          <span v-if="item.raw.last_seen"> | Letzte: {{ formatDate(item.raw.last_seen) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </v-list-item>
+                </template>
+              </v-combobox>
             </v-col>
 
             <!-- Bird 2 -->
             <v-col cols="12" md="6">
-              <v-text-field
-                v-model="localRelationship.bird2_ring"
+              <v-combobox
+                :model-value="localRelationship.bird2_ring"
+                @update:model-value="onBird2Update"
+                :items="bird2Suggestions"
+                :loading="bird2Loading"
+                item-title="ring"
+                item-value="ring"
                 label="Vogel 2 Ring *"
                 :rules="[rules.required]"
                 variant="outlined"
                 :readonly="isEditing"
                 :hint="isEditing ? 'Kann bei bestehender Beziehung nicht geändert werden' : ''"
                 persistent-hint
-              ></v-text-field>
+                autocomplete="off"
+                :filter="() => true"
+                @update:search="searchBird2"
+              >
+                <template v-slot:item="{ item, props }">
+                  <v-list-item v-bind="props" :title="undefined">
+                    <div class="d-flex align-center">
+                      <v-icon icon="mdi-bird" color="primary" size="small" class="mr-2"></v-icon>
+                      <div>
+                        <div><strong>{{ item.raw.ring }}</strong> - {{ item.raw.species || 'Unbekannt' }}</div>
+                        <div class="text-caption text-medium-emphasis">
+                          {{ item.raw.sighting_count }} Sichtung{{ item.raw.sighting_count !== 1 ? 'en' : '' }}
+                          <span v-if="item.raw.last_seen"> | Letzte: {{ formatDate(item.raw.last_seen) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </v-list-item>
+                </template>
+              </v-combobox>
             </v-col>
 
             <!-- Relationship Type -->
@@ -116,11 +162,20 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
-import { 
-  createRelationship, 
-  updateRelationship, 
-  createSymmetricRelationship 
+import debounce from 'lodash/debounce';
+import { api } from '@/api';
+import {
+  createRelationship,
+  updateRelationship,
+  createSymmetricRelationship
 } from '@/api';
+
+interface BirdSuggestion {
+  ring: string;
+  species: string | null;
+  sighting_count: number;
+  last_seen: string | null;
+}
 
 interface Relationship {
   id?: string;
@@ -159,8 +214,68 @@ const defaultRelationship: Relationship = {
 
 const localRelationship = ref<Relationship>({ ...defaultRelationship });
 
+// Ring autocomplete
+const bird1Suggestions = ref<BirdSuggestion[]>([]);
+const bird2Suggestions = ref<BirdSuggestion[]>([]);
+const bird1Loading = ref(false);
+const bird2Loading = ref(false);
+
+const searchBird1 = debounce(async (query: string) => {
+  if (!query || query.length < 2) {
+    bird1Suggestions.value = [];
+    return;
+  }
+  bird1Loading.value = true;
+  try {
+    const response = await api.get<BirdSuggestion[]>(`/birds/suggestions/${query}`);
+    bird1Suggestions.value = response.data.slice(0, 30);
+  } catch (error) {
+    console.error('Error fetching bird suggestions:', error);
+    bird1Suggestions.value = [];
+  } finally {
+    bird1Loading.value = false;
+  }
+}, 300);
+
+const searchBird2 = debounce(async (query: string) => {
+  if (!query || query.length < 2) {
+    bird2Suggestions.value = [];
+    return;
+  }
+  bird2Loading.value = true;
+  try {
+    const response = await api.get<BirdSuggestion[]>(`/birds/suggestions/${query}`);
+    bird2Suggestions.value = response.data.slice(0, 30);
+  } catch (error) {
+    console.error('Error fetching bird suggestions:', error);
+    bird2Suggestions.value = [];
+  } finally {
+    bird2Loading.value = false;
+  }
+}, 300);
+
+const formatDate = (date: string | null) => {
+  if (!date) return '';
+  return new Date(date).toLocaleDateString('de-DE');
+};
+
+// Normalize ring value (handle both string and object from combobox)
+const normalizeRing = (value: string | BirdSuggestion | null): string => {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  return value.ring || '';
+};
+
+const onBird1Update = (value: string | BirdSuggestion | null) => {
+  localRelationship.value.bird1_ring = normalizeRing(value);
+};
+
+const onBird2Update = (value: string | BirdSuggestion | null) => {
+  localRelationship.value.bird2_ring = normalizeRing(value);
+};
+
 const relationshipTypeOptions = [
-  { value: 'breeding_partner', title: 'Brutpartner' },
+  { value: 'breeding_partner', title: 'Partner' },
   { value: 'parent_of', title: 'Elternteil von' },
   { value: 'child_of', title: 'Kind von' },
   { value: 'sibling_of', title: 'Geschwister von' }
@@ -286,14 +401,9 @@ watch(dialog, (newValue) => {
 </script>
 
 <style scoped>
-:deep(.v-text-field .v-field__input) {
-  font-size: 0.875rem;
-}
-
-:deep(.v-select .v-field__input) {
-  font-size: 0.875rem;
-}
-
+:deep(.v-text-field .v-field__input),
+:deep(.v-select .v-field__input),
+:deep(.v-combobox .v-field__input),
 :deep(.v-textarea .v-field__input) {
   font-size: 0.875rem;
 }

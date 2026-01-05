@@ -34,25 +34,37 @@ A comprehensive bird tracking and sighting management system for ornithologists 
 
 ## Getting Started
 
-1. **Clone and setup environment**:
+```bash
+./dev.sh
+```
 
-   ```bash
-   git clone <repository>
-   cd vogelring
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
+This single command:
+- Creates `.env` from template (if missing)
+- Installs frontend dependencies and builds
+- Starts PostgreSQL, API, and Nginx via Docker
 
-2. **Build and start services**:
+**Access:** http://localhost (API at port 8000)
 
-   ```bash
-   docker-compose up --build
-   ```
+**Useful commands:**
+```bash
+docker-compose logs -f    # View logs
+docker-compose down       # Stop services
+docker-compose down -v    # Stop and remove data
+```
 
-3. **Access the application**:
-   - Frontend: http://localhost
-   - API: http://localhost/api
-   - Health check: http://localhost/health
+### Frontend Development (Hot Reload)
+
+For active frontend work:
+
+```bash
+# Terminal 1: Backend only
+docker-compose up postgres api
+
+# Terminal 2: Frontend dev server
+cd frontend && npm run dev
+```
+
+Frontend dev server runs at http://localhost:5173 with hot reload.
 
 ## Architecture
 

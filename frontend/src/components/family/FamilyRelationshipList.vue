@@ -180,7 +180,7 @@ const getEmptyMessage = () => {
   // Try to determine the type based on the first relationship
   const firstType = props.relationships[0]?.relationship_type;
   switch (firstType) {
-    case 'breeding_partner': return 'Brutpartner';
+    case 'breeding_partner': return 'Partner';
     case 'parent_of': return 'Nachkommen';
     case 'child_of': return 'Eltern';
     case 'sibling_of': return 'Geschwister';

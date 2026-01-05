@@ -36,7 +36,7 @@ export const useRelationshipsStore = defineStore('relationships', () => {
     const active = [];
     if (filters.value.relationship_type) {
       const labels: Record<string, string> = {
-        breeding_partner: 'Brutpartner',
+        breeding_partner: 'Partner',
         parent_of: 'Elternteil von',
         child_of: 'Kind von',
         sibling_of: 'Geschwister von',
