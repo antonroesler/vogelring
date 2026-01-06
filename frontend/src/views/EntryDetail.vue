@@ -1,16 +1,15 @@
 <template>
   <div>
     <v-row>
-      <v-col cols="12" class="d-flex align-center">
+      <v-col cols="12" class="d-flex align-center flex-wrap ga-2">
         <v-btn
           icon="mdi-arrow-left"
           variant="text"
           @click="handleBack"
-          class="me-2"
         ></v-btn>
-        <h1 class="text-h4">Eintrag Details</h1>
-        <v-spacer></v-spacer>
-        <v-dialog v-model="showDeleteDialog" max-width="400">
+        <h1 class="text-h5 text-sm-h4 flex-grow-1">Eintrag Details</h1>
+        <div class="d-flex ga-1">
+        <v-dialog v-model="showDeleteDialog" max-width="400" width="90%">
           <v-card>
             <v-card-title class="text-h5">
               Eintrag löschen
@@ -43,7 +42,6 @@
         <v-btn
           color="error"
           variant="text"
-          class="ml-2"
           @click="showDeleteDialog = true"
         >
           <v-icon icon="mdi-delete" color="error"></v-icon>
@@ -51,6 +49,7 @@
             Eintrag löschen
           </v-tooltip>
         </v-btn>
+        </div>
       </v-col>
     </v-row>
 

@@ -235,7 +235,7 @@
     />
 
     <!-- Delete Confirmation Dialog -->
-    <v-dialog v-model="showDeleteDialog" max-width="500">
+    <v-dialog v-model="showDeleteDialog" max-width="500" width="90%">
       <v-card>
         <v-card-title>Beziehung löschen</v-card-title>
         <v-card-text>

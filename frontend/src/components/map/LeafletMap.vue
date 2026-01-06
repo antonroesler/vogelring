@@ -189,9 +189,21 @@ watch(() => props.radius, (newRadius) => {
 
 <style scoped>
 .map-container {
-  height: 400px;
+  height: 250px;
   width: 100%;
   position: relative;
   z-index: 0;
+}
+
+@media (min-width: 600px) {
+  .map-container {
+    height: 350px;
+  }
+}
+
+@media (min-width: 960px) {
+  .map-container {
+    height: 400px;
+  }
 }
 </style>

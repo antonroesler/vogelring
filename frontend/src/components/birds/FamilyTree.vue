@@ -108,7 +108,7 @@
     </v-card-text>
 
     <!-- Add Family Member Dialog -->
-    <v-dialog v-model="showAddDialog" max-width="500">
+    <v-dialog v-model="showAddDialog" max-width="500" width="90%">
       <v-card>
         <v-card-title>Familienmitglied hinzufügen</v-card-title>
         <v-card-text>

@@ -51,6 +51,7 @@
     </v-menu>
   </div>
 
+  <div class="table-scroll-wrapper">
   <v-data-table
     :headers="headers"
     :items="sightings"
@@ -160,9 +161,10 @@
       </tr>
     </template>
   </v-data-table>
+  </div>
 
   <!-- Delete Confirmation Dialog -->
-  <v-dialog v-model="showDeleteDialog" max-width="400">
+  <v-dialog v-model="showDeleteDialog" max-width="400" width="90%">
     <v-card class="pa-4">
       <v-card-title class="text-h6 px-0">Sichtung löschen</v-card-title>
       <v-card-text class="px-0">
@@ -648,5 +650,22 @@ const toggleSelected = (key: ColumnKey, val: boolean) => {
 .fade-expand-enter-to, .fade-expand-leave-from {
   opacity: 1;
   max-height: 400px;
+}
+
+/* Table scroll wrapper for mobile */
+.table-scroll-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 600px) {
+  .table-scroll-wrapper {
+    margin: 0 -12px;
+  }
+
+  .config-list {
+    max-height: 300px;
+    overflow-y: auto;
+  }
 }
 </style>

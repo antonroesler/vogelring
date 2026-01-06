@@ -19,34 +19,36 @@
       <!-- New Header Section -->
       <v-card class="mb-4">
         <v-card-text>
-          <div class="d-flex align-center justify-space-between mb-2">
-            <div class="d-flex align-center">
-              <h2 class="text-h5 font-weight-bold mb-0">
+          <div class="bird-header-content">
+            <div class="bird-header-info">
+              <h2 class="text-h5 text-sm-h4 font-weight-bold mb-2 mb-sm-0">
                 {{ bird?.species || 'Loading...' }}
               </h2>
-              <v-chip
-                class="ml-4 ring-chip"
-                color="primary"
-                size="large"
-              >
-                <span class="font-weight-regular">Ring:</span>
-                <span class="ring-number">{{ bird?.ring }}</span>
-              </v-chip>
-              <v-chip
-                v-if="isBirdDead"
-                class="ml-2"
-                color="error"
-                size="large"
-                variant="elevated"
-              >
-                <v-icon icon="mdi-close-circle" size="small" class="mr-1"></v-icon>
-                Totfund
-              </v-chip>
+              <div class="bird-header-chips">
+                <v-chip
+                  class="ring-chip"
+                  color="primary"
+                  size="large"
+                >
+                  <span class="font-weight-regular">Ring:</span>
+                  <span class="ring-number">{{ bird?.ring }}</span>
+                </v-chip>
+                <v-chip
+                  v-if="isBirdDead"
+                  color="error"
+                  size="large"
+                  variant="elevated"
+                >
+                  <v-icon icon="mdi-close-circle" size="small" class="mr-1"></v-icon>
+                  Totfund
+                </v-chip>
+              </div>
             </div>
             <v-btn
               color="primary"
               :to="`/birds/${bird?.ring}/environment-analysis`"
               :disabled="!bird?.ring"
+              class="bird-header-btn"
             >
               Umfeld
             </v-btn>
@@ -129,7 +131,8 @@
         <v-col cols="12">
           <v-card>
             <v-card-title>Sichtungen</v-card-title>
-            <v-card-text>
+            <v-card-text class="pa-0 pa-sm-4">
+              <div class="table-scroll-wrapper">
               <v-table>
                 <thead>
                   <tr>
@@ -176,6 +179,7 @@
                   </tr>
                 </tbody>
               </v-table>
+              </div>
             </v-card-text>
           </v-card>
         </v-col>
@@ -481,5 +485,64 @@ const reporterChartOption = computed(() => {
   font-weight: 700;
   font-family: monospace;
   margin-left: 4px;
+}
+
+/* Header layout */
+.bird-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.bird-header-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.bird-header-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Table scroll wrapper */
+.table-scroll-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Mobile styles */
+@media (max-width: 600px) {
+  .chart {
+    height: 200px;
+  }
+
+  .bird-header-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .bird-header-info {
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+  }
+
+  .bird-header-btn {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  .ring-chip {
+    font-size: 0.95rem !important;
+  }
+
+  .table-scroll-wrapper {
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
 }
 </style>

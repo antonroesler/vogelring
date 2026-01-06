@@ -1,7 +1,19 @@
 <template>
   <v-card class="mb-6">
-    <v-card-title class="bg-primary text-white px-6 py-4 d-flex align-center">
+    <v-card-title class="bg-primary text-white px-4 px-sm-6 py-3 py-sm-4 d-flex align-center">
+      <v-btn
+        icon
+        variant="text"
+        size="small"
+        class="d-sm-none me-2"
+        @click="showFilters = !showFilters"
+      >
+        <v-icon :icon="showFilters ? 'mdi-chevron-up' : 'mdi-chevron-down'"></v-icon>
+      </v-btn>
       Filter
+      <v-chip v-if="activeFilters.length > 0" size="small" class="ml-2" color="white" variant="outlined">
+        {{ activeFilters.length }}
+      </v-chip>
       <v-spacer></v-spacer>
       <v-menu>
         <template v-slot:activator="{ props }">
@@ -30,7 +42,7 @@
       </v-menu>
     </v-card-title>
 
-    <v-card-text class="px-6 py-4">
+    <v-card-text v-show="showFilters" class="px-4 px-sm-6 py-4">
       <v-row v-if="activeFilters.length > 0">
         <v-col 
           v-for="filterId in activeFilters" 
@@ -164,6 +176,9 @@ import type { BirdStatus } from '@/types';
 import { useSightingsStore } from '@/stores/sightings';
 
 const store = useSightingsStore();
+
+// Mobile filter collapse state (default open)
+const showFilters = ref(true);
 
 const emit = defineEmits<{
   'update:filters': [filters: Filters];

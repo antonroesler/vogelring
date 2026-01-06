@@ -1,5 +1,5 @@
 <template>
-  <v-container>
+  <div>
     <v-tabs v-model="activeTab" color="primary">
       <v-tab value="search">Beringung suchen</v-tab>
       <v-tab value="add">Neue Beringung</v-tab>
@@ -342,7 +342,7 @@
     </v-window>
 
     <!-- Delete Confirmation Dialog -->
-    <v-dialog v-model="showDeleteDialog" max-width="400">
+    <v-dialog v-model="showDeleteDialog" max-width="400" width="90%">
       <v-card>
         <v-card-title>Beringung löschen</v-card-title>
         <v-card-text>
@@ -373,7 +373,7 @@
         </v-btn>
       </template>
     </v-snackbar>
-  </v-container>
+  </div>
 </template>
 
 <script setup lang="ts">

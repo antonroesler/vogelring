@@ -7,7 +7,7 @@
     border="b"
     elevation="0"
   >
-    <v-container class="d-flex align-center px-6">
+    <v-container class="d-flex align-center px-3 px-sm-4 px-md-6">
       <div class="nav-items">
         <v-btn 
           :to="{ path: '/new-entry' }"
@@ -149,18 +149,27 @@ const isActive = (path: string) => {
 
 @media (max-width: 600px) {
   .nav-items {
-    flex-wrap: wrap;
-    gap: 2px;
+    gap: 4px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
   }
-  
+
+  .nav-items::-webkit-scrollbar {
+    display: none;
+  }
+
   .secondary-nav-btn {
-    padding: 0 8px !important;
+    padding: 0 10px !important;
     font-size: 0.8rem !important;
     height: 36px !important;
+    flex-shrink: 0;
   }
-  
+
   .secondary-nav-btn .v-icon {
-    display: none;
+    font-size: 16px !important;
+    margin-right: 4px !important;
   }
 }
 </style>
