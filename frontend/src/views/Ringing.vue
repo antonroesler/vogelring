@@ -342,7 +342,7 @@
     </v-window>
 
     <!-- Delete Confirmation Dialog -->
-    <v-dialog v-model="showDeleteDialog" max-width="400">
+    <v-dialog v-model="showDeleteDialog" max-width="400" width="90%">
       <v-card>
         <v-card-title>Beringung löschen</v-card-title>
         <v-card-text>

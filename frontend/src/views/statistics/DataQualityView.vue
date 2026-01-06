@@ -160,7 +160,7 @@
       </v-row>
 
       <!-- Issue Details Dialog -->
-      <v-dialog v-model="showIssueDialog" max-width="1200">
+      <v-dialog v-model="showIssueDialog" max-width="1200" width="95%">
         <v-card>
           <v-card-title class="d-flex align-center">
             <v-icon :icon="selectedIssue?.icon" class="me-2"></v-icon>

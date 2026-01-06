@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="dialog" max-width="600" persistent>
+  <v-dialog v-model="dialog" max-width="600" width="95%" persistent>
     <v-card>
       <v-card-title>Familie erstellen - Bestätigung</v-card-title>
       <v-card-text>
