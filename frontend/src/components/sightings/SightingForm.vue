@@ -20,7 +20,7 @@
     </v-row>
     <v-row dense>
       <!-- First row -->
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-text-field
           v-model="localSighting.date"
           label="Datum"
@@ -28,7 +28,7 @@
           density="comfortable"
         ></v-text-field>
       </v-col>
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-autocomplete
           v-if="showPlaceSuggestions"
           v-model="localSighting.place"
@@ -50,7 +50,7 @@
           density="comfortable"
         ></v-text-field>
       </v-col>
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-autocomplete
           v-model="localSighting.habitat"
           :items="filteredHabitats"
@@ -69,17 +69,17 @@
 
     <!-- Additional fields -->
     <v-row dense v-if="showAdditionalFields">
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <!-- Empty column -->
       </v-col>
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-text-field
           v-model="localSighting.area"
           label="Kleinfläche"
           density="comfortable"
         ></v-text-field>
       </v-col>
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-autocomplete
           v-model="localSighting.field_fruit"
           :items="filteredFieldFruits"
@@ -99,7 +99,7 @@
     <!-- Group 2: Bird Identification -->
     <v-card-subtitle class="px-0 mt-4">Vogelidentifikation</v-card-subtitle>
     <v-row dense>
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-text-field
           v-model="localSighting.reading"
           label="Ablesung"
@@ -113,14 +113,14 @@
           </template>
         </v-text-field>
       </v-col>
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-text-field
           v-model="localSighting.ring"
           label="Ring"
           density="comfortable"
         ></v-text-field>
       </v-col>
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-autocomplete
           v-model="localSighting.species"
           :items="filteredSpecies"
@@ -141,7 +141,7 @@
     <v-card-subtitle class="px-0 mt-4">Zusätzliche Informationen</v-card-subtitle>
     <v-row dense>
       <!-- First row -->
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-text-field
           v-model="localSighting.partner"
           label="Partner"
@@ -155,7 +155,7 @@
           </template>
         </v-text-field>
       </v-col>
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-text-field
           v-model="smallGroupSizeInput"
           label="Kleingruppe"
@@ -164,7 +164,7 @@
           @input="handleNumericInput('small_group_size', $event)"
         ></v-text-field>
       </v-col>
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-text-field
           v-model="largeGroupSizeInput"
           label="Großgruppe"
@@ -175,7 +175,7 @@
       </v-col>
 
       <!-- Add new row for breed_size and family_size -->
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-text-field
           v-model="breedSizeInput"
           label="Nicht flügge Junge"
@@ -184,7 +184,7 @@
           @input="handleNumericInput('breed_size', $event)"
         ></v-text-field>
       </v-col>
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-text-field
           v-model="familySizeInput"
           label="Flügge Junge"
@@ -193,7 +193,7 @@
           @input="handleNumericInput('family_size', $event)"
         ></v-text-field>
       </v-col>
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-select
           v-model="localSighting.pair"
           :items="pairItems"
@@ -204,7 +204,7 @@
       </v-col>
 
       <!-- Second row -->
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-select
           v-model="localSighting.status"
           :items="statusItems"
@@ -213,7 +213,7 @@
           clearable
         ></v-select>
       </v-col>
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-select
           v-model="localSighting.age"
           :items="ageItems"
@@ -222,7 +222,7 @@
           clearable
         ></v-select>
       </v-col>
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-select
           v-model="localSighting.sex"
           :items="sexItems"
@@ -233,7 +233,7 @@
       </v-col>
 
       <!-- Third row -->
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-autocomplete
           v-model="localSighting.melder"
           :items="filteredMelders"
@@ -248,7 +248,7 @@
           density="comfortable"
         ></v-autocomplete>
       </v-col>
-      <v-col cols="12" sm="4" md="4">
+      <v-col cols="12" sm="6" md="4">
         <v-checkbox
           v-model="localSighting.melded"
           label="Gemeldet"
@@ -976,5 +976,24 @@ const longitude = computed({
   opacity: 1;
   background: transparent;
   transform: translateY(-1px);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 600px) {
+  .submit-btn {
+    width: 100% !important;
+    min-height: 48px !important;
+    flex: 1 !important;
+  }
+
+  :deep(.v-card-actions) {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    flex-wrap: wrap !important;
+  }
+
+  :deep(.v-card-actions > .v-spacer) {
+    display: none !important;
+  }
 }
 </style>

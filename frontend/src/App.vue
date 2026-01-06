@@ -4,18 +4,18 @@
       <!-- Left section -->
       <v-app-bar-title class="app-title">
         <div class="d-flex align-center" style="cursor: pointer" @click="navigateToHome">
-          <v-icon icon="mdi-bird" size="32" class="logo-icon me-3"></v-icon>
-          <span class="title-text">Vogelring</span>
+          <v-icon icon="mdi-bird" size="32" class="logo-icon"></v-icon>
+          <span class="title-text d-none d-sm-inline ms-3">Vogelring</span>
         </div>
       </v-app-bar-title>
 
-      <!-- Version/Changelog Menu -->
+      <!-- Version/Changelog Menu (hidden on mobile) -->
       <v-menu offset-y>
         <template v-slot:activator="{ props }">
           <v-btn
             v-bind="props"
             variant="text"
-            class="nav-btn"
+            class="nav-btn d-none d-sm-flex"
             size="small"
           >
             <v-icon size="small" class="me-1">mdi-information-outline</v-icon>
@@ -137,8 +137,28 @@
 
       <v-spacer></v-spacer>
 
-      <!-- Right section -->
-      <div class="navigation-buttons pe-4">
+      <!-- Mobile buttons (visible only on mobile) -->
+      <div class="mobile-buttons d-flex d-sm-none">
+        <v-btn
+          variant="text"
+          class="nav-btn"
+          size="small"
+          @click="showMobileSearch = true"
+        >
+          <v-icon>mdi-magnify</v-icon>
+        </v-btn>
+        <v-btn
+          variant="text"
+          class="nav-btn"
+          size="small"
+          @click="showMobileInfo = true"
+        >
+          <v-icon>mdi-menu</v-icon>
+        </v-btn>
+      </div>
+
+      <!-- Right section (hidden on mobile) -->
+      <div class="navigation-buttons pe-4 d-none d-sm-flex">
         <!-- Sister Sites Menu -->
         <v-menu offset-y>
           <template v-slot:activator="{ props }">
@@ -238,7 +258,7 @@
       <!-- Secondary Navigation -->
       <SecondaryNavigation />
       
-      <v-container class="px-6 pt-6">
+      <v-container fluid class="px-3 px-sm-4 px-md-6 pt-4 pt-md-6">
         <router-view :key="$route.fullPath"></router-view>
       </v-container>
     </v-main>
@@ -251,6 +271,155 @@
       @dismiss="versionStore.dismissChangelog"
       @mark-as-read="versionStore.markVersionAsSeen"
     />
+
+    <!-- Mobile Search Dialog -->
+    <v-dialog
+      v-model="showMobileSearch"
+      fullscreen
+      transition="dialog-bottom-transition"
+    >
+      <v-card class="mobile-search-card">
+        <v-toolbar color="primary" density="compact">
+          <v-btn icon @click="closeMobileSearch">
+            <v-icon>mdi-arrow-left</v-icon>
+          </v-btn>
+          <v-toolbar-title>Ring suchen</v-toolbar-title>
+        </v-toolbar>
+        <v-card-text class="pa-4">
+          <v-autocomplete
+            v-model="selectedBird"
+            v-model:search="mobileSearchQuery"
+            :items="sortedSuggestions"
+            :loading="isLoading"
+            color="primary"
+            hide-details
+            placeholder="Ring eingeben..."
+            item-title="ring"
+            item-value="ring"
+            return-object
+            density="comfortable"
+            variant="outlined"
+            autofocus
+            @update:search="debouncedSearch"
+            @update:model-value="onMobileBirdSelected"
+            :filter="() => true"
+            :custom-filter="() => true"
+          >
+            <template v-slot:item="{ item }">
+              <v-list-item
+                :title="item.raw.ring"
+                :subtitle="`${item.raw.species} - ${item.raw.sighting_count} Sichtung${item.raw.sighting_count !== 1 ? 'en' : ''}`"
+                @click="navigateFromMobileSearch(item.raw)"
+              >
+                <template v-slot:prepend>
+                  <v-icon icon="mdi-bird" color="primary"></v-icon>
+                </template>
+              </v-list-item>
+            </template>
+
+            <template v-slot:no-data>
+              <div class="pa-4 text-center">
+                <div v-if="isLoading" class="d-flex align-center justify-center">
+                  <v-progress-circular
+                    indeterminate
+                    size="24"
+                    width="2"
+                    color="primary"
+                    class="mr-2"
+                  ></v-progress-circular>
+                  <span>Suche läuft...</span>
+                </div>
+                <div v-else-if="noResults && mobileSearchQuery.length >= 2">
+                  <v-icon icon="mdi-alert-circle-outline" color="warning" class="mr-1"></v-icon>
+                  Keine Ergebnisse gefunden
+                </div>
+                <div v-else-if="mobileSearchQuery.length < 2" class="text-medium-emphasis">
+                  Mindestens 2 Zeichen eingeben
+                </div>
+              </div>
+            </template>
+          </v-autocomplete>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
+    <!-- Mobile Info Bottom Sheet -->
+    <v-bottom-sheet v-model="showMobileInfo">
+      <v-card class="mobile-info-sheet">
+        <v-card-title class="d-flex align-center py-3 px-4">
+          <v-icon icon="mdi-bird" color="primary" class="me-2"></v-icon>
+          Vogelring
+          <v-spacer></v-spacer>
+          <v-chip size="small" color="primary" variant="tonal">
+            v{{ versionStore.currentVersion }}
+          </v-chip>
+        </v-card-title>
+
+        <v-divider></v-divider>
+
+        <v-list density="comfortable">
+          <!-- User Info -->
+          <v-list-subheader>Benutzer</v-list-subheader>
+          <v-list-item>
+            <template v-slot:prepend>
+              <v-icon>mdi-account-circle</v-icon>
+            </template>
+            <v-list-item-title>{{ authStore.displayName }}</v-list-item-title>
+            <v-list-item-subtitle>{{ authStore.userEmail }}</v-list-item-subtitle>
+          </v-list-item>
+          <v-list-item v-if="authStore.organizationName">
+            <template v-slot:prepend>
+              <v-icon>mdi-domain</v-icon>
+            </template>
+            <v-list-item-title>{{ authStore.organizationName }}</v-list-item-title>
+            <v-list-item-subtitle>Organisation</v-list-item-subtitle>
+          </v-list-item>
+
+          <v-divider class="my-2"></v-divider>
+
+          <!-- Apps -->
+          <v-list-subheader>Apps</v-list-subheader>
+          <v-list-item href="https://chat.vogelring.com" target="_blank" @click="showMobileInfo = false">
+            <template v-slot:prepend>
+              <v-icon>mdi-chat</v-icon>
+            </template>
+            <v-list-item-title>Chat</v-list-item-title>
+            <v-list-item-subtitle>AI Assistent</v-list-item-subtitle>
+            <template v-slot:append>
+              <v-icon size="small">mdi-open-in-new</v-icon>
+            </template>
+          </v-list-item>
+          <v-list-item href="https://analytics.vogelring.com" target="_blank" @click="showMobileInfo = false">
+            <template v-slot:prepend>
+              <v-icon>mdi-chart-line</v-icon>
+            </template>
+            <v-list-item-title>Analytics</v-list-item-title>
+            <v-list-item-subtitle>Erweiterte Analysen</v-list-item-subtitle>
+            <template v-slot:append>
+              <v-icon size="small">mdi-open-in-new</v-icon>
+            </template>
+          </v-list-item>
+
+          <v-divider class="my-2"></v-divider>
+
+          <!-- Version & Info -->
+          <v-list-subheader>Info</v-list-subheader>
+          <v-list-item @click="versionStore.showChangelog(); showMobileInfo = false">
+            <template v-slot:prepend>
+              <v-icon>mdi-update</v-icon>
+            </template>
+            <v-list-item-title>Änderungsprotokoll</v-list-item-title>
+            <v-list-item-subtitle>Neue Funktionen ansehen</v-list-item-subtitle>
+          </v-list-item>
+        </v-list>
+
+        <v-card-actions class="pa-4">
+          <v-btn block variant="tonal" @click="showMobileInfo = false">
+            Schließen
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-bottom-sheet>
 
   </v-app>
 </template>
@@ -280,6 +449,13 @@ const selectedBird = ref<BirdSuggestion | null>(null);
 const totalResults = ref(0);
 const noResults = ref(false);
 const latestRequestId = ref(0); // To track the latest request
+
+// Mobile search state
+const showMobileSearch = ref(false);
+const mobileSearchQuery = ref('');
+
+// Mobile info sheet state
+const showMobileInfo = ref(false);
 
 // Updated computed property - no sorting needed, API provides sorted results
 const sortedSuggestions = computed(() => {
@@ -357,6 +533,24 @@ const navigateToBird = (bird: BirdSuggestion) => {
   router.push(`/birds/${bird.ring}`);
   selectedBird.value = null;
   searchQuery.value = '';
+};
+
+// Mobile search functions
+const closeMobileSearch = () => {
+  showMobileSearch.value = false;
+  mobileSearchQuery.value = '';
+  suggestions.value = [];
+};
+
+const onMobileBirdSelected = (bird: BirdSuggestion | null) => {
+  if (bird) {
+    navigateFromMobileSearch(bird);
+  }
+};
+
+const navigateFromMobileSearch = (bird: BirdSuggestion) => {
+  router.push(`/birds/${bird.ring}`);
+  closeMobileSearch();
 };
 
 // Navigate to home
@@ -655,18 +849,31 @@ onMounted(async () => {
   background: linear-gradient(135deg, rgba(0, 67, 108, 0.05) 0%, rgba(34, 128, 150, 0.05) 100%) !important;
 }
 
+/* Mobile search dialog */
+.mobile-search-card {
+  background: #fff;
+}
+
+.mobile-search-card .v-toolbar {
+  background: linear-gradient(135deg, #00436C 0%, #228096 100%) !important;
+}
+
+/* Mobile info bottom sheet */
+.mobile-info-sheet {
+  border-radius: 16px 16px 0 0 !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 960px) {
   .search-container {
     max-width: 300px;
     margin: 0 16px;
   }
-  
+
   .navigation-buttons {
     gap: 4px;
   }
-  
-  /* Adjust user text width on mobile */
+
   .user-btn .user-text {
     max-width: 80px;
   }
@@ -676,16 +883,7 @@ onMounted(async () => {
   .search-container {
     display: none;
   }
-  
-  .navigation-buttons {
-    gap: 2px;
-  }
-  
-  .nav-btn {
-    font-size: 0.875rem !important;
-    padding: 0 8px !important;
-  }
-  
+
   .user-btn .user-text {
     max-width: 60px;
   }

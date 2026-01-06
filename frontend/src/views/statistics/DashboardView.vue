@@ -1,5 +1,5 @@
 <template>
-  <v-container class="pa-6">
+  <div>
     <div class="text-h4 mb-8 font-weight-light">Dashboard</div>
     
     <!-- Stats Grid -->
@@ -125,7 +125,7 @@
         </v-card>
       </v-col>
     </v-row>
-  </v-container>
+  </div>
 </template>
 
 <script setup lang="ts">

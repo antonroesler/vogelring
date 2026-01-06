@@ -1,5 +1,5 @@
 <template>
-  <v-container>
+  <div>
     <v-tabs v-model="activeTab" color="primary">
       <v-tab value="search">Beringung suchen</v-tab>
       <v-tab value="add">Neue Beringung</v-tab>
@@ -373,7 +373,7 @@
         </v-btn>
       </template>
     </v-snackbar>
-  </v-container>
+  </div>
 </template>
 
 <script setup lang="ts">
