@@ -33,19 +33,18 @@
       </v-card-text>
     </v-card>
 
-    <div ref="mapContainer" style="height: 400px;"></div>
-    <div class="map-controls">
-      <v-btn-group density="compact" variant="outlined">
-        <v-btn
-          v-for="(map, key) in baseMaps"
+    <div class="map-wrapper">
+      <div ref="mapContainer" style="height: 400px;"></div>
+      <div class="map-controls">
+        <button
+          v-for="(mapStyle, key) in baseMaps"
           :key="key"
-          :active="currentBaseMap === key"
+          :class="['map-control-btn', { active: currentBaseMap === key }]"
           @click="switchBaseMap(key)"
-          size="small"
         >
-          {{ map.name }}
-        </v-btn>
-      </v-btn-group>
+          {{ mapStyle.name }}
+        </button>
+      </div>
     </div>
     <div class="map-legend">
       <template v-if="timelineMode">
@@ -104,7 +103,7 @@ const props = defineProps<{
 
 const mapContainer = ref<HTMLElement | null>(null);
 const map = ref<L.Map | null>(null);
-const currentBaseMap = ref('osm');
+const currentBaseMap = ref('cartoLight');
 const baseMapLayer = ref<L.TileLayer | null>(null);
 
 const baseMaps = {
@@ -247,7 +246,8 @@ const initMap = () => {
     maxClusterRadius: 30,
     spiderfyOnMaxZoom: true,
     showCoverageOnHover: false,
-    zoomToBoundsOnClick: true
+    zoomToBoundsOnClick: true,
+    disableClusteringAtZoom: 16
   });
 
   map.value.addLayer(markerClusterGroup.value);
@@ -492,14 +492,44 @@ onMounted(() => {
   margin-left: 4px;
 }
 
+.map-wrapper {
+  position: relative;
+}
+
 .map-controls {
   position: absolute;
   top: 10px;
   right: 10px;
   z-index: 1000;
+  display: flex;
   background: white;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
+
+.map-control-btn {
+  padding: 6px 12px;
+  border: none;
+  background: white;
+  color: rgba(0, 0, 0, 0.7);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.map-control-btn:last-child {
+  border-right: none;
+}
+
+.map-control-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.map-control-btn.active {
+  background: rgb(var(--v-theme-primary));
+  color: white;
 }
 
 /* Override marker cluster default styles */

@@ -57,7 +57,19 @@
         </v-btn>
       </v-card-text>
     </v-card>
-    <div ref="mapContainer" style="height: 400px; width: 100%"></div>
+    <div class="map-wrapper">
+      <div ref="mapContainer" style="height: 400px; width: 100%"></div>
+      <div class="map-controls">
+        <button
+          v-for="(mapStyle, key) in baseMaps"
+          :key="key"
+          :class="['map-control-btn', { active: currentBaseMap === key }]"
+          @click="switchBaseMap(key)"
+        >
+          {{ mapStyle.name }}
+        </button>
+      </div>
+    </div>
     <div class="map-legend">
       <div class="legend-item">
         <div class="legend-marker" style="border-color: #FF0000"></div>
@@ -127,6 +139,26 @@ const map = ref<L.Map | null>(null);
 const markerClusterGroup = ref<L.MarkerClusterGroup | null>(null);
 const selectedBirds = ref<SelectedBird[] | null>(null);
 const showOnlyJointSightings = ref(false);
+const currentBaseMap = ref('cartoLight');
+const baseMapLayer = ref<L.TileLayer | null>(null);
+
+const baseMaps = {
+  osm: {
+    name: 'Standard',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '© OpenStreetMap contributors'
+  },
+  cartoLight: {
+    name: 'Hell',
+    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+    attribution: '© OpenStreetMap contributors, © CARTO'
+  },
+  cartoDark: {
+    name: 'Dunkel',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+    attribution: '© OpenStreetMap contributors, © CARTO'
+  }
+};
 
 const formatDate = (date: string) => {
   return format(new Date(date), 'dd.MM.yyyy');
@@ -177,8 +209,10 @@ const createMap = () => {
     fadeAnimation: true
   }).setView(center as [number, number], 13);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap contributors'
+  // Add initial base map
+  const initialMap = baseMaps[currentBaseMap.value];
+  baseMapLayer.value = L.tileLayer(initialMap.url, {
+    attribution: initialMap.attribution
   }).addTo(map.value);
 
   // Initialize marker cluster group
@@ -369,6 +403,21 @@ const getStatusLabel = (status: SeenStatus) => {
       return 'Unbekannt';
   }
 };
+
+const switchBaseMap = (mapKey: string) => {
+  if (!map.value || !baseMapLayer.value) return;
+
+  currentBaseMap.value = mapKey;
+  const newMap = baseMaps[mapKey];
+
+  // Remove current base layer
+  baseMapLayer.value.remove();
+
+  // Add new base layer
+  baseMapLayer.value = L.tileLayer(newMap.url, {
+    attribution: newMap.attribution
+  }).addTo(map.value);
+};
 </script>
 
 <style scoped>
@@ -547,5 +596,45 @@ const getStatusLabel = (status: SeenStatus) => {
 
 :deep(.v-switch--inset.v-switch--selected .v-switch__track) {
   opacity: 0.3;
+}
+
+.map-wrapper {
+  position: relative;
+}
+
+.map-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1000;
+  display: flex;
+  background: white;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  overflow: hidden;
+}
+
+.map-control-btn {
+  padding: 6px 12px;
+  border: none;
+  background: white;
+  color: rgba(0, 0, 0, 0.7);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.map-control-btn:last-child {
+  border-right: none;
+}
+
+.map-control-btn:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.map-control-btn.active {
+  background: rgb(var(--v-theme-primary));
+  color: white;
 }
 </style>
