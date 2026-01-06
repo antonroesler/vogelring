@@ -5,6 +5,14 @@ All notable changes to Vogelring will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0](https://github.com/antonroesler/vogelring/compare/v2.6.0...v2.7.0) (2026-01-06)
+
+
+### ✨ Features
+
+* add ring autocomplete to family editor and improve dev setup ([7b8fc88](https://github.com/antonroesler/vogelring/commit/7b8fc881a3a4f6ea077aa80d7e5ddce55814d76b))
+* mobile responsiveness ([#60](https://github.com/antonroesler/vogelring/issues/60)) ([897aff3](https://github.com/antonroesler/vogelring/commit/897aff35875f7177a146d37ff11d4dcb8249a6f5))
+
 ## [2.6.0](https://github.com/antonroesler/vogelring/compare/v2.5.0...v2.6.0) (2025-11-11)
 
 
