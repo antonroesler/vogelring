@@ -3,6 +3,7 @@
 # Pi Deployment Script
 # Run this on the Raspberry Pi after pushing changes to git
 # Usage: ./scripts/pi-deploy.sh [--prod] [--no-backup] [--force]
+# The confirmation prompt is automatically skipped in non-interactive contexts (e.g., SSH).
 
 set -e
 
@@ -58,8 +59,8 @@ echo -e "   Compose file: ${COMPOSE_FILE}"
 echo -e "   Environment: ${ENV_FILE}"
 echo -e "   Backup before deploy: ${BACKUP_BEFORE_DEPLOY}"
 
-# Confirmation prompt (unless --force is used)
-if [ "$FORCE_DEPLOY" != "true" ]; then
+# Confirmation prompt (unless --force is used or stdin is not a terminal)
+if [ "$FORCE_DEPLOY" != "true" ] && [ -t 0 ]; then
     echo ""
     read -p "Continue with deployment? (y/N): " -n 1 -r
     echo
