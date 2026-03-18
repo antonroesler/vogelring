@@ -53,12 +53,15 @@
       </v-card-text>
       
       <v-card-actions>
-        <v-spacer></v-spacer>
         <v-btn color="grey" variant="text" @click="cancel">
           Zurück zum Bearbeiten
         </v-btn>
-        <v-btn 
-          color="primary" 
+        <v-spacer></v-spacer>
+        <v-btn color="secondary" variant="tonal" @click="skipRelationships">
+          Nur Sichtung speichern
+        </v-btn>
+        <v-btn
+          color="primary"
           @click="confirm"
           :loading="loading"
         >
@@ -85,6 +88,7 @@ const emit = defineEmits<{
   'update:modelValue': [value: boolean];
   'confirm': [];
   'cancel': [];
+  'skip-relationships': [];
 }>();
 
 const dialog = ref(props.modelValue);
@@ -103,6 +107,11 @@ const confirm = () => {
 
 const cancel = () => {
   emit('cancel');
+  dialog.value = false;
+};
+
+const skipRelationships = () => {
+  emit('skip-relationships');
   dialog.value = false;
 };
 </script>

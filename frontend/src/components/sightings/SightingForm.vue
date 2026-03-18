@@ -361,6 +361,7 @@
     :child-sightings="getChildSightings()"
     @confirm="handleFamilyConfirm"
     @cancel="handleFamilyCancel"
+    @skip-relationships="handleFamilySkipRelationships"
   />
 </template>
 
@@ -601,9 +602,7 @@ const handleSubmit = async () => {
 
   // Check if we need family confirmation for new entries
   if (props.isNewEntry) {
-    const hasPartner = cleanedSighting.partner &&
-      cleanedSighting.partner.toLowerCase() !== 'ub' &&
-      cleanedSighting.partner.toLowerCase() !== 'unberingt';
+    const hasPartner = cleanedSighting.partner && !isNonRingPartnerValue(cleanedSighting.partner);
     const hasChildren = children.value.some(child => child.ring);
 
     if (hasPartner || hasChildren) {
@@ -672,10 +671,12 @@ const handleCancelSpeciesDialog = () => {
   pendingSighting.value = null;
 };
 
+/** Returns true for non-ring placeholder values that should not trigger partner entry creation */
+const isNonRingPartnerValue = (partner: string): boolean =>
+  ['ub', 'unberingt', 'beringt'].includes(partner.toLowerCase());
+
 const getPartnerSighting = () => {
-  if (!pendingSighting.value?.partner || 
-      pendingSighting.value.partner.toLowerCase() === 'ub' || 
-      pendingSighting.value.partner.toLowerCase() === 'unberingt') {
+  if (!pendingSighting.value?.partner || isNonRingPartnerValue(pendingSighting.value.partner)) {
     return undefined;
   }
   
@@ -840,6 +841,12 @@ const handleFamilyConfirm = async () => {
 
 const handleFamilyCancel = () => {
   showFamilyConfirmationDialog.value = false;
+};
+
+const handleFamilySkipRelationships = async () => {
+  if (!pendingSighting.value) return;
+  showFamilyConfirmationDialog.value = false;
+  await createSingleSightingAndReset(pendingSighting.value);
 };
 
 const hasCoordinates = computed(() => {
