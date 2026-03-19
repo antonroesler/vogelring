@@ -173,7 +173,8 @@ const uniqueChildrenRelationships = computed(() => {
 const uniqueParentRelationships = computed(() => {
   const unique = new Map();
   parents.value.forEach(rel => {
-    const otherBird = rel.bird2_ring;
+    // parents filter: parent_of where bird2_ring === props.ring → parent is bird1
+    const otherBird = rel.bird1_ring;
     const key = `${otherBird}-${rel.year}`;
     if (!unique.has(key)) {
       unique.set(key, {
