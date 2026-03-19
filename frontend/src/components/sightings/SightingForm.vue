@@ -361,7 +361,6 @@
     :child-sightings="getChildSightings()"
     @confirm="handleFamilyConfirm"
     @cancel="handleFamilyCancel"
-    @skip-relationships="handleFamilySkipRelationships"
   />
 </template>
 
@@ -374,7 +373,7 @@ import BirdSuggestions from '@/components/birds/BirdSuggestions.vue';
 import MissingRingDialog from '@/components/dialogs/MissingRingDialog.vue';
 import MissingSpeciesDialog from '@/components/dialogs/MissingSpeciesDialog.vue';
 import ChildrenForm from '@/components/sightings/ChildrenForm.vue';
-import FamilyConfirmationDialog from '@/components/dialogs/FamilyConfirmationDialog.vue';
+import FamilyConfirmationDialog, { type FamilySelections } from '@/components/dialogs/FamilyConfirmationDialog.vue';
 import { api, createSighting } from '@/api';
 import { cleanSightingData, toNumberOrNull } from '@/utils/formValidation';
 import { createClearedSighting, createDefaultSighting } from '@/utils/fieldClearingUtils';
@@ -716,22 +715,21 @@ const getChildSightings = () => {
     }));
 };
 
-const handleFamilyConfirm = async () => {
+const handleFamilyConfirm = async (selections: FamilySelections) => {
   if (!pendingSighting.value) return;
-  
+
   try {
     const year = new Date(pendingSighting.value.date || new Date()).getFullYear();
-    
-    // Create main sighting
+
+    // Always create main sighting
     const mainSighting = await createSighting(pendingSighting.value);
-    
-    // Create partner sighting and relationship
-    const partnerSighting = getPartnerSighting();
+
+    // Conditionally create partner sighting and relationships
+    const partnerSightingData = getPartnerSighting();
     let createdPartnerSighting = null;
-    if (partnerSighting) {
-      createdPartnerSighting = await createSighting(partnerSighting);
-      
-      // Create breeding partner relationships
+    if (selections.includePartner && partnerSightingData) {
+      createdPartnerSighting = await createSighting(partnerSightingData);
+
       await apiRelationships.createRelationship({
         bird1_ring: mainSighting.ring!,
         bird2_ring: createdPartnerSighting.ring!,
@@ -740,7 +738,7 @@ const handleFamilyConfirm = async () => {
         sighting1_id: mainSighting.id,
         sighting2_id: createdPartnerSighting.id
       });
-      
+
       await apiRelationships.createRelationship({
         bird1_ring: createdPartnerSighting.ring!,
         bird2_ring: mainSighting.ring!,
@@ -750,89 +748,101 @@ const handleFamilyConfirm = async () => {
         sighting2_id: mainSighting.id
       });
     }
-    
-    // Create children sightings and relationships
-    const childSightings = getChildSightings();
-    for (const childSighting of childSightings) {
-      const createdChildSighting = await createSighting(childSighting);
-      
-      // Create parent-child relationships with main bird
+
+    // Conditionally create selected child sightings and their relationships.
+    // Track created child sightings by original index so sibling relationships
+    // use real sighting IDs (fixes pre-existing bug where sibling calls had no sighting_id).
+    const allChildSightings = getChildSightings();
+    const createdChildSightings: Array<{ index: number; sighting: Awaited<ReturnType<typeof createSighting>> }> = [];
+
+    for (const index of selections.includedChildIndices) {
+      const childSightingData = allChildSightings[index];
+      if (!childSightingData) continue;
+      const createdChild = await createSighting(childSightingData);
+      createdChildSightings.push({ index, sighting: createdChild });
+
+      // Parent-child: main ↔ child
       await apiRelationships.createRelationship({
         bird1_ring: mainSighting.ring!,
-        bird2_ring: createdChildSighting.ring!,
+        bird2_ring: createdChild.ring!,
         relationship_type: 'parent_of',
         year,
         sighting1_id: mainSighting.id,
-        sighting2_id: createdChildSighting.id
+        sighting2_id: createdChild.id
       });
-      
+
       await apiRelationships.createRelationship({
-        bird1_ring: createdChildSighting.ring!,
+        bird1_ring: createdChild.ring!,
         bird2_ring: mainSighting.ring!,
         relationship_type: 'child_of',
         year,
-        sighting1_id: createdChildSighting.id,
+        sighting1_id: createdChild.id,
         sighting2_id: mainSighting.id
       });
 
-      // Create parent-child relationships with partner if exists
+      // Parent-child: partner ↔ child (only if partner was also created)
       if (createdPartnerSighting) {
         await apiRelationships.createRelationship({
           bird1_ring: createdPartnerSighting.ring!,
-          bird2_ring: createdChildSighting.ring!,
+          bird2_ring: createdChild.ring!,
           relationship_type: 'parent_of',
           year,
           sighting1_id: createdPartnerSighting.id,
-          sighting2_id: createdChildSighting.id
+          sighting2_id: createdChild.id
         });
-        
+
         await apiRelationships.createRelationship({
-          bird1_ring: createdChildSighting.ring!,
+          bird1_ring: createdChild.ring!,
           bird2_ring: createdPartnerSighting.ring!,
           relationship_type: 'child_of',
           year,
-          sighting1_id: createdChildSighting.id,
+          sighting1_id: createdChild.id,
           sighting2_id: createdPartnerSighting.id
         });
       }
     }
-    
-    // Create sibling relationships between children
-    for (let i = 0; i < childSightings.length; i++) {
-      for (let j = i + 1; j < childSightings.length; j++) {
-        // Create sibling relationships
+
+    // Sibling relationships only between created children, using real sighting IDs
+    for (let i = 0; i < createdChildSightings.length; i++) {
+      for (let j = i + 1; j < createdChildSightings.length; j++) {
+        const a = createdChildSightings[i].sighting;
+        const b = createdChildSightings[j].sighting;
+
         await apiRelationships.createRelationship({
-          bird1_ring: childSightings[i].ring!,
-          bird2_ring: childSightings[j].ring!,
+          bird1_ring: a.ring!,
+          bird2_ring: b.ring!,
           relationship_type: 'sibling_of',
-          year
+          year,
+          sighting1_id: a.id,
+          sighting2_id: b.id
         });
-        
+
         await apiRelationships.createRelationship({
-          bird1_ring: childSightings[j].ring!,
-          bird2_ring: childSightings[i].ring!,
+          bird1_ring: b.ring!,
+          bird2_ring: a.ring!,
           relationship_type: 'sibling_of',
-          year
+          year,
+          sighting1_id: b.id,
+          sighting2_id: a.id
         });
       }
     }
-    
+
     showFamilyConfirmationDialog.value = false;
 
-    // Emit 'created' event - sightings are already saved, parent just shows toast
+    // Emit 'created' event — sightings already saved, parent just shows toast
     emit('created', mainSighting);
 
-    // Reset form using the same field clearing logic as individual sightings
+    // Reset form
     if (props.clearFieldsSettings) {
       localSighting.value = createClearedSighting(pendingSighting.value, props.clearFieldsSettings);
     } else {
-      // Fallback to default sighting if no clear fields settings available
       localSighting.value = createDefaultSighting();
     }
-    
+
     children.value = [];
     pendingSighting.value = null;
-    
+
   } catch (error) {
     console.error('Error creating family sighting:', error);
     throw error;
@@ -843,11 +853,6 @@ const handleFamilyCancel = () => {
   showFamilyConfirmationDialog.value = false;
 };
 
-const handleFamilySkipRelationships = async () => {
-  if (!pendingSighting.value) return;
-  showFamilyConfirmationDialog.value = false;
-  await createSingleSightingAndReset(pendingSighting.value);
-};
 
 const hasCoordinates = computed(() => {
   return typeof latitude.value === 'number' && 
