@@ -231,7 +231,7 @@ export const getSiblings = async (ring: string, year?: number) => {
 export const createRelationship = async (relationship: {
   bird1_ring: string;
   bird2_ring: string;
-  relationship_type: 'breeding_partner' | 'parent_of' | 'child_of' | 'sibling_of';
+  relationship_type: 'breeding_partner' | 'parent_of' | 'sibling_of';
   year: number;
   notes?: string;
   sighting1_id?: string;
@@ -245,20 +245,8 @@ export const createRelationship = async (relationship: {
   return response.data;
 };
 
-export const createSymmetricRelationship = async (relationship: {
-  bird1_ring: string;
-  bird2_ring: string;
-  relationship_type: 'breeding_partner' | 'sibling_of';
-  year: number;
-}) => {
-  console.log('Creating symmetric relationship:', relationship);
-  const response = await api.post('/family/relationships/symmetric', relationship);
-  console.log('Created symmetric relationship:', response.data);
-  return response.data;
-};
-
 export const getAllRelationships = async (params?: {
-  relationship_type?: 'breeding_partner' | 'parent_of' | 'child_of' | 'sibling_of';
+  relationship_type?: 'breeding_partner' | 'parent_of' | 'sibling_of';
   year?: number;
   bird_ring?: string;
 }) => {
@@ -267,7 +255,7 @@ export const getAllRelationships = async (params?: {
 };
 
 export const updateRelationship = async (id: string, updates: {
-  relationship_type?: 'breeding_partner' | 'parent_of' | 'child_of' | 'sibling_of';
+  relationship_type?: 'breeding_partner' | 'parent_of' | 'sibling_of';
   year?: number;
   notes?: string;
 }) => {

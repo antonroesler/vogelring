@@ -6,7 +6,8 @@ export interface Relationship {
   id: string;
   bird1_ring: string;
   bird2_ring: string;
-  relationship_type: 'breeding_partner' | 'parent_of' | 'child_of' | 'sibling_of';
+  relationship_type: 'breeding_partner' | 'parent_of' | 'sibling_of';
+  display_type?: string;  // perspective-based label (e.g. 'child_of' when bird is bird2)
   year: number | null;
   confidence: number | null;
   source: string | null;
@@ -38,7 +39,6 @@ export const useRelationshipsStore = defineStore('relationships', () => {
       const labels: Record<string, string> = {
         breeding_partner: 'Partner',
         parent_of: 'Elternteil von',
-        child_of: 'Kind von',
         sibling_of: 'Geschwister von',
       };
       active.push({ key: 'relationship_type', value: filters.value.relationship_type, label: labels[filters.value.relationship_type] });

@@ -167,7 +167,6 @@ import { api } from '@/api';
 import {
   createRelationship,
   updateRelationship,
-  createSymmetricRelationship
 } from '@/api';
 
 interface BirdSuggestion {
@@ -277,7 +276,6 @@ const onBird2Update = (value: string | BirdSuggestion | null) => {
 const relationshipTypeOptions = [
   { value: 'breeding_partner', title: 'Partner' },
   { value: 'parent_of', title: 'Elternteil von' },
-  { value: 'child_of', title: 'Kind von' },
   { value: 'sibling_of', title: 'Geschwister von' }
 ];
 
@@ -341,23 +339,14 @@ const save = async () => {
         notes: localRelationship.value.notes || undefined
       });
     } else {
-      // Create new relationship
-      if (isSymmetricRelationship.value) {
-        await createSymmetricRelationship({
-          bird1_ring: localRelationship.value.bird1_ring,
-          bird2_ring: localRelationship.value.bird2_ring,
-          relationship_type: localRelationship.value.relationship_type as any,
-          year: localRelationship.value.year
-        });
-      } else {
-        await createRelationship({
-          bird1_ring: localRelationship.value.bird1_ring,
-          bird2_ring: localRelationship.value.bird2_ring,
-          relationship_type: localRelationship.value.relationship_type as any,
-          year: localRelationship.value.year,
-          notes: localRelationship.value.notes
-        });
-      }
+      // Create new relationship (backend normalizes symmetric ordering)
+      await createRelationship({
+        bird1_ring: localRelationship.value.bird1_ring,
+        bird2_ring: localRelationship.value.bird2_ring,
+        relationship_type: localRelationship.value.relationship_type as any,
+        year: localRelationship.value.year,
+        notes: localRelationship.value.notes
+      });
     }
     
     emit('saved');

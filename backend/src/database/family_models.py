@@ -24,11 +24,19 @@ from .models import GUID
 
 
 class RelationshipType(enum.Enum):
-    """Types of relationships between birds"""
+    """Types of relationships between birds.
+
+    Stored unidirectionally — one record per relationship:
+    - BREEDING_PARTNER: symmetric, bird1_ring < bird2_ring alphabetically
+    - PARENT_OF: bird1 is parent, bird2 is child
+    - SIBLING_OF: symmetric, bird1_ring < bird2_ring alphabetically
+
+    'child_of' is derived at query time when the perspective bird is bird2
+    in a PARENT_OF relationship.
+    """
 
     BREEDING_PARTNER = "breeding_partner"  # Ist Brutpartner von
     PARENT_OF = "parent_of"  # Ist Elternteil von
-    CHILD_OF = "child_of"  # Ist Kind von
     SIBLING_OF = "sibling_of"  # Ist Nestgeschwister von
 
 
@@ -116,16 +124,12 @@ class BirdRelationship(Base):
 
     # Table constraints and indexes
     __table_args__ = (
-        # Prevent duplicate relationships for the same birds in the same year
+        # One record per (bird1, bird2, type, year) — enforced by normalization in repository
         UniqueConstraint(
             "bird1_ring",
             "bird2_ring",
             "relationship_type",
             "year",
-            "sighting1_id",
-            "sighting2_id",
-            "ringing1_id",
-            "ringing2_id",
             name="uq_bird_relationship",
         ),
         # Performance indexes

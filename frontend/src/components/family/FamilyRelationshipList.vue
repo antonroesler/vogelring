@@ -7,9 +7,9 @@
         class="relationship-item"
       >
         <template v-slot:prepend>
-          <v-icon 
-            :icon="getRelationshipIcon(relationship.relationship_type)"
-            :color="getRelationshipColor(relationship.relationship_type)"
+          <v-icon
+            :icon="getRelationshipIcon(relationship.displayType || relationship.relationship_type)"
+            :color="getRelationshipColor(relationship.displayType || relationship.relationship_type)"
             size="small"
           ></v-icon>
         </template>
@@ -157,7 +157,7 @@ const getRelationshipIcon = (type: string) => {
   switch (type) {
     case 'breeding_partner': return 'mdi-heart';
     case 'parent_of': return 'mdi-baby-face';
-    case 'child_of': return 'mdi-account-supervisor';
+    case 'child_of': return 'mdi-account-supervisor';  // derived display type
     case 'sibling_of': return 'mdi-account-group';
     default: return 'mdi-help';
   }
@@ -167,18 +167,17 @@ const getRelationshipColor = (type: string) => {
   switch (type) {
     case 'breeding_partner': return 'red';
     case 'parent_of': return 'green';
-    case 'child_of': return 'blue';
+    case 'child_of': return 'blue';  // derived display type
     case 'sibling_of': return 'orange';
     default: return 'grey';
   }
 };
 
-
 const getEmptyMessage = () => {
   if (props.relationships.length === 0) return 'Beziehungen';
-  
-  // Try to determine the type based on the first relationship
-  const firstType = props.relationships[0]?.relationship_type;
+
+  // Use displayType for perspective-aware label
+  const firstType = props.relationships[0]?.displayType || props.relationships[0]?.relationship_type;
   switch (firstType) {
     case 'breeding_partner': return 'Partner';
     case 'parent_of': return 'Nachkommen';

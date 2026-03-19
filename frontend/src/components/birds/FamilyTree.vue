@@ -303,7 +303,7 @@ const addFamilyMember = async () => {
   isAdding.value = true;
   try {
     if (addType.value === 'partner') {
-      await api.createSymmetricRelationship({
+      await api.createRelationship({
         bird1_ring: props.ring,
         bird2_ring: addRing.value,
         relationship_type: 'breeding_partner',
@@ -311,16 +311,11 @@ const addFamilyMember = async () => {
       });
       successMessage.value = 'Partner erfolgreich hinzugefügt';
     } else {
+      // parent_of: bird1 = parent, bird2 = child
       await api.createRelationship({
         bird1_ring: props.ring,
         bird2_ring: addRing.value,
         relationship_type: 'parent_of',
-        year: addYear.value
-      });
-      await api.createRelationship({
-        bird1_ring: addRing.value,
-        bird2_ring: props.ring,
-        relationship_type: 'child_of',
         year: addYear.value
       });
       successMessage.value = 'Nachkomme erfolgreich hinzugefügt';

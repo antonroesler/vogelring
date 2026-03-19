@@ -127,9 +127,9 @@ const children = computed(() =>
   )
 );
 
-const parents = computed(() => 
-  relationships.value.filter(rel => 
-    rel.relationship_type === 'child_of' && rel.bird1_ring === props.ring
+const parents = computed(() =>
+  relationships.value.filter(rel =>
+    rel.relationship_type === 'parent_of' && rel.bird2_ring === props.ring
   )
 );
 
