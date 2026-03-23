@@ -101,30 +101,6 @@ class SightingService:
 
             sighting = self.repository.create(org_id, **sighting_data)
             logger.info(f"Created sighting {sighting.id}")
-
-            # Handle partner relationship if specified
-            if sighting.ring and sighting.partner and sighting.date:
-                try:
-                    from ...database.family_repository import FamilyRepository
-                    from ...database.family_models import RelationshipType
-
-                    family_repo = FamilyRepository(self.db)
-                    family_repo.create_relationship(
-                        org_id=org_id,
-                        bird1_ring=sighting.ring,
-                        bird2_ring=sighting.partner,
-                        relationship_type=RelationshipType.BREEDING_PARTNER,
-                        year=sighting.date.year,
-                        source="sighting_observation",
-                    )
-                    logger.info(
-                        f"Added partner relationship: {sighting.ring} <-> {sighting.partner} ({sighting.date.year})"
-                    )
-                except Exception as e:
-                    logger.error(
-                        f"Failed to add partner relationship for sighting {sighting.id}: {str(e)}"
-                    )
-
             return sighting
 
         except Exception as e:
@@ -149,37 +125,6 @@ class SightingService:
                 return None
 
             logger.info(f"Updated sighting {sighting_id}")
-
-            # Handle partner relationship if changed
-            if (
-                updated_sighting.ring
-                and updated_sighting.partner
-                and updated_sighting.date
-                and (
-                    not old_sighting.partner
-                    or old_sighting.partner != updated_sighting.partner
-                )
-            ):
-                try:
-                    from ...database.family_repository import FamilyRepository
-                    from ...database.family_models import RelationshipType
-
-                    family_repo = FamilyRepository(self.db)
-                    family_repo.create_relationship(
-                        org_id=org_id,
-                        bird1_ring=updated_sighting.ring,
-                        bird2_ring=updated_sighting.partner,
-                        relationship_type=RelationshipType.BREEDING_PARTNER,
-                        year=updated_sighting.date.year,
-                        source="sighting_observation",
-                    )
-                    logger.info(
-                        f"Added partner relationship: {updated_sighting.ring} <-> {updated_sighting.partner} ({updated_sighting.date.year})"
-                    )
-                except Exception as e:
-                    logger.error(
-                        f"Failed to add partner relationship for sighting {sighting_id}: {str(e)}"
-                    )
 
             return updated_sighting
 
