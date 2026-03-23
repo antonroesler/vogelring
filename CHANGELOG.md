@@ -5,6 +5,28 @@ All notable changes to Vogelring will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0](https://github.com/antonroesler/vogelring/compare/v2.7.0...v2.8.0) (2026-03-23)
+
+
+### ✨ Features
+
+* improve map controls UI and add style selection to FriendsMap ([7b9228e](https://github.com/antonroesler/vogelring/commit/7b9228e3134e93ffa4dfdca19af92ab5cf640720))
+* redesign family confirmation dialog with per-item checkboxes ([9a8202b](https://github.com/antonroesler/vogelring/commit/9a8202b56e150e226b964cf0c2690e6a0535f461))
+
+
+### 🐛 Bug Fixes
+
+* BirdFamilyEditor parents tab used bird2_ring instead of bird1_ring ([da86689](https://github.com/antonroesler/vogelring/commit/da8668936d117e4e9cc9789c4465ee78aa94ae3e))
+* prevent partner 'beringt'/'unberingt' from triggering family dialog and add decline option ([2b89e9d](https://github.com/antonroesler/vogelring/commit/2b89e9d3a829824aa974be1bcbd3c77b514ad052))
+* remove auto-relationship creation from sighting service ([35f956c](https://github.com/antonroesler/vogelring/commit/35f956cf2973a4aac518f4f5b356d538e71a8799))
+* rename Feldobst to Feldfrucht in sightings table ([668d865](https://github.com/antonroesler/vogelring/commit/668d86597943b539a7d24441f170be77ba9a7346))
+* skip interactive prompt in pi-deploy.sh when stdin is not a terminal ([d8f3744](https://github.com/antonroesler/vogelring/commit/d8f3744f1450d2f43dc8bcc025e1fafa1cd08947))
+
+
+### ♻️ Code Refactoring
+
+* unidirectional relationship system ([19b1013](https://github.com/antonroesler/vogelring/commit/19b101386c60b54b3b6b1b29ef4e54753a45bc72))
+
 ## [2.7.0](https://github.com/antonroesler/vogelring/compare/v2.6.0...v2.7.0) (2026-01-06)
 
 
