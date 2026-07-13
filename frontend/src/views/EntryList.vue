@@ -21,13 +21,12 @@
         prepend-icon="mdi-microsoft-excel"
         variant="tonal"
         color="green-darken-2"
-        :loading="exporting"
-        @click="handleExport"
+        @click="exportDialog = true"
         class="me-2"
       >
         Wiederfunde-Export
         <v-tooltip activator="parent" location="bottom">
-          Excel-Export aller nicht gemeldeten Wiederfunde ab 01.01.2026 für die Vogelwarte (RING)
+          Excel-Export der nicht gemeldeten Wiederfunde für die Vogelwarte (RING)
         </v-tooltip>
       </v-btn>
       <v-btn
@@ -86,6 +85,47 @@
     >
       Sichtung erfolgreich gelöscht
     </v-snackbar>
+
+    <v-dialog v-model="exportDialog" max-width="440">
+      <v-card>
+        <v-card-title>Wiederfunde-Export (RING)</v-card-title>
+        <v-card-text>
+          <p class="text-body-2 mb-4">
+            Exportiert alle <strong>nicht gemeldeten</strong> Wiederfunde im
+            gewählten Zeitraum als Excel-Datei für die Vogelwarte.
+          </p>
+          <v-text-field
+            v-model="exportStartDate"
+            label="Von (Datum)"
+            type="date"
+            variant="outlined"
+            density="comfortable"
+          ></v-text-field>
+          <v-text-field
+            v-model="exportEndDate"
+            label="Bis (optional)"
+            type="date"
+            variant="outlined"
+            density="comfortable"
+            hint="Leer lassen = keine Obergrenze"
+            persistent-hint
+          ></v-text-field>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn variant="text" @click="exportDialog = false">Abbrechen</v-btn>
+          <v-btn
+            color="green-darken-2"
+            variant="flat"
+            :loading="exporting"
+            :disabled="!exportStartDate"
+            @click="handleExport"
+          >
+            Exportieren
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -104,11 +144,18 @@ const showDeleteSnackbar = ref(false);
 const showMeldedSnackbar = ref(false);
 const meldedSnackbarText = ref('');
 const exporting = ref(false);
+const exportDialog = ref(false);
+const exportStartDate = ref('2026-01-01');
+const exportEndDate = ref('');
 
 const handleExport = async () => {
   exporting.value = true;
   try {
-    await exportSightingsVogelwarte();
+    const params: { start_date?: string; end_date?: string } = {};
+    if (exportStartDate.value) params.start_date = exportStartDate.value;
+    if (exportEndDate.value) params.end_date = exportEndDate.value;
+    await exportSightingsVogelwarte(params);
+    exportDialog.value = false;
   } catch (error) {
     console.error('Error exporting Wiederfunde:', error);
     store.error = 'Export fehlgeschlagen. Bitte erneut versuchen.';

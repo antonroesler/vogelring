@@ -138,6 +138,31 @@ _RING_SEX_MAP = {
     "W": "weiblich",
 }
 
+# Age -> RING "<code> <label>" (Vogelwarte legend). The Vogelring sighting age
+# field mixes German shorthand (ad/dj/vj/juv), EURING numbers (1/3/...) and blanks;
+# normalize them all to one consistent scheme. Keys are lower-cased before lookup.
+_RING_AGE_MAP = {
+    "1": "1 Nestling",
+    "2": "2 Fängling",
+    "3": "3 Diesjährig",
+    "4": "4 Nicht Diesjährig",
+    "5": "5 Vorjährig",
+    "6": "6 älter als vorjährig",
+    "ad": "4 Nicht Diesjährig",
+    "dj": "3 Diesjährig",
+    "juv": "3 Diesjährig",
+    "vj": "5 Vorjährig",
+}
+
+
+def _ring_age(raw: str | None) -> str:
+    """Map a Vogelring sighting age to the RING code+label. Empty -> Fängling."""
+    val = (raw or "").strip()
+    if not val:
+        return "2 Fängling"
+    # Unknown values pass through raw so they stay visible rather than silently wrong.
+    return _RING_AGE_MAP.get(val.lower(), val)
+
 
 @router.get("/sightings/export/vogelwarte")
 async def export_sightings_vogelwarte(
@@ -145,15 +170,19 @@ async def export_sightings_vogelwarte(
         DateType(2026, 1, 1),
         description="Only Wiederfunde on/after this date (default 2026-01-01)",
     ),
+    end_date: DateType | None = Query(
+        None,
+        description="Only Wiederfunde on/before this date (optional, no upper bound)",
+    ),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Export Wiederfunde (sightings) as an Excel file for the Vogelwarte RING import.
 
-    Includes all sightings on/after ``start_date`` that are NOT yet marked as
-    "gemeldet" (melded is False or NULL). Coordinates are intentionally excluded —
-    only the place name is exported, to be matched against RING manually.
-    The melded flag is NOT modified by this export.
+    Includes all sightings between ``start_date`` and ``end_date`` (inclusive) that
+    are NOT yet marked as "gemeldet" (melded is False or NULL). Coordinates are
+    intentionally excluded — only the place name is exported, to be matched against
+    RING manually. The melded flag is NOT modified by this export.
     """
     try:
         from openpyxl import Workbook
@@ -164,16 +193,16 @@ async def export_sightings_vogelwarte(
             detail="Excel export dependency (openpyxl) is not installed",
         ) from exc
 
-    sightings = (
-        db.query(SightingDB)
-        .filter(
-            SightingDB.org_id == current_user.org_id,
-            SightingDB.date >= start_date,
-            SightingDB.melded.isnot(True),  # False or NULL: not yet reported
-        )
-        .order_by(SightingDB.date.asc(), SightingDB.place.asc())
-        .all()
+    query = db.query(SightingDB).filter(
+        SightingDB.org_id == current_user.org_id,
+        SightingDB.date >= start_date,
+        SightingDB.melded.isnot(True),  # False or NULL: not yet reported
     )
+    if end_date is not None:
+        query = query.filter(SightingDB.date <= end_date)
+    sightings = query.order_by(
+        SightingDB.date.asc(), SightingDB.place.asc()
+    ).all()
 
     headers = [
         "Datum",
@@ -201,8 +230,8 @@ async def export_sightings_vogelwarte(
                 s.place or "",
                 s.ring or "",
                 s.species or "",
-                # Empty age -> Vogelwarte default "2: Fängling"
-                (s.age or "").strip() or "2: Fängling",
+                # Age normalized to RING code+label (empty -> "2 Fängling")
+                _ring_age(s.age),
                 # Sex -> RING German text; empty -> "unbekannt"
                 _RING_SEX_MAP.get(
                     (s.sex or "").strip().upper(), (s.sex or "").strip()

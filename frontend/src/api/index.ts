@@ -53,7 +53,7 @@ export const getSightings = async (params?: {
 
 // Download the Vogelwarte RING export (Excel) of all not-yet-reported
 // Wiederfunde from start_date onward. Triggers a browser file download.
-export const exportSightingsVogelwarte = async (params?: { start_date?: string }) => {
+export const exportSightingsVogelwarte = async (params?: { start_date?: string; end_date?: string }) => {
   const response = await api.get('/sightings/export/vogelwarte', {
     params,
     responseType: 'blob',

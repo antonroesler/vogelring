@@ -129,7 +129,7 @@ class TestVogelwarteExport:
             "Nied",
             "R2",
             "Anas platyrhynchos",
-            "ad",
+            "4 Nicht Diesjährig",  # ad -> RING code+label
             "männlich",
             "nestbauend oder brütend",
             "Obs B",
@@ -141,7 +141,7 @@ class TestVogelwarteExport:
             "Kalbach",
             "R1",
             "Larus ridibundus",
-            "2: Fängling",
+            "2 Fängling",
             "unbekannt",
             "in Mausertrupp",
             "Obs A",
@@ -164,6 +164,45 @@ class TestVogelwarteExport:
         rows = _load_rows(response)
         assert len(rows) == 2  # header + 1 row
         assert rows[1][2] == "B"
+
+    def test_end_date_bound(self, client, test_db, dev_org_id):
+        _add(test_db, dev_org_id, date=date(2026, 1, 15), melded=False, status="MG", ring="A")
+        _add(test_db, dev_org_id, date=date(2026, 6, 15), melded=False, status="MG", ring="B")
+
+        response = client.get(
+            EXPORT_URL, params={"start_date": "2026-01-01", "end_date": "2026-03-01"}
+        )
+        assert response.status_code == 200
+        rows = _load_rows(response)
+        assert len(rows) == 2  # header + 1 row (only the January one)
+        assert rows[1][2] == "A"
+
+    def test_age_normalization(self, client, test_db, dev_org_id):
+        cases = [
+            (None, "2 Fängling"),
+            ("", "2 Fängling"),
+            ("ad", "4 Nicht Diesjährig"),
+            ("dj", "3 Diesjährig"),
+            ("juv", "3 Diesjährig"),
+            ("vj", "5 Vorjährig"),
+            ("1", "1 Nestling"),
+            ("3", "3 Diesjährig"),
+        ]
+        for i, (raw, _exp) in enumerate(cases):
+            _add(
+                test_db,
+                dev_org_id,
+                date=date(2026, 1, 1),
+                melded=False,
+                status="MG",
+                age=raw,
+                ring=f"AGE{i}",
+                place=f"p{i:02d}",  # order rows deterministically by place
+            )
+        rows = _load_rows(client.get(EXPORT_URL))
+        got = {r[2]: r[4] for r in rows[1:]}  # ring -> age column
+        for i, (_raw, exp) in enumerate(cases):
+            assert got[f"AGE{i}"] == exp
 
     def test_export_does_not_change_melded(self, client, test_db, dev_org_id):
         s = _add(
