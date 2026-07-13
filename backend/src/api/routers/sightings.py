@@ -2,7 +2,9 @@
 Sightings API router
 """
 
+import io
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from datetime import date as DateType
 from pydantic import BaseModel
@@ -10,6 +12,7 @@ from pydantic import BaseModel
 from ...utils.auth import get_current_user
 from ...database.connection import get_db
 from ...database.user_models import User
+from ...database.models import Sighting as SightingDB
 from ..services.sighting_service import SightingService
 
 router = APIRouter()
@@ -120,6 +123,116 @@ async def get_autocomplete_suggestions(
     service = SightingService(db)
     suggestions = service.get_autocomplete_suggestions(field, q, limit)
     return {"suggestions": suggestions}
+
+
+# Status code -> RING (Vogelwarte) status text mapping for the export.
+# MG = Mausergast, BV = Brutvogel; everything else / empty is unknown.
+_RING_STATUS_MAP = {
+    "MG": "in Mausertrupp",
+    "BV": "nestbauend oder brütend",
+}
+
+# Sex code -> RING text. Empty is rendered as "unbekannt" (see below).
+_RING_SEX_MAP = {
+    "M": "männlich",
+    "W": "weiblich",
+}
+
+
+@router.get("/sightings/export/vogelwarte")
+async def export_sightings_vogelwarte(
+    start_date: DateType = Query(
+        DateType(2026, 1, 1),
+        description="Only Wiederfunde on/after this date (default 2026-01-01)",
+    ),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Export Wiederfunde (sightings) as an Excel file for the Vogelwarte RING import.
+
+    Includes all sightings on/after ``start_date`` that are NOT yet marked as
+    "gemeldet" (melded is False or NULL). Coordinates are intentionally excluded —
+    only the place name is exported, to be matched against RING manually.
+    The melded flag is NOT modified by this export.
+    """
+    try:
+        from openpyxl import Workbook
+        from openpyxl.styles import Font
+    except ImportError as exc:  # pragma: no cover - dependency guard
+        raise HTTPException(
+            status_code=500,
+            detail="Excel export dependency (openpyxl) is not installed",
+        ) from exc
+
+    sightings = (
+        db.query(SightingDB)
+        .filter(
+            SightingDB.org_id == current_user.org_id,
+            SightingDB.date >= start_date,
+            SightingDB.melded.isnot(True),  # False or NULL: not yet reported
+        )
+        .order_by(SightingDB.date.asc(), SightingDB.place.asc())
+        .all()
+    )
+
+    headers = [
+        "Datum",
+        "Ort",
+        "Ring",
+        "Spezies",
+        "Alter",
+        "Geschlecht",
+        "Status",
+        "Melder",
+        "Kommentar",
+    ]
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Wiederfunde"
+    ws.append(headers)
+    for cell in ws[1]:
+        cell.font = Font(bold=True)
+
+    for s in sightings:
+        ws.append(
+            [
+                s.date.strftime("%d.%m.%Y") if s.date else "",
+                s.place or "",
+                s.ring or "",
+                s.species or "",
+                # Empty age -> Vogelwarte default "2: Fängling"
+                (s.age or "").strip() or "2: Fängling",
+                # Sex -> RING German text; empty -> "unbekannt"
+                _RING_SEX_MAP.get(
+                    (s.sex or "").strip().upper(), (s.sex or "").strip()
+                )
+                or "unbekannt",
+                _RING_STATUS_MAP.get(
+                    (s.status or "").strip().upper(), "unbekannt / nicht erfasst"
+                ),
+                s.melder or "",
+                s.comment or "",
+            ]
+        )
+
+    # Reasonable default column widths for readability.
+    widths = [12, 28, 16, 22, 14, 12, 24, 20, 40]
+    for idx, width in enumerate(widths, start=1):
+        ws.column_dimensions[chr(64 + idx)].width = width
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    filename = f"vogelring_wiederfunde_{DateType.today().isoformat()}.xlsx"
+    return StreamingResponse(
+        buffer,
+        media_type=(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        ),
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/sightings/{id}")

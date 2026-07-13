@@ -18,6 +18,19 @@
         Filter zurücksetzen
       </v-btn>
       <v-btn
+        prepend-icon="mdi-microsoft-excel"
+        variant="tonal"
+        color="green-darken-2"
+        :loading="exporting"
+        @click="handleExport"
+        class="me-2"
+      >
+        Wiederfunde-Export
+        <v-tooltip activator="parent" location="bottom">
+          Excel-Export aller nicht gemeldeten Wiederfunde ab 01.01.2026 für die Vogelwarte (RING)
+        </v-tooltip>
+      </v-btn>
+      <v-btn
         icon="mdi-refresh"
         @click="loadSightings"
         :loading="store.loading"
@@ -83,12 +96,26 @@ import SightingsFilter from '@/components/sightings/SightingsFilter.vue';
 import SightingsTable from '@/components/sightings/SightingsTable.vue';
 import type { Sighting } from '@/types';
 import { useRouter } from 'vue-router';
+import { exportSightingsVogelwarte } from '@/api';
 
 const store = useSightingsStore();
 const router = useRouter();
 const showDeleteSnackbar = ref(false);
 const showMeldedSnackbar = ref(false);
 const meldedSnackbarText = ref('');
+const exporting = ref(false);
+
+const handleExport = async () => {
+  exporting.value = true;
+  try {
+    await exportSightingsVogelwarte();
+  } catch (error) {
+    console.error('Error exporting Wiederfunde:', error);
+    store.error = 'Export fehlgeschlagen. Bitte erneut versuchen.';
+  } finally {
+    exporting.value = false;
+  }
+};
 
 const filters = computed({
   get: () => store.filters,

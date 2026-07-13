@@ -51,6 +51,28 @@ export const getSightings = async (params?: {
   return response.data;
 };
 
+// Download the Vogelwarte RING export (Excel) of all not-yet-reported
+// Wiederfunde from start_date onward. Triggers a browser file download.
+export const exportSightingsVogelwarte = async (params?: { start_date?: string }) => {
+  const response = await api.get('/sightings/export/vogelwarte', {
+    params,
+    responseType: 'blob',
+  });
+
+  const disposition = response.headers['content-disposition'] as string | undefined;
+  const match = disposition?.match(/filename="?([^"]+)"?/);
+  const filename = match?.[1] || `vogelring_wiederfunde_${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+  const url = window.URL.createObjectURL(new Blob([response.data]));
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+};
+
 export const getSightingById = async (id: string) => {
   console.log('Fetching sighting with id:', id);
   const response = await api.get<Sighting>(`/sightings/${id}`);

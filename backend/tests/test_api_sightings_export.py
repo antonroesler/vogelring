@@ -1,0 +1,174 @@
+"""
+Tests for the Vogelwarte (RING) Wiederfunde Excel export endpoint.
+"""
+
+import io
+from datetime import date
+from uuid import uuid4
+
+import pytest
+from openpyxl import load_workbook
+
+from src.database.models import Sighting
+from src.database.user_models import User
+
+
+EXPORT_URL = "/api/sightings/export/vogelwarte"
+
+
+@pytest.fixture
+def dev_org_id(client, test_db):
+    """Warm up the dev user (created on first authed request) and return its org_id.
+
+    In dev mode the endpoint scopes to this org, so test sightings must share it.
+    """
+    client.get("/api/sightings/count")
+    user = test_db.query(User).filter(User.email == "dev@vogelring.local").first()
+    return user.org_id
+
+EXPECTED_HEADERS = [
+    "Datum",
+    "Ort",
+    "Ring",
+    "Spezies",
+    "Alter",
+    "Geschlecht",
+    "Status",
+    "Melder",
+    "Kommentar",
+]
+
+
+def _add(test_db, org_id, **kwargs):
+    sighting = Sighting(id=uuid4(), org_id=org_id, **kwargs)
+    test_db.add(sighting)
+    test_db.commit()
+    return sighting
+
+
+def _load_rows(response):
+    wb = load_workbook(io.BytesIO(response.content))
+    ws = wb.active
+    return [list(row) for row in ws.iter_rows(values_only=True)]
+
+
+class TestVogelwarteExport:
+    def test_empty_export_has_only_header(self, client):
+        response = client.get(EXPORT_URL)
+        assert response.status_code == 200
+        assert (
+            response.headers["content-type"]
+            == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+        assert "attachment" in response.headers["content-disposition"]
+        assert ".xlsx" in response.headers["content-disposition"]
+
+        rows = _load_rows(response)
+        assert rows == [EXPECTED_HEADERS]
+
+    def test_filtering_and_transforms(self, client, test_db, dev_org_id):
+        # Included: MG, empty age/sex -> defaults
+        _add(
+            test_db,
+            dev_org_id,
+            date=date(2026, 3, 1),
+            melded=False,
+            status="MG",
+            age=None,
+            sex=None,
+            place="Kalbach",
+            ring="R1",
+            species="Larus ridibundus",
+            melder="Obs A",
+            comment="c1",
+            lat=50.1,
+            lon=8.6,
+        )
+        # Included: BV, populated age/sex pass through; melded NULL treated as not reported
+        _add(
+            test_db,
+            dev_org_id,
+            date=date(2026, 2, 1),
+            melded=None,
+            status="BV",
+            age="ad",
+            sex="M",
+            place="Nied",
+            ring="R2",
+            species="Anas platyrhynchos",
+            melder="Obs B",
+            comment="c2",
+        )
+        # Included: other status -> "unbekannt / nicht erfasst"
+        _add(
+            test_db,
+            dev_org_id,
+            date=date(2026, 5, 1),
+            melded=False,
+            status="NB",
+            place="Mainkai",
+            ring="R3",
+        )
+        # Excluded: already reported
+        _add(test_db, dev_org_id, date=date(2026, 4, 1), melded=True, status="MG", ring="X1")
+        # Excluded: before start date
+        _add(test_db, dev_org_id, date=date(2025, 12, 31), melded=False, status="MG", ring="X2")
+
+        response = client.get(EXPORT_URL)
+        assert response.status_code == 200
+        rows = _load_rows(response)
+
+        assert rows[0] == EXPECTED_HEADERS
+        data = rows[1:]
+        # 3 included, ordered by date ascending
+        assert len(data) == 3
+
+        # Row 1: 2026-02-01, BV
+        assert data[0] == [
+            "01.02.2026",
+            "Nied",
+            "R2",
+            "Anas platyrhynchos",
+            "ad",
+            "männlich",
+            "nestbauend oder brütend",
+            "Obs B",
+            "c2",
+        ]
+        # Row 2: 2026-03-01, MG, empty age/sex defaults
+        assert data[1] == [
+            "01.03.2026",
+            "Kalbach",
+            "R1",
+            "Larus ridibundus",
+            "2: Fängling",
+            "unbekannt",
+            "in Mausertrupp",
+            "Obs A",
+            "c1",
+        ]
+        # Row 3: 2026-05-01, NB -> unknown status
+        assert data[2][0] == "01.05.2026"
+        assert data[2][6] == "unbekannt / nicht erfasst"
+
+        # Coordinates must NOT be present anywhere in the sheet
+        flat = [str(c) for r in rows for c in r if c is not None]
+        assert not any("50.1" in v or "8.6" in v for v in flat)
+
+    def test_start_date_override(self, client, test_db, dev_org_id):
+        _add(test_db, dev_org_id, date=date(2026, 1, 15), melded=False, status="MG", ring="A")
+        _add(test_db, dev_org_id, date=date(2026, 6, 15), melded=False, status="MG", ring="B")
+
+        response = client.get(EXPORT_URL, params={"start_date": "2026-06-01"})
+        assert response.status_code == 200
+        rows = _load_rows(response)
+        assert len(rows) == 2  # header + 1 row
+        assert rows[1][2] == "B"
+
+    def test_export_does_not_change_melded(self, client, test_db, dev_org_id):
+        s = _add(
+            test_db, dev_org_id, date=date(2026, 3, 1), melded=False, status="MG", ring="R1"
+        )
+        client.get(EXPORT_URL)
+        test_db.refresh(s)
+        assert s.melded is False
