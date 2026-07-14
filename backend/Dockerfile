@@ -32,6 +32,7 @@ RUN uv sync --frozen --no-dev
 
 # Copy application code
 COPY src/ ./src/
+COPY scripts/ ./scripts/
 
 # Change ownership to non-root user
 RUN chown -R appuser:appuser /app

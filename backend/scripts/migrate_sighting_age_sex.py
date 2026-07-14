@@ -25,6 +25,7 @@ Usage:
 """
 
 import os
+import re
 import sys
 import logging
 from sqlalchemy import create_engine, text
@@ -60,6 +61,20 @@ def _column_type(conn, table: str, column: str) -> str | None:
     ).scalar()
 
 
+def _capture_view(conn, name: str) -> str | None:
+    """Return a view's SELECT body if it exists, with the age/sex placeholder casts
+    switched to integer so the recreated UNION stays type-consistent."""
+    exists = conn.execute(text("SELECT to_regclass(:n)"), {"n": name}).scalar()
+    if not exists:
+        return None
+    body = conn.execute(
+        text("SELECT pg_get_viewdef(:n::regclass, true)"), {"n": name}
+    ).scalar()
+    body = re.sub(r"NULL::character varying\(\d+\) AS age", "NULL::integer AS age", body)
+    body = re.sub(r"NULL::character varying\(\d+\) AS sex", "NULL::integer AS sex", body)
+    return body.rstrip().rstrip(";")
+
+
 def run_migration(engine) -> dict:
     counts: dict = {}
     with engine.begin() as conn:
@@ -92,6 +107,13 @@ def run_migration(engine) -> dict:
             text("UPDATE sightings SET sex_legacy = sex WHERE sex_legacy IS NULL AND sex IS NOT NULL")
         ).rowcount
 
+        # ---- Step 2b: drop dependent view(s) blocking the ALTER (recreated below) ----
+        # Only v_sightings depends on sightings.age/sex (verified via pg_depend).
+        view_body = _capture_view(conn, "v_sightings")
+        if view_body is not None:
+            logger.info("Dropping dependent view v_sightings (will recreate with integer casts)...")
+            conn.execute(text("DROP VIEW v_sightings"))
+
         # ---- Step 3: convert column types with the shared mapping ----
         logger.info("Step 3: converting age -> integer...")
         conn.execute(
@@ -107,6 +129,11 @@ def run_migration(engine) -> dict:
                 f"USING ({_build_case('sex', SEX_LEGACY_CASES)})"
             )
         )
+
+        # ---- Step 3b: recreate the view (age/sex now integer on both branches) ----
+        if view_body is not None:
+            conn.execute(text(f"CREATE VIEW v_sightings AS {view_body}"))
+            logger.info("Recreated view v_sightings.")
 
         # ---- Post-migration distribution ----
         for col in ("age", "sex"):
