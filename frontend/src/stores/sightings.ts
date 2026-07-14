@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import type { Sighting, BirdStatus, BirdAge } from '../types';
+import type { Sighting, BirdStatus, SightingAgeCode } from '../types';
 import * as api from '../api';
 
 interface Filters {
@@ -12,7 +12,7 @@ interface Filters {
   melder?: string;
   melded?: boolean;
   status?: BirdStatus;
-  age?: BirdAge;
+  age?: SightingAgeCode;
   month_start?: number;
   month_end?: number;
 }

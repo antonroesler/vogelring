@@ -13,6 +13,7 @@ from ...utils.auth import get_current_user
 from ...database.connection import get_db
 from ...database.user_models import User
 from ...database.models import Sighting as SightingDB
+from ...utils.sighting_coding import ring_age_label, ring_sex_label
 from ..services.sighting_service import SightingService
 
 router = APIRouter()
@@ -26,8 +27,8 @@ class SightingCreate(BaseModel):
     species: str | None = None
     ring: str | None = None
     reading: str | None = None
-    age: str | None = None
-    sex: str | None = None
+    age: int | None = None  # RING/EURING code (see utils.sighting_coding)
+    sex: int | None = None  # 0 unbekannt, 1 männlich, 2 weiblich
     date: DateType | None = None
     large_group_size: int | None = None
     small_group_size: int | None = None
@@ -56,8 +57,8 @@ class SightingUpdate(BaseModel):
     species: str | None = None
     ring: str | None = None
     reading: str | None = None
-    age: str | None = None
-    sex: str | None = None
+    age: int | None = None  # RING/EURING code (see utils.sighting_coding)
+    sex: int | None = None  # 0 unbekannt, 1 männlich, 2 weiblich
     date: DateType | None = None
     large_group_size: int | None = None
     small_group_size: int | None = None
@@ -132,37 +133,6 @@ _RING_STATUS_MAP = {
     "BV": "nestbauend oder brütend",
 }
 
-# Sex code -> RING text. Empty is rendered as "unbekannt" (see below).
-_RING_SEX_MAP = {
-    "M": "männlich",
-    "W": "weiblich",
-}
-
-# Age -> RING "<code> <label>" (Vogelwarte legend). The Vogelring sighting age
-# field mixes German shorthand (ad/dj/vj/juv), EURING numbers (1/3/...) and blanks;
-# normalize them all to one consistent scheme. Keys are lower-cased before lookup.
-_RING_AGE_MAP = {
-    "1": "1 Nestling",
-    "2": "2 Fängling",
-    "3": "3 Diesjährig",
-    "4": "4 Nicht Diesjährig",
-    "5": "5 Vorjährig",
-    "6": "6 älter als vorjährig",
-    "ad": "4 Nicht Diesjährig",
-    "dj": "3 Diesjährig",
-    "juv": "3 Diesjährig",
-    "vj": "5 Vorjährig",
-}
-
-
-def _ring_age(raw: str | None) -> str:
-    """Map a Vogelring sighting age to the RING code+label. Empty -> Fängling."""
-    val = (raw or "").strip()
-    if not val:
-        return "2 Fängling"
-    # Unknown values pass through raw so they stay visible rather than silently wrong.
-    return _RING_AGE_MAP.get(val.lower(), val)
-
 
 @router.get("/sightings/export/vogelwarte")
 async def export_sightings_vogelwarte(
@@ -230,13 +200,10 @@ async def export_sightings_vogelwarte(
                 s.place or "",
                 s.ring or "",
                 s.species or "",
-                # Age normalized to RING code+label (empty -> "2 Fängling")
-                _ring_age(s.age),
-                # Sex -> RING German text; empty -> "unbekannt"
-                _RING_SEX_MAP.get(
-                    (s.sex or "").strip().upper(), (s.sex or "").strip()
-                )
-                or "unbekannt",
+                # Age code -> RING "<code> <label>" (empty -> "2 Fängling")
+                ring_age_label(s.age),
+                # Sex code -> RING German text (empty -> "unbekannt")
+                ring_sex_label(s.sex),
                 _RING_STATUS_MAP.get(
                     (s.status or "").strip().upper(), "unbekannt / nicht erfasst"
                 ),

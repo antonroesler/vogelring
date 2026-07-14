@@ -61,7 +61,7 @@
             </v-list-item-title>
             <v-list-item-subtitle>
               Ring: {{ child.ring }} |
-              Alter: {{ child.age || 'Nicht angegeben' }} |
+              Alter: {{ formatSightingAge(child.age) || 'Nicht angegeben' }} |
               Ort: {{ child.place }} |
               Datum: {{ child.date }}
             </v-list-item-subtitle>
@@ -93,6 +93,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 import type { Sighting } from '@/types';
+import { formatSightingAge } from '@/utils/sightingCoding';
 
 export interface FamilySelections {
   includePartner: boolean;

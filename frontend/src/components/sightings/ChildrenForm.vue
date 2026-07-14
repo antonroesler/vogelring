@@ -15,8 +15,6 @@
             v-model="child.age"
             :items="ageOptions"
             label="Alter"
-            item-title="text"
-            item-value="value"
             density="comfortable"
           ></v-select>
         </v-col>
@@ -53,18 +51,17 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { getRingingAgeOptions } from '@/utils/ageMapping';
+import { getSightingAgeOptions, getSightingSexOptions } from '@/utils/sightingCoding';
 
 const emit = defineEmits<{
-  'update:children': [children: Array<{ ring: string; age?: number; sex?: string }>];
+  'update:children': [children: Array<{ ring: string; age?: number; sex?: number }>];
 }>();
 
-const children = ref<Array<{ ring: string; age?: number; sex?: string }>>([]);
-const ageOptions = getRingingAgeOptions(true);
-const sexOptions = [
-  { title: 'Männlich', value: 'M' },
-  { title: 'Weiblich', value: 'W' }
-];
+// Children become Sightings, so they use the SIGHTING age/sex codes
+// (previously this used the ringing age list — the source of the mixed-code bug).
+const children = ref<Array<{ ring: string; age?: number; sex?: number }>>([]);
+const ageOptions = getSightingAgeOptions();
+const sexOptions = getSightingSexOptions();
 
 const addChild = () => {
   children.value.push({ ring: '', age: undefined, sex: undefined });

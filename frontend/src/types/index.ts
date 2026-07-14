@@ -20,11 +20,11 @@ export interface Sighting {
   is_exact_location?: boolean;
   partner?: string | null;
   status?: 'BV' | 'MG' | 'NB' | 'RV' | 'TF' | null;
-  age?: BirdAge | null;
+  age?: SightingAgeCode | null;
   breed_size?: number | null;
   family_size?: number | null;
   pair?: PairType | null;
-  sex?: "M" | "W" | null;
+  sex?: SightingSexCode | null;
 }
 
 export enum BirdStatus {
@@ -127,11 +127,27 @@ export interface SuggestionLists {
   field_fruits: string[];
 }
 
-export enum BirdAge {
-  AD = "ad",  // Adult
-  DJ = "dj",  // Diesjährig
-  VJ = "vj",  // Vorjährig
-  JUV = "juv" // Juvenile
+/**
+ * EURING age codes for sightings — the same integer scheme Ringings use.
+ * (Legacy shorthand ad/dj/vj/juv was migrated: Adult→6, Diesjährig→3,
+ * Vorjährig→5, Juvenil→1. See utils/sightingCoding.ts for labels/options.)
+ */
+export enum SightingAgeCode {
+  Nestling = 1,
+  Faengling = 2,
+  Diesjaehrig = 3,
+  NichtDiesjaehrig = 4,
+  Vorjaehrig = 5,
+  AelterAlsVorjaehrig = 6,
+  DrittesKalenderjahr = 7,
+  UeberDreiJahre = 8,
+}
+
+/** Sex codes for sightings — same scheme as Ringings. */
+export enum SightingSexCode {
+  Unbekannt = 0,
+  Maennlich = 1,
+  Weiblich = 2,
 }
 
 export enum PairType {

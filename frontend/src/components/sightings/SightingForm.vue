@@ -367,7 +367,8 @@
 <script setup lang="ts">
 import { ref, watch, computed, onMounted } from 'vue';
 import type { Sighting, SuggestionBird, SuggestionLists } from '@/types';
-import { BirdStatus, BirdAge, PairType } from '@/types';
+import { BirdStatus, PairType } from '@/types';
+import { getSightingAgeOptions, getSightingSexOptions, invertSightingSex } from '@/utils/sightingCoding';
 import LeafletMap from '@/components/map/LeafletMap.vue';
 import BirdSuggestions from '@/components/birds/BirdSuggestions.vue';
 import MissingRingDialog from '@/components/dialogs/MissingRingDialog.vue';
@@ -422,7 +423,7 @@ const showMissingRingDialog = ref(false);
 const showMissingSpeciesDialog = ref(false);
 const showFamilyConfirmationDialog = ref(false);
 const pendingSighting = ref<Partial<Sighting> | null>(null);
-const children = ref<Array<{ ring: string; age?: number }>>([]);
+const children = ref<Array<{ ring: string; age?: number; sex?: number }>>([]);
 
 const statusItems = [
   { title: 'Brutvogel', value: BirdStatus.BV },
@@ -432,17 +433,9 @@ const statusItems = [
   { title: 'Totfund', value: BirdStatus.TOTFUND }
 ];
 
-const ageItems = [
-  { title: 'Adult', value: BirdAge.AD },
-  { title: 'Diesjährig', value: BirdAge.DJ },
-  { title: 'Vorjährig', value: BirdAge.VJ },
-  { title: 'Juvenil', value: BirdAge.JUV }
-];
-
-const sexItems = [
-  { title: 'Männlich', value: 'M' },
-  { title: 'Weiblich', value: 'W' }
-];
+// Age/sex use the RING/EURING integer codes shared with Ringings.
+const ageItems = getSightingAgeOptions();
+const sexItems = getSightingSexOptions();
 
 const pairItems = [
   { title: 'Verpaart', value: PairType.PAIRED },
@@ -679,14 +672,9 @@ const getPartnerSighting = () => {
     return undefined;
   }
   
-  // Determine partner sex based on main sighting sex
-  let partnerSex: string | undefined;
-  if (pendingSighting.value.sex === 'M') {
-    partnerSex = 'W';
-  } else if (pendingSighting.value.sex === 'W') {
-    partnerSex = 'M';
-  }
-  
+  // Determine partner sex based on main sighting sex (M↔W)
+  const partnerSex = invertSightingSex(pendingSighting.value.sex);
+
   return {
     ...pendingSighting.value,
     ring: pendingSighting.value.partner,
@@ -706,8 +694,9 @@ const getChildSightings = () => {
       partner: undefined,
       reading: undefined,
       comment: 'Diese Sichtung wurde automatisch generiert',
-      age: child.age ? `${child.age}` as any : undefined,
-      sex: child.sex,
+      // age/sex are already RING integer codes — no coercion needed
+      age: child.age ?? undefined,
+      sex: child.sex ?? undefined,
       status: undefined,
       breed_size: undefined,
       family_size: undefined,

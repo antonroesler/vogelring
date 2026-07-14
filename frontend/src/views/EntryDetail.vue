@@ -150,6 +150,7 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { Sighting, BirdMeta, Ringing } from '@/types';
 import * as api from '@/api';
+import { formatSightingAge, formatSightingSex } from '@/utils/sightingCoding';
 import SightingForm from '@/components/sightings/SightingForm.vue';
 import BirdDetails from '@/components/birds/BirdDetails.vue';
 import SightingsMap from '@/components/map/SightingsMap.vue';
@@ -461,7 +462,7 @@ const generateStaticHTML = () => {
         </tr>
         <tr>
           <td class="field-label">Alter</td>
-          <td>${sighting.value?.age || '-'}</td>
+          <td>${formatSightingAge(sighting.value?.age) || '-'}</td>
         </tr>
         <tr>
           <td class="field-label">Brutgröße</td>
@@ -473,7 +474,7 @@ const generateStaticHTML = () => {
         </tr>
         <tr>
           <td class="field-label">Geschlecht</td>
-          <td>${sighting.value?.sex || '-'}</td>
+          <td>${formatSightingSex(sighting.value?.sex) || '-'}</td>
         </tr>
         <tr>
           <td class="field-label">Koordinaten</td>
@@ -596,8 +597,8 @@ const generateStaticHTML = () => {
                 <td>${s.place || '-'}</td>
                 <td>${s.ring || '-'}</td>
                 <td>${s.status || '-'}</td>
-                <td>${s.age || '-'}</td>
-                <td>${s.sex || '-'}</td>
+                <td>${formatSightingAge(s.age) || '-'}</td>
+                <td>${formatSightingSex(s.sex) || '-'}</td>
                 <td class="coordinates">${s.lat && s.lon ? `${s.lat}, ${s.lon}` : '-'}</td>
                 <td>${s.large_group_size || '-'}</td>
               </tr>

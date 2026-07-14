@@ -126,8 +126,11 @@ class Sighting(Base):
     species = Column(String(100), index=True)
     ring = Column(String(50), index=True)
     reading = Column(String(50), index=True)
-    age = Column(String(10))
-    sex = Column(String(1))
+    # RING/EURING integer codes (see utils.sighting_coding). Original pre-migration
+    # values are preserved in DB-only columns age_legacy/sex_legacy (not mapped here,
+    # so they stay hidden + immutable from the app's perspective).
+    age = Column(Integer)
+    sex = Column(Integer)
     date = Column(Date, index=True)
     large_group_size = Column(Integer)
     small_group_size = Column(Integer)

@@ -197,6 +197,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { format } from 'date-fns';
 import { formatBirdStatus, getBirdStatusColor, getBirdStatusIcon } from '@/utils/statusUtils';
+import { formatSightingAge, formatSightingSex } from '@/utils/sightingCoding';
 import type { Sighting } from '@/types';
 import { useSightingsStore } from '@/stores/sightings';
 
@@ -484,6 +485,8 @@ const formatField = (key: string, value: any) => {
   if (key === 'date') return formatDate(value);
   if (key === 'pair') return formatPairStatus(value);
   if (key === 'status') return formatBirdStatus(value);
+  if (key === 'age') return formatSightingAge(value);
+  if (key === 'sex') return formatSightingSex(value);
   if (typeof value === 'boolean') return value ? 'Ja' : 'Nein';
   return value;
 };

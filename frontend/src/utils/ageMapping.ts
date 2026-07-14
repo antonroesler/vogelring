@@ -1,9 +1,7 @@
 /**
- * Centralized age mapping for RINGING data only
- * Official ringing age codes and their corresponding labels
- * 
- * NOTE: This is NOT for sightings! Sightings use the BirdAge enum 
- * which has a fixed database model and should not be changed.
+ * Centralized EURING age code -> label mapping.
+ * Shared by Ringings and Sightings (sightings render via utils/sightingCoding.ts,
+ * which reuses these labels). Codes: 1 Nestling … 8 Über 3 Jahre.
  */
 
 export interface AgeOption {

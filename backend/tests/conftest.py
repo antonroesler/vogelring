@@ -94,8 +94,8 @@ def sample_sighting_data():
         "species": "Larus ridibundus",
         "ring": "TEST001",
         "reading": "TEST001",
-        "age": "adult",
-        "sex": "M",
+        "age": 6,  # RING code (post age/sex migration these are integers)
+        "sex": 1,  # männlich
         "date": date(2023, 6, 20),
         "large_group_size": 5,
         "small_group_size": 2,
