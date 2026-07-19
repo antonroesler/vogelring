@@ -128,7 +128,8 @@ async def get_autocomplete_suggestions(
 
 
 # Status code -> RING (Vogelwarte) status text mapping for the export.
-# MG = Mausergast, BV = Brutvogel; everything else / empty is unknown.
+# Only these two Vogelring statuses carry over to the RING Status field.
+# MG = Mausergast, BV = Brutvogel; everything else / empty is left blank.
 _RING_STATUS_MAP = {
     "MG": "in Mausertrupp",
     "BV": "nestbauend oder brütend",
@@ -280,9 +281,7 @@ async def export_sightings_vogelwarte(
                 ring_age_label(s.age),
                 # Sex code -> RING German text (empty -> "unbekannt")
                 ring_sex_label(s.sex),
-                _RING_STATUS_MAP.get(
-                    (s.status or "").strip().upper(), "unbekannt / nicht erfasst"
-                ),
+                _RING_STATUS_MAP.get((s.status or "").strip().upper(), ""),
                 # Non-RING Vogelring fields (incl. Melder + Kommentar) bundled here.
                 _build_bemerkungen(s),
             ]

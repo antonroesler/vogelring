@@ -161,9 +161,9 @@ class TestVogelwarteExport:
             "in Mausertrupp",
             "Melder: Obs A / Kommentare: c1",  # Bemerkungen
         ]
-        # Row 3: 2026-05-01, NB -> unknown status
+        # Row 3: 2026-05-01, NB -> not one of the 2 mapped statuses -> blank
         assert data[2][0] == "01.05.2026"
-        assert data[2][COL_STATUS] == "unbekannt / nicht erfasst"
+        assert data[2][COL_STATUS] is None
 
         # The sighting's OWN stored coordinates must NOT leak — only RING-lookup
         # coordinates are exported, and these test places aren't in the lookup.
