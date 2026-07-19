@@ -14,6 +14,7 @@ from ...database.connection import get_db
 from ...database.user_models import User
 from ...database.models import Sighting as SightingDB
 from ...utils.sighting_coding import ring_age_label, ring_sex_label
+from ...utils.ring_places import lookup_place
 from ..services.sighting_service import SightingService
 
 router = APIRouter()
@@ -133,6 +134,46 @@ _RING_STATUS_MAP = {
     "BV": "nestbauend oder brütend",
 }
 
+# pair (Familien Status) code -> label, matching the Vogelring form dropdown.
+_PAIR_LABELS = {
+    "x": "Verpaart",
+    "F": "Familie",
+    "S": "Schule",
+}
+
+# Vogelring fields with no dedicated RING column, bundled into the RING
+# "Bemerkungen" field. (label, accessor) — only filled values are emitted.
+# Order follows Ingo's example; tweak once he sends the final field order.
+_BEMERKUNGEN_FIELDS: list[tuple[str, "callable"]] = [
+    ("Familien Status", lambda s: _PAIR_LABELS.get(s.pair, s.pair) if s.pair else None),
+    ("Partner", lambda s: s.partner),
+    ("Nicht flügge Junge", lambda s: s.breed_size),
+    ("Flügge Junge", lambda s: s.family_size),
+    ("Kleingruppe", lambda s: s.small_group_size),
+    ("Großgruppe", lambda s: s.large_group_size),
+    ("Habitat", lambda s: s.habitat),
+    ("Kleinfläche", lambda s: s.area),
+    ("Feldfrucht", lambda s: s.field_fruit),
+]
+
+
+def _build_bemerkungen(s: SightingDB) -> str:
+    """Concatenate the filled non-RING Vogelring fields into one RING remarks string.
+
+    Example: "Familien Status: Familie / Partner: 281937 / Nicht flügge Junge: 8".
+    Empty/None fields are skipped entirely.
+    """
+    parts = []
+    for label, accessor in _BEMERKUNGEN_FIELDS:
+        value = accessor(s)
+        if value is None:
+            continue
+        text = str(value).strip()
+        if text == "":
+            continue
+        parts.append(f"{label}: {text}")
+    return " / ".join(parts)
+
 
 @router.get("/sightings/export/vogelwarte")
 async def export_sightings_vogelwarte(
@@ -150,9 +191,10 @@ async def export_sightings_vogelwarte(
     """Export Wiederfunde (sightings) as an Excel file for the Vogelwarte RING import.
 
     Includes all sightings between ``start_date`` and ``end_date`` (inclusive) that
-    are NOT yet marked as "gemeldet" (melded is False or NULL). Coordinates are
-    intentionally excluded — only the place name is exported, to be matched against
-    RING manually. The melded flag is NOT modified by this export.
+    are NOT yet marked as "gemeldet" (melded is False or NULL). Each Vogelring place
+    is matched to its RING place name + coordinates via the baked-in ring_places
+    lookup (blank when unmatched). Non-RING Vogelring fields are bundled into a
+    "Bemerkungen" column. The melded flag is NOT modified by this export.
     """
     try:
         from openpyxl import Workbook
@@ -177,12 +219,16 @@ async def export_sightings_vogelwarte(
     headers = [
         "Datum",
         "Ort",
+        "RING-Ort",
+        "Lat",
+        "Lon",
         "Ring",
         "Spezies",
         "Alter",
         "Geschlecht",
         "Status",
         "Melder",
+        "Bemerkungen",
         "Kommentar",
     ]
 
@@ -194,10 +240,15 @@ async def export_sightings_vogelwarte(
         cell.font = Font(bold=True)
 
     for s in sightings:
+        # Match the Vogelring place to its RING place + coordinates (blank if unmatched).
+        ring_place = lookup_place(s.place)
         ws.append(
             [
                 s.date.strftime("%d.%m.%Y") if s.date else "",
                 s.place or "",
+                ring_place.ring_place if ring_place else "",
+                ring_place.lat if ring_place else "",
+                ring_place.lon if ring_place else "",
                 s.ring or "",
                 s.species or "",
                 # Age code -> RING "<code> <label>" (empty -> "2 Fängling")
@@ -208,12 +259,14 @@ async def export_sightings_vogelwarte(
                     (s.status or "").strip().upper(), "unbekannt / nicht erfasst"
                 ),
                 s.melder or "",
+                # Non-RING Vogelring fields bundled into the RING remarks field.
+                _build_bemerkungen(s),
                 s.comment or "",
             ]
         )
 
     # Reasonable default column widths for readability.
-    widths = [12, 28, 16, 22, 14, 12, 24, 20, 40]
+    widths = [12, 28, 30, 10, 10, 16, 22, 16, 12, 24, 20, 44, 40]
     for idx, width in enumerate(widths, start=1):
         ws.column_dimensions[chr(64 + idx)].width = width
 

@@ -244,6 +244,9 @@ $RECYCLE.BIN/
 
 .aws-sam
 data
+# but keep the baked-in RING place lookup used by the Wiederfunde export
+!backend/src/data/
+!backend/src/data/ring_places.json
 
 bolt.in
 scripts/user.py

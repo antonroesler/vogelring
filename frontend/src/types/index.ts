@@ -133,6 +133,7 @@ export interface SuggestionLists {
  * Vorjährig→5, Juvenil→1. See utils/sightingCoding.ts for labels/options.)
  */
 export enum SightingAgeCode {
+  Unbekannt = 0,
   Nestling = 1,
   Faengling = 2,
   Diesjaehrig = 3,
@@ -141,6 +142,11 @@ export enum SightingAgeCode {
   AelterAlsVorjaehrig = 6,
   DrittesKalenderjahr = 7,
   UeberDreiJahre = 8,
+  ViertesKalenderjahr = 9,
+  UeberVierJahre = 10, // RING code A
+  FuenftesKalenderjahr = 11, // RING code B
+  UeberFuenfJahre = 12, // RING code C
+  SechstesKalenderjahr = 13, // RING code D
 }
 
 /** Sex codes for sightings — same scheme as Ringings. */

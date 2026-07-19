@@ -6,7 +6,7 @@
  * share one legend. Sightings render them as "<code> <label>" (e.g. "3 Diesjährig").
  */
 import { SightingAgeCode, SightingSexCode } from '@/types';
-import { AGE_MAPPING } from '@/utils/ageMapping';
+import { AGE_MAPPING, AGE_CODE_ORDER } from '@/utils/ageMapping';
 
 export interface CodeOption {
   title: string;
@@ -15,8 +15,8 @@ export interface CodeOption {
 
 /** Age options for a sighting dropdown, e.g. { title: '3 Diesjährig', value: 3 }. */
 export function getSightingAgeOptions(): CodeOption[] {
-  return Object.values(AGE_MAPPING).map((a) => ({
-    title: `${a.value} ${a.label}`,
+  return AGE_CODE_ORDER.map((code) => AGE_MAPPING[code]).map((a) => ({
+    title: `${a.ringCode} ${a.label}`,
     value: a.value,
   }));
 }
@@ -25,7 +25,7 @@ export function getSightingAgeOptions(): CodeOption[] {
 export function formatSightingAge(code: number | null | undefined): string {
   if (code === null || code === undefined) return '';
   const a = AGE_MAPPING[code as number];
-  return a ? `${a.value} ${a.label}` : `${code}`;
+  return a ? `${a.ringCode} ${a.label}` : `${code}`;
 }
 
 export const SIGHTING_SEX_LABELS: Record<number, string> = {

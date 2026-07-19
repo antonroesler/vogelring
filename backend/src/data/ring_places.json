@@ -1,0 +1,296 @@
+{
+  "bad homburg, schlossteich": {
+    "lat": 50.22639,
+    "lon": 8.60833,
+    "ring_place": "Bad Homburg, Schloßteich*[DEED, 5717]",
+    "vogelring_place": "Bad Homburg, Schloßteich"
+  },
+  "eddersheim, staustufe": {
+    "lat": 50.03861,
+    "lon": 8.47639,
+    "ring_place": "Eddersheim, Staustufe*[DEED, 5916)",
+    "vogelring_place": "Eddersheim, Staustufe"
+  },
+  "f, ben-gurion-ring": {
+    "lat": 50.19832,
+    "lon": 8.66209,
+    "ring_place": "Frankfurt, Bonames Nord*[DEED, 5817]",
+    "vogelring_place": "F, Ben-Gurion-Ring"
+  },
+  "f, brentanopark": {
+    "lat": 50.12278,
+    "lon": 8.61417,
+    "ring_place": "Frankfurt, Solmspark*[DEED, 5817)",
+    "vogelring_place": "F, Brentanopark"
+  },
+  "f, eschenheimer anlage": {
+    "lat": 50.11417,
+    "lon": 8.68278,
+    "ring_place": "Frankfurt, Innenstadt*[DEED, 5818)",
+    "vogelring_place": "F, Eschenheimer Anlage"
+  },
+  "f, fechenheim, endhaltestelle": {
+    "lat": 50.11111,
+    "lon": 8.77389,
+    "ring_place": "Frankfurt, Fechenheim, Mainbogen*(DEED 5818)",
+    "vogelring_place": "F, Fechenheim, Endhaltestelle"
+  },
+  "f, fechenheimer mainbogen ost": {
+    "lat": 50.11111,
+    "lon": 8.77389,
+    "ring_place": "Frankfurt, Fechenheim, Mainbogen*(DEED 5818)",
+    "vogelring_place": "F, Fechenheimer Mainbogen Ost"
+  },
+  "f, gerbermühle": {
+    "lat": 50.10833,
+    "lon": 8.72667,
+    "ring_place": "Offenbach, Staustufe*[DEED, 5818]",
+    "vogelring_place": "F, Gerbermühle"
+  },
+  "f, griesheimer klärwerks mainufer": {
+    "lat": 50.08917,
+    "lon": 8.62694,
+    "ring_place": "Frankfurt, Griesheim, Klärwerk*(DEED 5917)",
+    "vogelring_place": "F, Griesheimer Klärwerks Mainufer"
+  },
+  "f, griesheimer staustufe": {
+    "lat": 50.08861,
+    "lon": 8.59556,
+    "ring_place": "Frankfurt, Griesheim-Staustufe*[DEED, 5917]",
+    "vogelring_place": "F, Griesheimer Staustufe"
+  },
+  "f, grillscher altarm": {
+    "lat": 50.11111,
+    "lon": 8.59056,
+    "ring_place": "Frankfurt, Nidda-Niedwald*[DEED, 5817]",
+    "vogelring_place": "F, Grillscher Altarm"
+  },
+  "f, höchst, fähre": {
+    "lat": 50.09722,
+    "lon": 8.54722,
+    "ring_place": "Frankfurt, Höchst-Mainufer*[DEED, 5917]",
+    "vogelring_place": "F, Höchst, Fähre"
+  },
+  "f, höchst, stadtpark": {
+    "lat": 50.10861,
+    "lon": 8.55583,
+    "ring_place": "Frankfurt, Höchst-Stadtpark*[DEED, 5817]",
+    "vogelring_place": "F, Höchst, Stadtpark"
+  },
+  "f, jacobiweiher": {
+    "lat": 50.06872,
+    "lon": 8.68697,
+    "ring_place": "Frankfurt, Jacobi Weiher*[DEED, 5918]",
+    "vogelring_place": "F, Jacobiweiher"
+  },
+  "f, kesselbruchweiher": {
+    "lat": 50.06569,
+    "lon": 8.70792,
+    "ring_place": "Frankfurt, Kesselbruchweiher*[DEED, 5918]",
+    "vogelring_place": "F, Kesselbruchweiher"
+  },
+  "f, kläranlage niederrad": {
+    "lat": 50.085,
+    "lon": 8.62389,
+    "ring_place": "Frankfurt, Niederrad, Klärwerk*(DEED 5917)",
+    "vogelring_place": "F, Kläranlage Niederrad"
+  },
+  "f, lilu": {
+    "lat": 50.09369,
+    "lon": 8.64647,
+    "ring_place": "Frankfurt, Niederrad, LiLu*(DEED 5917)",
+    "vogelring_place": "F, LiLu"
+  },
+  "f, mainkai, innenstadt": {
+    "lat": 50.11194,
+    "lon": 8.7025,
+    "ring_place": "Frankfurt, Mainkai*[DEED, 5818]",
+    "vogelring_place": "F, Mainkai, Innenstadt"
+  },
+  "f, martin-luther-king-park": {
+    "lat": 50.16194,
+    "lon": 8.62361,
+    "ring_place": "Frankfurt, Martin-Luther-King-Park*[DEED, 5817]",
+    "vogelring_place": "F, Martin-Luther-King-Park"
+  },
+  "f, messeweiher": {
+    "lat": 50.11378,
+    "lon": 8.65208,
+    "ring_place": "Frankfurt, Ludwig-Erhard-Anlage*(DEED 5817)",
+    "vogelring_place": "F, Messeweiher"
+  },
+  "f, nidda a5-bhs": {
+    "lat": 50.11432,
+    "lon": 8.57253,
+    "ring_place": "Frankfurt, Sossenheim*[DEED, 5817]",
+    "vogelring_place": "F, Nidda A5-BHS"
+  },
+  "f, nidda a661-maybachbrücke": {
+    "lat": 50.15056,
+    "lon": 8.64972,
+    "ring_place": "Frankfurt, Eschersheim*[DEED, 5817]",
+    "vogelring_place": "F, Nidda A661-Maybachbrücke"
+  },
+  "f, nidda maybachbrücke bis rosa-luxemburg-str": {
+    "lat": 50.15056,
+    "lon": 8.64972,
+    "ring_place": "Frankfurt, Eschersheim*[DEED, 5817]",
+    "vogelring_place": "F, Nidda Maybachbrücke bis Rosa-Luxemburg-Str"
+  },
+  "f, nidda rl-a66": {
+    "lat": 50.14972,
+    "lon": 8.62583,
+    "ring_place": "Frankfurt, Römerstadt*[DEED, 5817]",
+    "vogelring_place": "F, Nidda RL-A66"
+  },
+  "f, nied, blumenwiese": {
+    "lat": 50.10778,
+    "lon": 8.57111,
+    "ring_place": "Frankfurt, Nied, Polofeld*[DEED, 5817]",
+    "vogelring_place": "F, Nied, Blumenwiese"
+  },
+  "f, obermainanlage": {
+    "lat": 50.11333,
+    "lon": 8.69361,
+    "ring_place": "Frankfurt, Rechneigrabenweiher*[DEED, 5818]",
+    "vogelring_place": "F, Obermainanlage"
+  },
+  "f, ostpark": {
+    "lat": 50.12028,
+    "lon": 8.72333,
+    "ring_place": "Frankfurt, Ostpark*[DEED, 5818)",
+    "vogelring_place": "F, Ostpark"
+  },
+  "f, palmengarten": {
+    "lat": 50.12389,
+    "lon": 8.65583,
+    "ring_place": "Frankfurt, Palmengarten*[DEED, 5817]",
+    "vogelring_place": "F, Palmengarten"
+  },
+  "f, rebstockpark": {
+    "lat": 50.11139,
+    "lon": 8.61583,
+    "ring_place": "Frankfurt, Rebstockweiher*(DEED 5817)",
+    "vogelring_place": "F, Rebstockpark"
+  },
+  "f, rechneigrabenweiher": {
+    "lat": 50.11333,
+    "lon": 8.69361,
+    "ring_place": "Frankfurt, Rechneigrabenweiher*[DEED, 5818]",
+    "vogelring_place": "F, Rechneigrabenweiher"
+  },
+  "f, römerstadt, altarm": {
+    "lat": 50.14972,
+    "lon": 8.62583,
+    "ring_place": "Frankfurt, Römerstadt*[DEED, 5817]",
+    "vogelring_place": "F, Römerstadt, Altarm"
+  },
+  "f, sausee": {
+    "lat": 50.15746,
+    "lon": 8.72949,
+    "ring_place": "Frankfurt, Seckbach*[DEED, 5818]",
+    "vogelring_place": "F, Sausee"
+  },
+  "f, schwanheimer mainufer": {
+    "lat": 50.08681,
+    "lon": 8.5601,
+    "ring_place": "Frankfurt, Schwanheim*[DEED, 5917]",
+    "vogelring_place": "F, Schwanheimer Mainufer"
+  },
+  "f, sindlingen, mainufer": {
+    "lat": 50.06898,
+    "lon": 8.51425,
+    "ring_place": "Frankfurt, Sindlingen*[DEED, 5917]",
+    "vogelring_place": "F, Sindlingen, Mainufer"
+  },
+  "f, solmspark": {
+    "lat": 50.12278,
+    "lon": 8.61417,
+    "ring_place": "Frankfurt, Solmspark*[DEED, 5817)",
+    "vogelring_place": "F, Solmspark"
+  },
+  "f, uni campus weiher": {
+    "lat": 50.12583,
+    "lon": 8.66722,
+    "ring_place": "Frankfurt, Unicampus, Westend*[DEED, 5818]",
+    "vogelring_place": "F, Uni Campus Weiher"
+  },
+  "f, zoo": {
+    "lat": 50.11583,
+    "lon": 8.70333,
+    "ring_place": "Frankfurt, Zoo*[DEED, 5818)",
+    "vogelring_place": "F, Zoo"
+  },
+  "klein-krotzenburg, mainauen": {
+    "lat": 50.07083,
+    "lon": 8.98639,
+    "ring_place": "Klein-Krotzenburg, Mainauen*(DEED 5919)",
+    "vogelring_place": "Klein-Krotzenburg, Mainauen"
+  },
+  "mühlheim, lsg hess. mainauen": {
+    "lat": 50.13114,
+    "lon": 8.82119,
+    "ring_place": "Mühlheim, LSG \"Hess. Mainauen\"*[DEED, 5818]",
+    "vogelring_place": "Mühlheim, LSG Hess. Mainauen"
+  },
+  "nsg bingenheimer ried": {
+    "lat": 50.36917,
+    "lon": 8.88,
+    "ring_place": "Echzell, NSG \"Bingenheimer-Ried\"*[DEED, 5619]",
+    "vogelring_place": "NSG Bingenheimer Ried"
+  },
+  "oberursel, maasgrundweiher": {
+    "lat": 50.20306,
+    "lon": 8.56833,
+    "ring_place": "Oberursel, Maasgrundweiher*(DEED 5717",
+    "vogelring_place": "Oberursel, Maasgrundweiher"
+  },
+  "of bürgel, mainufer": {
+    "lat": 50.1175,
+    "lon": 8.78028,
+    "ring_place": "Offenbach, Bürgel-Mainufer*[DEED, 5818)",
+    "vogelring_place": "OF Bürgel, Mainufer"
+  },
+  "of rumpenheim, lsg hess. mainauen ost": {
+    "lat": 50.13194,
+    "lon": 8.8125,
+    "ring_place": "Offenbach, Rumpenheim LSG \"Hess. Mainauen\"Ost*[DEED, 5818)",
+    "vogelring_place": "OF Rumpenheim, LSG Hess. Mainauen Ost"
+  },
+  "of rumpenheim, lsg hess. mainauen west": {
+    "lat": 50.13583,
+    "lon": 8.7775,
+    "ring_place": "Offenbach, Bürgel und Rrumpenheim, Mainauen*[DEED, 5818)",
+    "vogelring_place": "OF Rumpenheim, LSG Hess. Mainauen West"
+  },
+  "of, carl-ulrich-brücke": {
+    "lat": 50.11167,
+    "lon": 8.75778,
+    "ring_place": "Offenbach, Carl-Ulrich-Brücke*[DEED, 5818]",
+    "vogelring_place": "OF, Carl-Ulrich-Brücke"
+  },
+  "of, kaiserlei": {
+    "lat": 50.10833,
+    "lon": 8.72667,
+    "ring_place": "Offenbach, Staustufe*[DEED, 5818]",
+    "vogelring_place": "OF, Kaiserlei"
+  },
+  "offenbach hafen": {
+    "lat": 50.11361,
+    "lon": 8.74778,
+    "ring_place": "Offenbach, Hafen*[DEED, 5818]",
+    "vogelring_place": "Offenbach Hafen"
+  },
+  "offenbacher mainufer": {
+    "lat": 50.1075,
+    "lon": 8.77194,
+    "ring_place": "Offenbach, Mainufer*[DEED, 5818]",
+    "vogelring_place": "Offenbacher Mainufer"
+  },
+  "offenbacher staustufe": {
+    "lat": 50.10833,
+    "lon": 8.72667,
+    "ring_place": "Offenbach, Staustufe*[DEED, 5818]",
+    "vogelring_place": "Offenbacher Staustufe"
+  }
+}

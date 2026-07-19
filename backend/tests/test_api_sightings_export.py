@@ -29,14 +29,24 @@ def dev_org_id(client, test_db):
 EXPECTED_HEADERS = [
     "Datum",
     "Ort",
+    "RING-Ort",
+    "Lat",
+    "Lon",
     "Ring",
     "Spezies",
     "Alter",
     "Geschlecht",
     "Status",
     "Melder",
+    "Bemerkungen",
     "Kommentar",
 ]
+
+# 0-indexed positions of the columns the tests assert on.
+COL_RING = 5
+COL_AGE = 7
+COL_STATUS = 9
+COL_BEMERKUNGEN = 11
 
 
 def _add(test_db, org_id, **kwargs):
@@ -123,35 +133,45 @@ class TestVogelwarteExport:
         # 3 included, ordered by date ascending
         assert len(data) == 3
 
-        # Row 1: 2026-02-01, BV
+        # Row 1: 2026-02-01, BV. Place "Nied" is not in the RING lookup, so
+        # RING-Ort/Lat/Lon are blank (read back as None); no non-RING fields set.
         assert data[0] == [
             "01.02.2026",
             "Nied",
+            None,  # RING-Ort
+            None,  # Lat
+            None,  # Lon
             "R2",
             "Anas platyrhynchos",
             "6 Älter als vorjährig",  # code 6 -> label
             "männlich",
             "nestbauend oder brütend",
             "Obs B",
+            None,  # Bemerkungen (no non-RING fields set)
             "c2",
         ]
         # Row 2: 2026-03-01, MG, empty age/sex defaults
         assert data[1] == [
             "01.03.2026",
             "Kalbach",
+            None,  # RING-Ort
+            None,  # Lat
+            None,  # Lon
             "R1",
             "Larus ridibundus",
             "2 Fängling",
             "unbekannt",
             "in Mausertrupp",
             "Obs A",
+            None,  # Bemerkungen
             "c1",
         ]
         # Row 3: 2026-05-01, NB -> unknown status
         assert data[2][0] == "01.05.2026"
-        assert data[2][6] == "unbekannt / nicht erfasst"
+        assert data[2][COL_STATUS] == "unbekannt / nicht erfasst"
 
-        # Coordinates must NOT be present anywhere in the sheet
+        # The sighting's OWN stored coordinates must NOT leak — only RING-lookup
+        # coordinates are exported, and these test places aren't in the lookup.
         flat = [str(c) for r in rows for c in r if c is not None]
         assert not any("50.1" in v or "8.6" in v for v in flat)
 
@@ -163,7 +183,7 @@ class TestVogelwarteExport:
         assert response.status_code == 200
         rows = _load_rows(response)
         assert len(rows) == 2  # header + 1 row
-        assert rows[1][2] == "B"
+        assert rows[1][COL_RING] == "B"
 
     def test_end_date_bound(self, client, test_db, dev_org_id):
         _add(test_db, dev_org_id, date=date(2026, 1, 15), melded=False, status="MG", ring="A")
@@ -175,7 +195,7 @@ class TestVogelwarteExport:
         assert response.status_code == 200
         rows = _load_rows(response)
         assert len(rows) == 2  # header + 1 row (only the January one)
-        assert rows[1][2] == "A"
+        assert rows[1][COL_RING] == "A"
 
     def test_age_labels(self, client, test_db, dev_org_id):
         # Post-migration the DB holds integer codes; the export labels them.
@@ -199,9 +219,47 @@ class TestVogelwarteExport:
                 place=f"p{i:02d}",  # order rows deterministically by place
             )
         rows = _load_rows(client.get(EXPORT_URL))
-        got = {r[2]: r[4] for r in rows[1:]}  # ring -> age column
+        got = {r[COL_RING]: r[COL_AGE] for r in rows[1:]}  # ring -> age column
         for i, (_code, exp) in enumerate(cases):
             assert got[f"AGE{i}"] == exp
+
+    def test_place_matched_to_ring_place_and_coords(self, client, test_db, dev_org_id):
+        # "F, Mainkai, Innenstadt" is a mapped Vogelring place in the RING lookup.
+        _add(
+            test_db,
+            dev_org_id,
+            date=date(2026, 3, 1),
+            melded=False,
+            status="MG",
+            ring="M1",
+            place="F, Mainkai, Innenstadt",
+        )
+        rows = _load_rows(client.get(EXPORT_URL))
+        row = rows[1]
+        assert row[2].startswith("Frankfurt, Mainkai")  # RING-Ort
+        assert row[3] == 50.11194  # Lat from the lookup
+        assert row[4] == 8.7025  # Lon from the lookup
+
+    def test_bemerkungen_bundles_non_ring_fields(self, client, test_db, dev_org_id):
+        _add(
+            test_db,
+            dev_org_id,
+            date=date(2026, 3, 1),
+            melded=False,
+            status="MG",
+            ring="B1",
+            place="Nirgendwo",
+            pair="F",  # Familie
+            partner="281937",
+            breed_size=8,
+            family_size=2,
+        )
+        rows = _load_rows(client.get(EXPORT_URL))
+        bemerkungen = rows[1][COL_BEMERKUNGEN]
+        assert bemerkungen == (
+            "Familien Status: Familie / Partner: 281937 / "
+            "Nicht flügge Junge: 8 / Flügge Junge: 2"
+        )
 
     def test_export_does_not_change_melded(self, client, test_db, dev_org_id):
         s = _add(
