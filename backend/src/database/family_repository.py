@@ -12,6 +12,7 @@ Storage convention (unidirectional):
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
+from sqlalchemy.exc import IntegrityError
 from uuid import UUID
 import logging
 
@@ -58,6 +59,19 @@ class FamilyRepository:
             sighting1_id, sighting2_id = sighting2_id, sighting1_id
             ringing1_id, ringing2_id = ringing2_id, ringing1_id
 
+        # Idempotent create: a relationship that already exists is not an error —
+        # it just means the two birds are already linked for that year. Return the
+        # existing record instead of raising a UniqueViolation (uq_bird_relationship).
+        # Previously the 400 aborted the whole family-creation flow in the frontend,
+        # so checked children were never created and the entry form was never reset.
+        existing = self._find_relationship(
+            org_id, bird1_ring, bird2_ring, relationship_type, year
+        )
+        if existing is not None:
+            return self._backfill_relationship_links(
+                existing, sighting1_id, sighting2_id, ringing1_id, ringing2_id
+            )
+
         relationship = BirdRelationship(
             org_id=org_id,
             bird1_ring=bird1_ring,
@@ -74,8 +88,73 @@ class FamilyRepository:
             created_by=created_by,
         )
         self.db.add(relationship)
-        self.db.commit()
+        try:
+            self.db.commit()
+        except IntegrityError:
+            # Race: a concurrent request inserted the same relationship between our
+            # check above and this commit. Roll back and return the existing record.
+            self.db.rollback()
+            existing = self._find_relationship(
+                org_id, bird1_ring, bird2_ring, relationship_type, year
+            )
+            if existing is not None:
+                return self._backfill_relationship_links(
+                    existing, sighting1_id, sighting2_id, ringing1_id, ringing2_id
+                )
+            raise
         self.db.refresh(relationship)
+        return relationship
+
+    def _find_relationship(
+        self,
+        org_id: str,
+        bird1_ring: str,
+        bird2_ring: str,
+        relationship_type: RelationshipType,
+        year: int,
+    ) -> Optional[BirdRelationship]:
+        """Find an existing relationship matching the unique key (rings already normalized)."""
+        return (
+            self.db.query(BirdRelationship)
+            .filter(
+                BirdRelationship.org_id == org_id,
+                BirdRelationship.bird1_ring == bird1_ring,
+                BirdRelationship.bird2_ring == bird2_ring,
+                BirdRelationship._relationship_type == relationship_type.value,
+                BirdRelationship.year == year,
+            )
+            .first()
+        )
+
+    def _backfill_relationship_links(
+        self,
+        relationship: BirdRelationship,
+        sighting1_id: Optional[UUID],
+        sighting2_id: Optional[UUID],
+        ringing1_id: Optional[UUID],
+        ringing2_id: Optional[UUID],
+    ) -> BirdRelationship:
+        """Attach sighting/ringing references to an existing relationship if it had none.
+
+        Lets a re-observation enrich an earlier link (e.g. one first recorded without
+        a sighting id) without ever overwriting an existing reference.
+        """
+        changed = False
+        if relationship.sighting1_id is None and sighting1_id is not None:
+            relationship.sighting1_id = sighting1_id
+            changed = True
+        if relationship.sighting2_id is None and sighting2_id is not None:
+            relationship.sighting2_id = sighting2_id
+            changed = True
+        if relationship.ringing1_id is None and ringing1_id is not None:
+            relationship.ringing1_id = ringing1_id
+            changed = True
+        if relationship.ringing2_id is None and ringing2_id is not None:
+            relationship.ringing2_id = ringing2_id
+            changed = True
+        if changed:
+            self.db.commit()
+            self.db.refresh(relationship)
         return relationship
 
     def get_relationship_by_id(

@@ -704,15 +704,33 @@ const getChildSightings = () => {
     }));
 };
 
+/**
+ * Create a family relationship without ever aborting the surrounding flow.
+ * An "already linked" relationship (backend returns the existing record now, but
+ * older data / races could still surface an error) must not prevent the remaining
+ * child sightings from being created or the form from being reset.
+ */
+const linkRelationshipSafely = async (
+  relationship: Parameters<typeof apiRelationships.createRelationship>[0]
+) => {
+  try {
+    await apiRelationships.createRelationship(relationship);
+  } catch (error) {
+    console.warn('Relationship skipped (already linked or failed):', relationship, error);
+  }
+};
+
 const handleFamilyConfirm = async (selections: FamilySelections) => {
   if (!pendingSighting.value) return;
 
+  const sightingForReset = pendingSighting.value;
+  const year = new Date(pendingSighting.value.date || new Date()).getFullYear();
+
+  // Always create main sighting first. If THIS fails, keep the form untouched so
+  // the user can retry — nothing was saved.
+  const mainSighting = await createSighting(pendingSighting.value);
+
   try {
-    const year = new Date(pendingSighting.value.date || new Date()).getFullYear();
-
-    // Always create main sighting
-    const mainSighting = await createSighting(pendingSighting.value);
-
     // Conditionally create partner sighting and relationships
     const partnerSightingData = getPartnerSighting();
     let createdPartnerSighting = null;
@@ -720,7 +738,7 @@ const handleFamilyConfirm = async (selections: FamilySelections) => {
       createdPartnerSighting = await createSighting(partnerSightingData);
 
       // One breeding_partner record, bird1 < bird2 alphabetically (backend normalizes)
-      await apiRelationships.createRelationship({
+      await linkRelationshipSafely({
         bird1_ring: mainSighting.ring!,
         bird2_ring: createdPartnerSighting.ring!,
         relationship_type: 'breeding_partner',
@@ -743,7 +761,7 @@ const handleFamilyConfirm = async (selections: FamilySelections) => {
       createdChildSightings.push({ index, sighting: createdChild });
 
       // Parent-child: main → child (one record, parent is bird1)
-      await apiRelationships.createRelationship({
+      await linkRelationshipSafely({
         bird1_ring: mainSighting.ring!,
         bird2_ring: createdChild.ring!,
         relationship_type: 'parent_of',
@@ -754,7 +772,7 @@ const handleFamilyConfirm = async (selections: FamilySelections) => {
 
       // Parent-child: partner → child (only if partner was also created)
       if (createdPartnerSighting) {
-        await apiRelationships.createRelationship({
+        await linkRelationshipSafely({
           bird1_ring: createdPartnerSighting.ring!,
           bird2_ring: createdChild.ring!,
           relationship_type: 'parent_of',
@@ -772,7 +790,7 @@ const handleFamilyConfirm = async (selections: FamilySelections) => {
         const b = createdChildSightings[j].sighting;
 
         // One sibling_of record per pair (backend normalizes bird1 < bird2)
-        await apiRelationships.createRelationship({
+        await linkRelationshipSafely({
           bird1_ring: a.ring!,
           bird2_ring: b.ring!,
           relationship_type: 'sibling_of',
@@ -782,25 +800,21 @@ const handleFamilyConfirm = async (selections: FamilySelections) => {
         });
       }
     }
-
+  } finally {
+    // The sightings are already persisted — always close the dialog, notify the
+    // parent, and reset the form, even if a secondary sighting/relationship step
+    // failed. Otherwise the filled fields linger and have to be cleared by hand.
     showFamilyConfirmationDialog.value = false;
-
-    // Emit 'created' event — sightings already saved, parent just shows toast
     emit('created', mainSighting);
 
-    // Reset form
     if (props.clearFieldsSettings) {
-      localSighting.value = createClearedSighting(pendingSighting.value, props.clearFieldsSettings);
+      localSighting.value = createClearedSighting(sightingForReset, props.clearFieldsSettings);
     } else {
       localSighting.value = createDefaultSighting();
     }
 
     children.value = [];
     pendingSighting.value = null;
-
-  } catch (error) {
-    console.error('Error creating family sighting:', error);
-    throw error;
   }
 };
 

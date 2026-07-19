@@ -269,3 +269,96 @@ def test_display_type_sibling(repo):
     )
     assert repo._get_display_type(rel, "A001") == "sibling_of"
     assert repo._get_display_type(rel, "B002") == "sibling_of"
+
+
+# ----------- Idempotent create (duplicate = "already linked", not an error) -----------
+
+def test_create_relationship_duplicate_returns_existing(repo):
+    """Creating the same relationship twice returns the existing record, no error.
+
+    Regression: a duplicate raised a UniqueViolation (400) that aborted the whole
+    family-creation flow — checked children were never created and the form never reset.
+    """
+    first = repo.create_relationship(
+        org_id=TEST_ORG_ID,
+        bird1_ring="P001",
+        bird2_ring="C001",
+        relationship_type=RelationshipType.PARENT_OF,
+        year=2026,
+    )
+    second = repo.create_relationship(
+        org_id=TEST_ORG_ID,
+        bird1_ring="P001",
+        bird2_ring="C001",
+        relationship_type=RelationshipType.PARENT_OF,
+        year=2026,
+    )
+    assert second.id == first.id
+
+
+def test_create_relationship_duplicate_symmetric_reversed_returns_existing(repo):
+    """A symmetric duplicate submitted in reversed order still resolves to the same record."""
+    first = repo.create_relationship(
+        org_id=TEST_ORG_ID,
+        bird1_ring="A001",
+        bird2_ring="Z999",
+        relationship_type=RelationshipType.BREEDING_PARTNER,
+        year=2026,
+    )
+    # Reversed ring order — normalization makes it the same unique key
+    second = repo.create_relationship(
+        org_id=TEST_ORG_ID,
+        bird1_ring="Z999",
+        bird2_ring="A001",
+        relationship_type=RelationshipType.BREEDING_PARTNER,
+        year=2026,
+    )
+    assert second.id == first.id
+
+
+def test_create_relationship_duplicate_backfills_missing_sighting_ids(repo):
+    """A re-observation enriches an earlier link that had no sighting references."""
+    s1, s2 = uuid4(), uuid4()
+    first = repo.create_relationship(
+        org_id=TEST_ORG_ID,
+        bird1_ring="P002",
+        bird2_ring="C002",
+        relationship_type=RelationshipType.PARENT_OF,
+        year=2026,
+    )
+    assert first.sighting1_id is None
+    second = repo.create_relationship(
+        org_id=TEST_ORG_ID,
+        bird1_ring="P002",
+        bird2_ring="C002",
+        relationship_type=RelationshipType.PARENT_OF,
+        year=2026,
+        sighting1_id=s1,
+        sighting2_id=s2,
+    )
+    assert second.id == first.id
+    assert second.sighting1_id == s1
+    assert second.sighting2_id == s2
+
+
+def test_create_relationship_duplicate_does_not_overwrite_existing_sighting_ids(repo):
+    """Backfill never clobbers references that are already set."""
+    original = uuid4()
+    first = repo.create_relationship(
+        org_id=TEST_ORG_ID,
+        bird1_ring="P003",
+        bird2_ring="C003",
+        relationship_type=RelationshipType.PARENT_OF,
+        year=2026,
+        sighting1_id=original,
+    )
+    second = repo.create_relationship(
+        org_id=TEST_ORG_ID,
+        bird1_ring="P003",
+        bird2_ring="C003",
+        relationship_type=RelationshipType.PARENT_OF,
+        year=2026,
+        sighting1_id=uuid4(),
+    )
+    assert second.id == first.id
+    assert second.sighting1_id == original
