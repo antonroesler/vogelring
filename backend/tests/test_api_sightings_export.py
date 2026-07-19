@@ -240,6 +240,41 @@ class TestVogelwarteExport:
         assert row[3] == 50.11194  # Lat from the lookup
         assert row[4] == 8.7025  # Lon from the lookup
 
+    def test_unmapped_place_smart_matched_and_flagged(self, client, test_db, dev_org_id):
+        # "F, Bethmannweiher" is NOT in Ingo's explicit map, but the sighting's
+        # coordinates sit ~3 m from RING "Bethmann Weiher" -> auto-suggested.
+        _add(
+            test_db,
+            dev_org_id,
+            date=date(2026, 3, 1),
+            melded=False,
+            status="MG",
+            ring="S1",
+            place="F, Bethmannweiher",
+            lat=50.11775,
+            lon=8.69082,
+        )
+        row = _load_rows(client.get(EXPORT_URL))[1]
+        assert "Bethmann" in row[2]
+        assert row[2].endswith("(auto)")  # flagged as unverified suggestion
+        assert isinstance(row[3], float) and isinstance(row[4], float)
+
+    def test_unmapped_place_without_close_match_stays_blank(self, client, test_db, dev_org_id):
+        _add(
+            test_db,
+            dev_org_id,
+            date=date(2026, 3, 1),
+            melded=False,
+            status="MG",
+            ring="S2",
+            place="F, Erlenbruch",
+            lat=50.12912,
+            lon=8.72790,
+        )
+        row = _load_rows(client.get(EXPORT_URL))[1]
+        assert row[2] is None  # RING-Ort blank
+        assert row[3] is None and row[4] is None
+
     def test_bemerkungen_bundles_non_ring_fields(self, client, test_db, dev_org_id):
         _add(
             test_db,

@@ -1,0 +1,53 @@
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e9] [cursor=pointer]:
+        - generic [ref=e10]: 󱗆
+        - generic [ref=e11]: Vogelring
+      - button "v2.7.0" [ref=e12] [cursor=pointer]:
+        - generic [ref=e13]:
+          - generic [ref=e14]: 󰋽
+          - generic [ref=e15]: v2.7.0
+          - generic [ref=e16]: 󰅀
+      - combobox [ref=e20]:
+        - textbox "Ring suchen..." [ref=e23]
+        - text: 󰍝
+      - text: 󰍉 󰍜
+      - generic [ref=e24]:
+        - button "Apps" [ref=e25] [cursor=pointer]:
+          - generic [ref=e26]:
+            - generic [ref=e27]: 󰀻
+            - generic [ref=e28]: Apps
+            - generic [ref=e29]: 󰅀
+        - button "User" [ref=e30] [cursor=pointer]:
+          - generic [ref=e31]:
+            - generic [ref=e32]: 󰀉
+            - generic [ref=e33]: User
+            - generic [ref=e34]: 󰅀
+  - main [ref=e35]:
+    - generic [ref=e39]:
+      - link "Neuer Eintrag" [ref=e40] [cursor=pointer]:
+        - /url: /new-entry
+        - generic [ref=e41]:
+          - generic [ref=e42]: 󰐕
+          - text: Neuer Eintrag
+      - link "Eintragliste" [ref=e43] [cursor=pointer]:
+        - /url: /entries
+        - generic [ref=e44]:
+          - generic [ref=e45]: 󰉹
+          - text: Eintragliste
+      - link "Beringungen" [ref=e46] [cursor=pointer]:
+        - /url: /ringing
+        - generic [ref=e47]:
+          - generic [ref=e48]: 󰟫
+          - text: Beringungen
+      - link "Familienbeziehungen" [ref=e49] [cursor=pointer]:
+        - /url: /family-relations
+        - generic [ref=e50]:
+          - generic [ref=e51]: 󱘎
+          - text: Familienbeziehungen
+      - link "Statistiken" [ref=e52] [cursor=pointer]:
+        - /url: /statistics
+        - generic [ref=e53]:
+          - generic [ref=e54]: 󰄪
+          - text: Statistiken

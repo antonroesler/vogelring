@@ -1,0 +1,977 @@
+[
+  {
+    "ring_place": "Altenstadt; NSG Buschwiesen von Höchst*[DEED, 5719]",
+    "lat": 50.26833,
+    "lon": 8.93889
+  },
+  {
+    "ring_place": "Alzenau, Hörsteiner See*[DEAU, 5920]",
+    "lat": 50.05889,
+    "lon": 9.03444
+  },
+  {
+    "ring_place": "Alzenau, Meerhofsee*[DEAU, 5920]",
+    "lat": 50.08528,
+    "lon": 9.04361
+  },
+  {
+    "ring_place": "Bad Homburg, Kurpark*[DEED, 5717]",
+    "lat": 50.22917,
+    "lon": 8.62111
+  },
+  {
+    "ring_place": "Bad Homburg, Ober-Eschbach*[DEED, 5717]",
+    "lat": 50.21167,
+    "lon": 8.66194
+  },
+  {
+    "ring_place": "Bad Homburg, Schloßteich*[DEED, 5717]",
+    "lat": 50.22639,
+    "lon": 8.60833
+  },
+  {
+    "ring_place": "Bad König, Kurpark*[DEED, 6219]",
+    "lat": 49.74167,
+    "lon": 8.99833
+  },
+  {
+    "ring_place": "Bad Vilbel, Dortelweil-Golfplatz*[DEED, 5718]",
+    "lat": 50.20681,
+    "lon": 8.76708
+  },
+  {
+    "ring_place": "Bad Vilbel, Dortelweil-Niddawiesen*[DEED, 5718]",
+    "lat": 50.20417,
+    "lon": 8.77361
+  },
+  {
+    "ring_place": "Bad Vilbel, Gronau*[DEED, 5818]",
+    "lat": 50.18333,
+    "lon": 8.76667
+  },
+  {
+    "ring_place": "Bad Vilbel, Massenheim*[DEED, 5818]",
+    "lat": 50.19769,
+    "lon": 8.72208
+  },
+  {
+    "ring_place": "Bauschheim, Beinesgraben*(DEED 6016)",
+    "lat": 49.95167,
+    "lon": 8.39
+  },
+  {
+    "ring_place": "Biebesheim, Wechselsee*[DEED, 6216)",
+    "lat": 49.78139,
+    "lon": 8.45
+  },
+  {
+    "ring_place": "Bingen, Globuslager*(DECR 6013)",
+    "lat": 49.96444,
+    "lon": 7.95139
+  },
+  {
+    "ring_place": "Bingen, Nahemündung*[DEED, 6013)",
+    "lat": 49.97,
+    "lon": 7.885
+  },
+  {
+    "ring_place": "Dreieich-Sprendlingen, Bürgerpark*(DEED 5918",
+    "lat": 50.02306,
+    "lon": 8.68917
+  },
+  {
+    "ring_place": "Echzell, NSG \"Bingenheimer-Ried\"*[DEED, 5619]",
+    "lat": 50.36917,
+    "lon": 8.88
+  },
+  {
+    "ring_place": "Echzell, NSG Pfaffensee*[DEED, 5619]",
+    "lat": 50.37528,
+    "lon": 8.86222
+  },
+  {
+    "ring_place": "Eddersheim, Staustufe*[DEED, 5916)",
+    "lat": 50.03861,
+    "lon": 8.47639
+  },
+  {
+    "ring_place": "Eltville, Hattenheim*[DEED, 5914]",
+    "lat": 50.01194,
+    "lon": 8.06139
+  },
+  {
+    "ring_place": "Erlensee, NSG Weideswiesen*(DEED 5820)",
+    "lat": 50.15861,
+    "lon": 9.0075
+  },
+  {
+    "ring_place": "Florstadt, NSG Mähried von Staden",
+    "lat": 50.33269,
+    "lon": 8.89667
+  },
+  {
+    "ring_place": "Flörsheim, Mainufer*[DEED, 5916]",
+    "lat": 50.01056,
+    "lon": 8.42917
+  },
+  {
+    "ring_place": "Frankfurt, Bergen-Enkheim - Am Hohen Stein*[DEED, 5818]",
+    "lat": 50.16225,
+    "lon": 8.75819
+  },
+  {
+    "ring_place": "Frankfurt, Bergen-Enkheim - Feldbach*[DEED, 5818]",
+    "lat": 50.16661,
+    "lon": 8.7808
+  },
+  {
+    "ring_place": "Frankfurt, Bergen-Enkheim - Galgen*[DEED, 5818]",
+    "lat": 50.16254,
+    "lon": 8.74734
+  },
+  {
+    "ring_place": "Frankfurt, Bergen-Enkheim Nord*[DEED, 5818]",
+    "lat": 50.16858,
+    "lon": 8.75745
+  },
+  {
+    "ring_place": "Frankfurt, Bergen-Enkheim Süd*[DEED, 5818]",
+    "lat": 50.15558,
+    "lon": 8.77467
+  },
+  {
+    "ring_place": "Frankfurt, Berkersheim Nord*[DEED, 5818]",
+    "lat": 50.17535,
+    "lon": 8.70409
+  },
+  {
+    "ring_place": "Frankfurt, Berkersheim Ost*[DEED, 5818]",
+    "lat": 50.1657,
+    "lon": 8.70954
+  },
+  {
+    "ring_place": "Frankfurt, Berkersheim Wiesenhüttenhof*[DEED, 5818]",
+    "lat": 50.17141,
+    "lon": 8.68302
+  },
+  {
+    "ring_place": "Frankfurt, Berkersheim-West*[DEED, 5818]",
+    "lat": 50.16583,
+    "lon": 8.69973
+  },
+  {
+    "ring_place": "Frankfurt, Bethmann Weiher*(DEED 5818",
+    "lat": 50.11778,
+    "lon": 8.69083
+  },
+  {
+    "ring_place": "Frankfurt, Bockenheimer Anlage*(DEED 5818)",
+    "lat": 50.11667,
+    "lon": 8.67528
+  },
+  {
+    "ring_place": "Frankfurt, Bonames Nord*[DEED, 5817]",
+    "lat": 50.19832,
+    "lon": 8.66209
+  },
+  {
+    "ring_place": "Frankfurt, Bonames Ost*[DEED, 5817]",
+    "lat": 50.18583,
+    "lon": 8.67194
+  },
+  {
+    "ring_place": "Frankfurt, Bonames Süd*[DEED, 5817]",
+    "lat": 50.17572,
+    "lon": 8.66157
+  },
+  {
+    "ring_place": "Frankfurt, Botanischer Garten*[DEED, 5817]",
+    "lat": 50.12667,
+    "lon": 8.65778
+  },
+  {
+    "ring_place": "Frankfurt, Eisernersteg*(DEED 5818)",
+    "lat": 50.10833,
+    "lon": 8.68222
+  },
+  {
+    "ring_place": "Frankfurt, Enkheimer Wald*[DEED, 5818]",
+    "lat": 50.14722,
+    "lon": 8.775
+  },
+  {
+    "ring_place": "Frankfurt, Eschersheim*[DEED, 5817]",
+    "lat": 50.15056,
+    "lon": 8.64972
+  },
+  {
+    "ring_place": "Frankfurt, Eschersheim*[DEED, 5817]",
+    "lat": 50.15056,
+    "lon": 8.64972
+  },
+  {
+    "ring_place": "Frankfurt, Fechenheim, Kohlenhafen*(DEED 5818)",
+    "lat": 50.13139,
+    "lon": 8.77139
+  },
+  {
+    "ring_place": "Frankfurt, Fechenheim, Mainbogen*(DEED 5818)",
+    "lat": 50.11111,
+    "lon": 8.77389
+  },
+  {
+    "ring_place": "Frankfurt, Fechenheim, Mainbogen*(DEED 5818)",
+    "lat": 50.11111,
+    "lon": 8.77389
+  },
+  {
+    "ring_place": "Frankfurt, Friedensbrücke*[DEED, 5818]",
+    "lat": 50.10028,
+    "lon": 8.6675
+  },
+  {
+    "ring_place": "Frankfurt, Försterwiesenweiher*[DEED, 5918]",
+    "lat": 50.06689,
+    "lon": 8.70478
+  },
+  {
+    "ring_place": "Frankfurt, Gallusanlage*[DEED, 5818]",
+    "lat": 50.11,
+    "lon": 8.67222
+  },
+  {
+    "ring_place": "Frankfurt, Griesheim*[DEED, 5917]",
+    "lat": 50.09611,
+    "lon": 8.595
+  },
+  {
+    "ring_place": "Frankfurt, Griesheim, Klärwerk*(DEED 5917)",
+    "lat": 50.08917,
+    "lon": 8.62694
+  },
+  {
+    "ring_place": "Frankfurt, Griesheim-Staustufe*[DEED, 5917]",
+    "lat": 50.08861,
+    "lon": 8.59556
+  },
+  {
+    "ring_place": "Frankfurt, Gutleuthof*[DEED, 5917]",
+    "lat": 50.09244,
+    "lon": 8.64989
+  },
+  {
+    "ring_place": "Frankfurt, Harheim Nord*[DEED, 5818]",
+    "lat": 50.19055,
+    "lon": 8.68683
+  },
+  {
+    "ring_place": "Frankfurt, Harheim Nord*[DEED, 5818]",
+    "lat": 50.19056,
+    "lon": 8.68683
+  },
+  {
+    "ring_place": "Frankfurt, Harheim Süd*[DEED, 5818]",
+    "lat": 50.17799,
+    "lon": 8.68894
+  },
+  {
+    "ring_place": "Frankfurt, Harheim Süd*[DEED, 5818]",
+    "lat": 50.178,
+    "lon": 8.68894
+  },
+  {
+    "ring_place": "Frankfurt, Hausen*[DEED, 5817]",
+    "lat": 50.13361,
+    "lon": 8.62556
+  },
+  {
+    "ring_place": "Frankfurt, Heddernheim*[DEED, 5817]",
+    "lat": 50.15361,
+    "lon": 8.64583
+  },
+  {
+    "ring_place": "Frankfurt, Holzhausenpark*[DEED, 5818)",
+    "lat": 50.12614,
+    "lon": 8.67811
+  },
+  {
+    "ring_place": "Frankfurt, Höchst-Mainufer*[DEED, 5917]",
+    "lat": 50.09722,
+    "lon": 8.54722
+  },
+  {
+    "ring_place": "Frankfurt, Höchst-Stadtpark*[DEED, 5817]",
+    "lat": 50.10861,
+    "lon": 8.55583
+  },
+  {
+    "ring_place": "Frankfurt, Industriepark-Höchst*[DEED, 5917]",
+    "lat": 50.08342,
+    "lon": 8.52694
+  },
+  {
+    "ring_place": "Frankfurt, Innenstadt*[DEED, 5818)",
+    "lat": 50.11417,
+    "lon": 8.68278
+  },
+  {
+    "ring_place": "Frankfurt, Jacobi Weiher*[DEED, 5918]",
+    "lat": 50.06872,
+    "lon": 8.68697
+  },
+  {
+    "ring_place": "Frankfurt, Kalbach*[DEED, 5817]",
+    "lat": 50.1889,
+    "lon": 8.63349
+  },
+  {
+    "ring_place": "Frankfurt, Kalbach*[DEED, 5817]",
+    "lat": 50.18889,
+    "lon": 8.6335
+  },
+  {
+    "ring_place": "Frankfurt, Kesselbruchweiher*[DEED, 5918]",
+    "lat": 50.06569,
+    "lon": 8.70792
+  },
+  {
+    "ring_place": "Frankfurt, Kätcheslach-Weiher*[DEED, 5817]",
+    "lat": 50.18222,
+    "lon": 8.63389
+  },
+  {
+    "ring_place": "Frankfurt, Ludwig-Erhard-Anlage*(DEED 5817)",
+    "lat": 50.11378,
+    "lon": 8.65208
+  },
+  {
+    "ring_place": "Frankfurt, Mainkai*[DEED, 5818]",
+    "lat": 50.11194,
+    "lon": 8.7025
+  },
+  {
+    "ring_place": "Frankfurt, Martin-Luther-King-Park*[DEED, 5817]",
+    "lat": 50.16194,
+    "lon": 8.62361
+  },
+  {
+    "ring_place": "Frankfurt, Maunzenweiher*[DEED, 5918]",
+    "lat": 50.07972,
+    "lon": 8.73111
+  },
+  {
+    "ring_place": "Frankfurt, Miquelanlage*[DEED, 5817]",
+    "lat": 50.1325,
+    "lon": 8.66028
+  },
+  {
+    "ring_place": "Frankfurt, NSG \"Riedwiesen bei Niederursel\"*[DEED, 5817]",
+    "lat": 50.17153,
+    "lon": 8.64714
+  },
+  {
+    "ring_place": "Frankfurt, Nidda-Niedwald*[DEED, 5817]",
+    "lat": 50.11111,
+    "lon": 8.59056
+  },
+  {
+    "ring_place": "Frankfurt, Nied Mainufer*[DEED, 5917]",
+    "lat": 50.09417,
+    "lon": 8.57083
+  },
+  {
+    "ring_place": "Frankfurt, Nied, Polofeld*[DEED, 5817]",
+    "lat": 50.10778,
+    "lon": 8.57111
+  },
+  {
+    "ring_place": "Frankfurt, Nieder-Erlenbach Nord*[DEED, 5718]",
+    "lat": 50.21145,
+    "lon": 8.71142
+  },
+  {
+    "ring_place": "Frankfurt, Nieder-Erlenbach Nord*[DEED, 5718]",
+    "lat": 50.21144,
+    "lon": 8.71142
+  },
+  {
+    "ring_place": "Frankfurt, Nieder-Erlenbach Süd*[DEED, 5718]",
+    "lat": 50.20187,
+    "lon": 8.71926
+  },
+  {
+    "ring_place": "Frankfurt, Nieder-Erlenbach West*[DEED, 5818]",
+    "lat": 50.19846,
+    "lon": 8.70375
+  },
+  {
+    "ring_place": "Frankfurt, Nieder-Eschbach Nord*[DEED, 5718]",
+    "lat": 50.21215,
+    "lon": 8.66862
+  },
+  {
+    "ring_place": "Frankfurt, Nieder-Eschbach Süd*[DEED, 5718]",
+    "lat": 50.20251,
+    "lon": 8.68101
+  },
+  {
+    "ring_place": "Frankfurt, Niederrad, Klärwerk*(DEED 5917)",
+    "lat": 50.085,
+    "lon": 8.62389
+  },
+  {
+    "ring_place": "Frankfurt, Niederrad, LiLu*(DEED 5917)",
+    "lat": 50.09369,
+    "lon": 8.64647
+  },
+  {
+    "ring_place": "Frankfurt, Niederursel*[DEED, 5817]",
+    "lat": 50.17352,
+    "lon": 8.60788
+  },
+  {
+    "ring_place": "Frankfurt, Ostend*[DEED, 5818)",
+    "lat": 50.11964,
+    "lon": 8.70736
+  },
+  {
+    "ring_place": "Frankfurt, Osthafen I*[DEED, 5818]",
+    "lat": 50.10889,
+    "lon": 8.71306
+  },
+  {
+    "ring_place": "Frankfurt, Osthafen II*[DEED, 5818]",
+    "lat": 50.11861,
+    "lon": 8.74556
+  },
+  {
+    "ring_place": "Frankfurt, Ostpark*[DEED, 5818)",
+    "lat": 50.12028,
+    "lon": 8.72333
+  },
+  {
+    "ring_place": "Frankfurt, Palmengarten*[DEED, 5817]",
+    "lat": 50.12389,
+    "lon": 8.65583
+  },
+  {
+    "ring_place": "Frankfurt, Portikusinsel*[DEED, 5818]",
+    "lat": 50.10778,
+    "lon": 8.68917
+  },
+  {
+    "ring_place": "Frankfurt, Posthof*[DEED, 5817]",
+    "lat": 50.10503,
+    "lon": 8.6545
+  },
+  {
+    "ring_place": "Frankfurt, Preungesheim*[DEED, 5818]",
+    "lat": 50.15765,
+    "lon": 8.71195
+  },
+  {
+    "ring_place": "Frankfurt, Rebstockweiher*(DEED 5817)",
+    "lat": 50.11139,
+    "lon": 8.61583
+  },
+  {
+    "ring_place": "Frankfurt, Rechneigrabenweiher*[DEED, 5818]",
+    "lat": 50.11333,
+    "lon": 8.69361
+  },
+  {
+    "ring_place": "Frankfurt, Rechneigrabenweiher*[DEED, 5818]",
+    "lat": 50.11333,
+    "lon": 8.69361
+  },
+  {
+    "ring_place": "Frankfurt, Riedberg*[DEED, 5817]",
+    "lat": 50.17528,
+    "lon": 8.62167
+  },
+  {
+    "ring_place": "Frankfurt, Römerstadt*[DEED, 5817]",
+    "lat": 50.14972,
+    "lon": 8.62583
+  },
+  {
+    "ring_place": "Frankfurt, Römerstadt*[DEED, 5817]",
+    "lat": 50.14972,
+    "lon": 8.62583
+  },
+  {
+    "ring_place": "Frankfurt, Schwanheim*[DEED, 5917]",
+    "lat": 50.08681,
+    "lon": 8.5601
+  },
+  {
+    "ring_place": "Frankfurt, Seckbach*[DEED, 5818]",
+    "lat": 50.15746,
+    "lon": 8.72949
+  },
+  {
+    "ring_place": "Frankfurt, Sindlingen*[DEED, 5917]",
+    "lat": 50.06898,
+    "lon": 8.51425
+  },
+  {
+    "ring_place": "Frankfurt, Sindlingen*[DEED, 5917]",
+    "lat": 50.06897,
+    "lon": 8.51425
+  },
+  {
+    "ring_place": "Frankfurt, Sindlingen, Mainufer*[DEED, 5917]",
+    "lat": 50.07972,
+    "lon": 8.52111
+  },
+  {
+    "ring_place": "Frankfurt, Solmspark*[DEED, 5817)",
+    "lat": 50.12278,
+    "lon": 8.61417
+  },
+  {
+    "ring_place": "Frankfurt, Solmspark*[DEED, 5817)",
+    "lat": 50.12278,
+    "lon": 8.61417
+  },
+  {
+    "ring_place": "Frankfurt, Sossenheim*[DEED, 5817]",
+    "lat": 50.11432,
+    "lon": 8.57253
+  },
+  {
+    "ring_place": "Frankfurt, Sossenheim*[DEED, 5817]",
+    "lat": 50.11433,
+    "lon": 8.57253
+  },
+  {
+    "ring_place": "Frankfurt, Sportuni*[DEED, 5817]",
+    "lat": 50.13167,
+    "lon": 8.64083
+  },
+  {
+    "ring_place": "Frankfurt, Tirolerweiher*[DEED, 5917",
+    "lat": 50.07308,
+    "lon": 8.65739
+  },
+  {
+    "ring_place": "Frankfurt, Unicampus, Westend*[DEED, 5818]",
+    "lat": 50.12583,
+    "lon": 8.66722
+  },
+  {
+    "ring_place": "Frankfurt, Unterliederbach Nord*[DEED, 5817]",
+    "lat": 50.11725,
+    "lon": 8.52176
+  },
+  {
+    "ring_place": "Frankfurt, Unterliederbach Süd*[DEED, 5817]",
+    "lat": 50.10698,
+    "lon": 8.52332
+  },
+  {
+    "ring_place": "Frankfurt, Weseler Werft*[DEED, 5818]",
+    "lat": 50.1075,
+    "lon": 8.7
+  },
+  {
+    "ring_place": "Frankfurt, Westhafen*[DEED, 5917]",
+    "lat": 50.0975,
+    "lon": 8.65611
+  },
+  {
+    "ring_place": "Frankfurt, Zeilsheim Nord*[DEED, 5816]",
+    "lat": 50.1021,
+    "lon": 8.48182
+  },
+  {
+    "ring_place": "Frankfurt, Zeilsheim Nord*[DEED, 5816]",
+    "lat": 50.10211,
+    "lon": 8.48183
+  },
+  {
+    "ring_place": "Frankfurt, Zeilsheim Süd*[DEED, 5916]",
+    "lat": 50.08989,
+    "lon": 8.4915
+  },
+  {
+    "ring_place": "Frankfurt, Zoo*[DEED, 5818)",
+    "lat": 50.11583,
+    "lon": 8.70333
+  },
+  {
+    "ring_place": "Ginsheim-Gustavsburg, Ginsheimer Altrhein*[DEED, 6016]",
+    "lat": 49.96333,
+    "lon": 8.34222
+  },
+  {
+    "ring_place": "Hamburg, Blomen und Planten*[DEED, 2425",
+    "lat": 53.56167,
+    "lon": 9.98083
+  },
+  {
+    "ring_place": "Hamburg, Kl. Alster*[DEED, 2425]",
+    "lat": 53.55167,
+    "lon": 9.98083
+  },
+  {
+    "ring_place": "Hanau, Bärensee*[DEED, 5819]",
+    "lat": 50.1527,
+    "lon": 8.95396
+  },
+  {
+    "ring_place": "Hanau, Kesselstädter Mainufer*[DEED, 5819]",
+    "lat": 50.125,
+    "lon": 8.88583
+  },
+  {
+    "ring_place": "Hanau-Steinheim, Altmain*[DEED, 5819]",
+    "lat": 50.10722,
+    "lon": 8.91917
+  },
+  {
+    "ring_place": "Helgoland*, Binnenhafen*[DEQH, 1813]",
+    "lat": 54.17833,
+    "lon": 7.88889
+  },
+  {
+    "ring_place": "Helgoland*, Nordoststrand*[DEQH, 1813]",
+    "lat": 54.18194,
+    "lon": 7.88556
+  },
+  {
+    "ring_place": "Heusenstamm, NSG \"See am Goldberg\"*[DEED, 5918)",
+    "lat": 50.06383,
+    "lon": 8.822
+  },
+  {
+    "ring_place": "Heusenstamm, Sandgrube Braas*[DEED, 5918)",
+    "lat": 50.04513,
+    "lon": 8.82758
+  },
+  {
+    "ring_place": "Hofheim am Taunus, Oberfeldhof*(DEED 5916)",
+    "lat": 50.05,
+    "lon": 8.3775
+  },
+  {
+    "ring_place": "Horn-Bad Meinberg, Nordteich*[DEED, 4120]",
+    "lat": 51.88472,
+    "lon": 9.03194
+  },
+  {
+    "ring_place": "Karben, Burg-Gräfenrode*[DEED, 5718]",
+    "lat": 50.26694,
+    "lon": 8.79028
+  },
+  {
+    "ring_place": "Karben, Klötzel-Teich*[DEED, 5718]",
+    "lat": 50.24944,
+    "lon": 8.73472
+  },
+  {
+    "ring_place": "Kelsterbach, Mainufer*[DEED, 5917]",
+    "lat": 50.06972,
+    "lon": 8.52722
+  },
+  {
+    "ring_place": "Klein-Krotzenburg, Fähranleger*(DEED 5919)",
+    "lat": 50.07833,
+    "lon": 8.97222
+  },
+  {
+    "ring_place": "Klein-Krotzenburg, Mainauen*(DEED 5919)",
+    "lat": 50.07083,
+    "lon": 8.98639
+  },
+  {
+    "ring_place": "Kronberg im Taunus *[DEED, 5817)",
+    "lat": 50.18194,
+    "lon": 8.52056
+  },
+  {
+    "ring_place": "Kronberg, Schillerteich*(DEED 5817]",
+    "lat": 50.18111,
+    "lon": 8.51306
+  },
+  {
+    "ring_place": "Lampertheim, Rhein*[DEED, 6316)",
+    "lat": 49.62806,
+    "lon": 8.37528
+  },
+  {
+    "ring_place": "Linsengericht, Kinzigaue Ost*[DEED, 5821]",
+    "lat": 50.19722,
+    "lon": 9.20472
+  },
+  {
+    "ring_place": "Lißberg, Ortenberg*[DEED, 6216)",
+    "lat": 50.375,
+    "lon": 9.08083
+  },
+  {
+    "ring_place": "Mainhausen, NSG \"Bongsche Kiesgrube\" *[DEED, 5920)",
+    "lat": 50.01333,
+    "lon": 9.03111
+  },
+  {
+    "ring_place": "Maintal, Höllsee*[DEED, 5818)",
+    "lat": 50.13667,
+    "lon": 8.82028
+  },
+  {
+    "ring_place": "Maintal, Mainkur*(DEED 5818)",
+    "lat": 50.13846,
+    "lon": 8.79095
+  },
+  {
+    "ring_place": "Maintal-Dörnigheim, Mainufer*[DEED, 5819]",
+    "lat": 50.12944,
+    "lon": 8.84528
+  },
+  {
+    "ring_place": "Mainz, Mainzer Sand*[DECO, 5915]",
+    "lat": 50.01324,
+    "lon": 8.20871
+  },
+  {
+    "ring_place": "Mainz-Kastel,Rhein*[DEED, 5915]",
+    "lat": 50.01639,
+    "lon": 8.2725
+  },
+  {
+    "ring_place": "Mainz-Kostheim,Main*[DEED, 5915]",
+    "lat": 49.99917,
+    "lon": 8.30694
+  },
+  {
+    "ring_place": "Muros*[ES01]",
+    "lat": 42.76819,
+    "lon": -9.062
+  },
+  {
+    "ring_place": "Mühlheim, LSG \"Hess. Mainauen\"*[DEED, 5818]",
+    "lat": 50.13114,
+    "lon": 8.82119
+  },
+  {
+    "ring_place": "Mühlheim, Mainfähre*[DEED, 5819]",
+    "lat": 50.12972,
+    "lon": 8.83472
+  },
+  {
+    "ring_place": "Mühlheim, Staustufe*[DEED, 5819]",
+    "lat": 50.12528,
+    "lon": 8.87
+  },
+  {
+    "ring_place": "Nidderau, Eichen*[DEED, 5719]",
+    "lat": 50.25778,
+    "lon": 8.90806
+  },
+  {
+    "ring_place": "Niederdorfelden, Mühlgraben*[DEED, 5818",
+    "lat": 50.19694,
+    "lon": 8.80167
+  },
+  {
+    "ring_place": "Niederwald, Kiesgrube*[DEEG, 5119]",
+    "lat": 50.81667,
+    "lon": 8.88333
+  },
+  {
+    "ring_place": "Ober-Mockstadt, Nidda Aue*[DEED, 5619]",
+    "lat": 50.34806,
+    "lon": 8.95333
+  },
+  {
+    "ring_place": "Obertshausen, Angelweiher*[DEED, 5919]",
+    "lat": 50.05917,
+    "lon": 8.82472
+  },
+  {
+    "ring_place": "Oberursel, Maasgrundweiher*(DEED 5717",
+    "lat": 50.20306,
+    "lon": 8.56833
+  },
+  {
+    "ring_place": "Oberursel, Rushmoor Park*(DEED 5817",
+    "lat": 50.19806,
+    "lon": 8.57861
+  },
+  {
+    "ring_place": "Oberwesel, Rhein*(DEED 5812)",
+    "lat": 50.12417,
+    "lon": 7.7425
+  },
+  {
+    "ring_place": "Offenbach, Athur von Weinberg Steg*[DEED, 5818]",
+    "lat": 50.12528,
+    "lon": 8.77139
+  },
+  {
+    "ring_place": "Offenbach, Buchrainweiher*[DEED, 5918]",
+    "lat": 50.08222,
+    "lon": 8.73528
+  },
+  {
+    "ring_place": "Offenbach, Bürgel und Rrumpenheim, Mainauen*[DEED, 5818)",
+    "lat": 50.13583,
+    "lon": 8.7775
+  },
+  {
+    "ring_place": "Offenbach, Bürgel, Entensee*[DEED, 5818]",
+    "lat": 50.12759,
+    "lon": 8.78441
+  },
+  {
+    "ring_place": "Offenbach, Bürgel-Mainufer*[DEED, 5818)",
+    "lat": 50.1175,
+    "lon": 8.78028
+  },
+  {
+    "ring_place": "Offenbach, Carl-Ulrich-Brücke*[DEED, 5818]",
+    "lat": 50.11167,
+    "lon": 8.75778
+  },
+  {
+    "ring_place": "Offenbach, Dreieichpark*[DEED, 5818]",
+    "lat": 50.10028,
+    "lon": 8.74861
+  },
+  {
+    "ring_place": "Offenbach, EVO*[DEED, 5818]",
+    "lat": 50.11175,
+    "lon": 8.74361
+  },
+  {
+    "ring_place": "Offenbach, Friedrichsweiher*[DEED, 5918]",
+    "lat": 50.09389,
+    "lon": 8.7625
+  },
+  {
+    "ring_place": "Offenbach, Hafen*[DEED, 5818]",
+    "lat": 50.11361,
+    "lon": 8.74778
+  },
+  {
+    "ring_place": "Offenbach, Mainufer*[DEED, 5818]",
+    "lat": 50.1075,
+    "lon": 8.77194
+  },
+  {
+    "ring_place": "Offenbach, NSG \"Rumpenheimer und Bürgeler Kiesgruben\"*[DEED, 5818]",
+    "lat": 50.13194,
+    "lon": 8.78133
+  },
+  {
+    "ring_place": "Offenbach, Rumpenheim LSG \"Hess. Mainauen\"Ost*[DEED, 5818)",
+    "lat": 50.13194,
+    "lon": 8.8125
+  },
+  {
+    "ring_place": "Offenbach, Staustufe*[DEED, 5818]",
+    "lat": 50.10833,
+    "lon": 8.72667
+  },
+  {
+    "ring_place": "Offenbach, Staustufe*[DEED, 5818]",
+    "lat": 50.10833,
+    "lon": 8.72667
+  },
+  {
+    "ring_place": "Offenbach, Staustufe*[DEED, 5818]",
+    "lat": 50.10833,
+    "lon": 8.72667
+  },
+  {
+    "ring_place": "Okriftel, Mainufer*[DEED, 5916]",
+    "lat": 50.05111,
+    "lon": 8.50222
+  },
+  {
+    "ring_place": "Ranstadt, NSG Nachtweid von Dauernheim*[DEED, 5619]",
+    "lat": 50.34556,
+    "lon": 8.935
+  },
+  {
+    "ring_place": "Reichelsheim*[DEED, 5619]",
+    "lat": 50.365,
+    "lon": 8.85556
+  },
+  {
+    "ring_place": "Riedstadt, Fuchsloch*(DEED 6116)",
+    "lat": 49.86722,
+    "lon": 8.4
+  },
+  {
+    "ring_place": "Riedstadt, Kiesgrube östlich Crumstadt*[DEED, 6117)",
+    "lat": 49.81928,
+    "lon": 8.53406
+  },
+  {
+    "ring_place": "Riedstadt, NSG \"KK Schusterwörther Altrhein\"*[DEED, 6116]",
+    "lat": 49.84833,
+    "lon": 8.39333
+  },
+  {
+    "ring_place": "Rüdesheim, Rheinuferl*[DEED, 6013]",
+    "lat": 49.97667,
+    "lon": 7.93306
+  },
+  {
+    "ring_place": "Rüsselsheim, Mainufer*[DEED, 6016]",
+    "lat": 49.99694,
+    "lon": 8.41111
+  },
+  {
+    "ring_place": "Sankt Goar, Ehrentahler Werth*[DECK, 5812]",
+    "lat": 50.16944,
+    "lon": 7.67361
+  },
+  {
+    "ring_place": "Schloß Holte-Stukenbrock*[DEFL, 4017",
+    "lat": 51.90692,
+    "lon": 8.61872
+  },
+  {
+    "ring_place": "Seligenstadt, Fähranleger*[DEED, 5919]",
+    "lat": 50.04333,
+    "lon": 8.97917
+  },
+  {
+    "ring_place": "Trebur, Geinsheim*[DEED, 6116]",
+    "lat": 49.88333,
+    "lon": 8.39694
+  },
+  {
+    "ring_place": "Trebur, Hessenaue*[DEED, 6116]",
+    "lat": 49.895,
+    "lon": 8.36694
+  },
+  {
+    "ring_place": "Wesseling, Entengfang*[DEED, 5107]",
+    "lat": 50.81775,
+    "lon": 6.95925
+  },
+  {
+    "ring_place": "Wiesbaden,Schiersteiner Hafen*[DEED, 5915]",
+    "lat": 50.04194,
+    "lon": 8.19778
+  },
+  {
+    "ring_place": "Wiesbaden-Biebrich, Rheinuferl*[DEED, 5915]",
+    "lat": 50.03639,
+    "lon": 8.235
+  },
+  {
+    "ring_place": "Wörrstadt, *(DECR 6114)",
+    "lat": 49.83861,
+    "lon": 8.11472
+  },
+  {
+    "ring_place": "Östrich-Winkel*[DEED, 6014]",
+    "lat": 49.99472,
+    "lon": 8.0075
+  }
+]

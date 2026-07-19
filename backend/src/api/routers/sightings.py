@@ -14,7 +14,7 @@ from ...database.connection import get_db
 from ...database.user_models import User
 from ...database.models import Sighting as SightingDB
 from ...utils.sighting_coding import ring_age_label, ring_sex_label
-from ...utils.ring_places import lookup_place
+from ...utils.ring_places import lookup_place, smart_match_place
 from ..services.sighting_service import SightingService
 
 router = APIRouter()
@@ -157,6 +157,22 @@ _BEMERKUNGEN_FIELDS: list[tuple[str, "callable"]] = [
 ]
 
 
+def _ring_place_columns(s: SightingDB) -> tuple[str, object, object]:
+    """Return (RING-Ort, Lat, Lon) for a sighting.
+
+    Prefer Ingo's explicit mapping; otherwise fall back to the GPS-nearest RING
+    place (within 500 m + name overlap), flagged "(auto)" so it's clearly an
+    unverified suggestion. Blank when neither resolves.
+    """
+    explicit = lookup_place(s.place)
+    if explicit is not None:
+        return explicit.ring_place, explicit.lat, explicit.lon
+    auto = smart_match_place(s.place, s.lat, s.lon)
+    if auto is not None:
+        return f"{auto.ring_place} (auto)", auto.lat, auto.lon
+    return "", "", ""
+
+
 def _build_bemerkungen(s: SightingDB) -> str:
     """Concatenate the filled non-RING Vogelring fields into one RING remarks string.
 
@@ -192,9 +208,10 @@ async def export_sightings_vogelwarte(
 
     Includes all sightings between ``start_date`` and ``end_date`` (inclusive) that
     are NOT yet marked as "gemeldet" (melded is False or NULL). Each Vogelring place
-    is matched to its RING place name + coordinates via the baked-in ring_places
-    lookup (blank when unmatched). Non-RING Vogelring fields are bundled into a
-    "Bemerkungen" column. The melded flag is NOT modified by this export.
+    is matched to its RING place name + coordinates: Ingo's explicit map first, else
+    the GPS-nearest RING place within 500 m whose name overlaps (flagged "(auto)"),
+    else blank. Non-RING Vogelring fields are bundled into a "Bemerkungen" column.
+    The melded flag is NOT modified by this export.
     """
     try:
         from openpyxl import Workbook
@@ -240,15 +257,16 @@ async def export_sightings_vogelwarte(
         cell.font = Font(bold=True)
 
     for s in sightings:
-        # Match the Vogelring place to its RING place + coordinates (blank if unmatched).
-        ring_place = lookup_place(s.place)
+        # Match the Vogelring place to its RING place + coordinates (explicit map,
+        # else GPS-nearest "(auto)" suggestion, else blank).
+        ring_ort, ring_lat, ring_lon = _ring_place_columns(s)
         ws.append(
             [
                 s.date.strftime("%d.%m.%Y") if s.date else "",
                 s.place or "",
-                ring_place.ring_place if ring_place else "",
-                ring_place.lat if ring_place else "",
-                ring_place.lon if ring_place else "",
+                ring_ort,
+                ring_lat,
+                ring_lon,
                 s.ring or "",
                 s.species or "",
                 # Age code -> RING "<code> <label>" (empty -> "2 Fängling")
