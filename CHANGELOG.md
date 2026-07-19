@@ -5,6 +5,20 @@ All notable changes to Vogelring will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0](https://github.com/antonroesler/vogelring/compare/v2.7.0...v2.8.0) (2026-07-19)
+
+
+### ✨ Features
+
+* **Alter:** weitere RING-Altersklassen (im 4.–6. Kalenderjahr, über 4/5 Jahre alt – Codes 9, A–D) sowie "0 unbekannt"
+* **Export:** Orte werden auf RING-Ort + Koordinaten abgeglichen (RING-Ort/Lat/Lon-Spalten)
+* **Export:** Vogelring-Felder ohne RING-Entsprechung (Familien Status, Partner, Nicht flügge/Flügge Junge, Gruppengrößen, Habitat …) werden in einer Bemerkungen-Spalte gebündelt
+
+### 🐛 Bug Fixes
+
+* **Familie:** ausgewählte Nachkommen-Sichtungen werden auch dann angelegt, wenn eine Beziehung bereits besteht (kein 400 mehr durch doppelte Beziehung)
+* **Familie:** Eingabeformular wird nach dem Speichern einer Familien-Verknüpfung wieder zurückgesetzt
+
 ## [2.7.0](https://github.com/antonroesler/vogelring/compare/v2.6.0...v2.7.0) (2026-01-06)
 
 
