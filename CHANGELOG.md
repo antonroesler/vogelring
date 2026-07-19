@@ -5,6 +5,13 @@ All notable changes to Vogelring will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.1](https://github.com/antonroesler/vogelring/compare/v2.9.0...v2.9.1) (2026-07-19)
+
+
+### ✨ Features
+
+* **Export:** Bemerkungen-Feld final abgestimmt – Felder in Ingos Reihenfolge (Melder außer bei IR, Groß-/Kleingruppe, Familien Status, Partner, nicht flügge/flügge Junge, Feldfrucht, Kommentare); die Spalten Melder und Kommentar entfallen (in RING keine eigenen Spalten), Habitat und Kleinfläche bleiben außen vor
+
 ## [2.9.0](https://github.com/antonroesler/vogelring/compare/v2.8.0...v2.9.0) (2026-07-19)
 
 
