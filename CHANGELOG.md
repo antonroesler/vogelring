@@ -5,6 +5,13 @@ All notable changes to Vogelring will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.2](https://github.com/antonroesler/vogelring/compare/v2.9.1...v2.9.2) (2026-07-19)
+
+
+### 🐛 Bug Fixes
+
+* **Export:** RING-Status nur für Brutvogel (→ nestbauend oder brütend) und Mausergast (→ in Mausertrupp) setzen; alle anderen/leeren Status bleiben leer statt "unbekannt / nicht erfasst"
+
 ## [2.9.1](https://github.com/antonroesler/vogelring/compare/v2.9.0...v2.9.1) (2026-07-19)
 
 
