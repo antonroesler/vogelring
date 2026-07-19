@@ -141,19 +141,28 @@ _PAIR_LABELS = {
     "S": "Schule",
 }
 
+def _melder_for_bemerkungen(s: SightingDB):
+    """Melder for the Bemerkungen field — omitted when it's IR (the default enterer)."""
+    m = (s.melder or "").strip()
+    if not m or m.upper() == "IR":
+        return None
+    return m
+
+
 # Vogelring fields with no dedicated RING column, bundled into the RING
-# "Bemerkungen" field. (label, accessor) — only filled values are emitted.
-# Order follows Ingo's example; tweak once he sends the final field order.
+# "Bemerkungen" field. (label, accessor) — only filled values are emitted, in
+# Ingo's specified order. Melder + Kommentar are NOT separate RING columns, so
+# they live here too; Habitat/Kleinfläche are intentionally left out.
 _BEMERKUNGEN_FIELDS: list[tuple[str, "callable"]] = [
+    ("Melder", _melder_for_bemerkungen),
+    ("Großgruppe", lambda s: s.large_group_size),
+    ("Kleingruppe", lambda s: s.small_group_size),
     ("Familien Status", lambda s: _PAIR_LABELS.get(s.pair, s.pair) if s.pair else None),
     ("Partner", lambda s: s.partner),
     ("Nicht flügge Junge", lambda s: s.breed_size),
     ("Flügge Junge", lambda s: s.family_size),
-    ("Kleingruppe", lambda s: s.small_group_size),
-    ("Großgruppe", lambda s: s.large_group_size),
-    ("Habitat", lambda s: s.habitat),
-    ("Kleinfläche", lambda s: s.area),
     ("Feldfrucht", lambda s: s.field_fruit),
+    ("Kommentare", lambda s: s.comment),
 ]
 
 
@@ -244,9 +253,7 @@ async def export_sightings_vogelwarte(
         "Alter",
         "Geschlecht",
         "Status",
-        "Melder",
         "Bemerkungen",
-        "Kommentar",
     ]
 
     wb = Workbook()
@@ -276,15 +283,13 @@ async def export_sightings_vogelwarte(
                 _RING_STATUS_MAP.get(
                     (s.status or "").strip().upper(), "unbekannt / nicht erfasst"
                 ),
-                s.melder or "",
-                # Non-RING Vogelring fields bundled into the RING remarks field.
+                # Non-RING Vogelring fields (incl. Melder + Kommentar) bundled here.
                 _build_bemerkungen(s),
-                s.comment or "",
             ]
         )
 
     # Reasonable default column widths for readability.
-    widths = [12, 28, 30, 10, 10, 16, 22, 16, 12, 24, 20, 44, 40]
+    widths = [12, 28, 30, 10, 10, 16, 22, 16, 12, 24, 60]
     for idx, width in enumerate(widths, start=1):
         ws.column_dimensions[chr(64 + idx)].width = width
 

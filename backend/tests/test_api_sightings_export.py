@@ -37,16 +37,14 @@ EXPECTED_HEADERS = [
     "Alter",
     "Geschlecht",
     "Status",
-    "Melder",
     "Bemerkungen",
-    "Kommentar",
 ]
 
 # 0-indexed positions of the columns the tests assert on.
 COL_RING = 5
 COL_AGE = 7
 COL_STATUS = 9
-COL_BEMERKUNGEN = 11
+COL_BEMERKUNGEN = 10
 
 
 def _add(test_db, org_id, **kwargs):
@@ -134,7 +132,8 @@ class TestVogelwarteExport:
         assert len(data) == 3
 
         # Row 1: 2026-02-01, BV. Place "Nied" is not in the RING lookup, so
-        # RING-Ort/Lat/Lon are blank (read back as None); no non-RING fields set.
+        # RING-Ort/Lat/Lon are blank (read back as None). Melder + comment fold
+        # into Bemerkungen (Melder kept because it's not "IR").
         assert data[0] == [
             "01.02.2026",
             "Nied",
@@ -146,9 +145,7 @@ class TestVogelwarteExport:
             "6 Älter als vorjährig",  # code 6 -> label
             "männlich",
             "nestbauend oder brütend",
-            "Obs B",
-            None,  # Bemerkungen (no non-RING fields set)
-            "c2",
+            "Melder: Obs B / Kommentare: c2",  # Bemerkungen
         ]
         # Row 2: 2026-03-01, MG, empty age/sex defaults
         assert data[1] == [
@@ -162,9 +159,7 @@ class TestVogelwarteExport:
             "2 Fängling",
             "unbekannt",
             "in Mausertrupp",
-            "Obs A",
-            None,  # Bemerkungen
-            "c1",
+            "Melder: Obs A / Kommentare: c1",  # Bemerkungen
         ]
         # Row 3: 2026-05-01, NB -> unknown status
         assert data[2][0] == "01.05.2026"
@@ -295,6 +290,47 @@ class TestVogelwarteExport:
             "Familien Status: Familie / Partner: 281937 / "
             "Nicht flügge Junge: 8 / Flügge Junge: 2"
         )
+
+    def test_bemerkungen_order_and_melder_ir_dropped(self, client, test_db, dev_org_id):
+        # Melder "IR" is dropped; all other fields appear in Ingo's specified order.
+        _add(
+            test_db,
+            dev_org_id,
+            date=date(2026, 3, 1),
+            melded=False,
+            status="MG",
+            ring="B2",
+            place="Nirgendwo",
+            melder="IR",  # must NOT appear
+            large_group_size=85,
+            small_group_size=19,
+            pair="F",
+            partner="281937",
+            breed_size=8,
+            family_size=2,
+            field_fruit="Rasen",
+            comment="ruht am Ufer",
+        )
+        b = _load_rows(client.get(EXPORT_URL))[1][COL_BEMERKUNGEN]
+        assert b == (
+            "Großgruppe: 85 / Kleingruppe: 19 / Familien Status: Familie / "
+            "Partner: 281937 / Nicht flügge Junge: 8 / Flügge Junge: 2 / "
+            "Feldfrucht: Rasen / Kommentare: ruht am Ufer"
+        )
+
+    def test_bemerkungen_keeps_non_ir_melder(self, client, test_db, dev_org_id):
+        _add(
+            test_db,
+            dev_org_id,
+            date=date(2026, 3, 1),
+            melded=False,
+            status="MG",
+            ring="B3",
+            place="Nirgendwo",
+            melder="OR",
+        )
+        b = _load_rows(client.get(EXPORT_URL))[1][COL_BEMERKUNGEN]
+        assert b == "Melder: OR"
 
     def test_export_does_not_change_melded(self, client, test_db, dev_org_id):
         s = _add(
