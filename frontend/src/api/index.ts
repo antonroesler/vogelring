@@ -73,6 +73,80 @@ export const exportSightingsVogelwarte = async (params?: { start_date?: string; 
   window.URL.revokeObjectURL(url);
 };
 
+// --- Export-Verlauf -------------------------------------------------------
+// Each export records exactly which sightings it contained, so they can be
+// bulk-marked as "gemeldet" once the Vogelwarte confirms the delivery.
+
+export interface SightingExportRun {
+  id: string;
+  created_at: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  row_count: number;
+  filename: string | null;
+  source: 'export' | 'manual';
+  note: string | null;
+  marked_melded_at: string | null;
+  marked_count: number | null;
+  pending_count: number;
+}
+
+export interface SightingExportItem {
+  id: string;
+  date: string | null;
+  ring: string | null;
+  species: string | null;
+  place: string | null;
+  melder: string | null;
+  melded: boolean;
+}
+
+export const getSightingExports = async (limit = 20) => {
+  const response = await api.get<SightingExportRun[]>('/sightings/exports', { params: { limit } });
+  return response.data;
+};
+
+export const getSightingExportItems = async (exportId: string) => {
+  const response = await api.get<SightingExportItem[]>(`/sightings/exports/${exportId}/sightings`);
+  return response.data;
+};
+
+export const markSightingExportMelded = async (exportId: string) => {
+  const response = await api.post<{
+    marked: number;
+    already_melded: number;
+    total: number;
+    run: SightingExportRun;
+  }>(`/sightings/exports/${exportId}/mark-melded`);
+  return response.data;
+};
+
+export const unmarkSightingExportMelded = async (exportId: string) => {
+  const response = await api.post<{ unmarked: number; run: SightingExportRun }>(
+    `/sightings/exports/${exportId}/unmark-melded`
+  );
+  return response.data;
+};
+
+// Reconstructs an export that was delivered before runs were recorded.
+// dry_run (the default) only reports what would be affected — nothing is written.
+export const backfillSightingExport = async (payload: {
+  start_date: string;
+  end_date?: string;
+  created_before?: string;
+  note?: string;
+  dry_run?: boolean;
+}) => {
+  const response = await api.post<{
+    dry_run: boolean;
+    matched: number;
+    marked?: number;
+    preview: Array<{ id: string; date: string | null; ring: string | null; species: string | null; place: string | null }>;
+    run: SightingExportRun | null;
+  }>('/sightings/exports/backfill', payload);
+  return response.data;
+};
+
 export const getSightingById = async (id: string) => {
   console.log('Fetching sighting with id:', id);
   const response = await api.get<Sighting>(`/sightings/${id}`);

@@ -178,3 +178,67 @@ class Sighting(Base):
         Index("idx_sightings_org_ring_date", "org_id", "ring", "date"),
         Index("idx_sightings_org_place", "org_id", "place"),
     )
+
+
+class SightingExport(Base):
+    """One run of the Vogelwarte (RING) Wiederfunde export.
+
+    Records exactly which sightings went into one export file, so the "gemeldet"
+    flag can be flipped for that same set later — the Vogelwarte usually accepts
+    a delivery days after the file was downloaded, and only then is it reported.
+    """
+
+    __tablename__ = "sighting_exports"
+
+    id = Column(GUID(), primary_key=True, default=uuid4)
+    org_id = Column(GUID(), ForeignKey("organizations.id"), nullable=False, index=True)
+
+    # The filter the export ran with (end_date NULL = no upper bound).
+    start_date = Column(Date)
+    end_date = Column(Date)
+    row_count = Column(Integer, nullable=False, default=0)
+    filename = Column(String(200))
+
+    # "export" = recorded by an actual download; "manual" = entered after the
+    # fact for an export that predates this feature.
+    source = Column(String(20), nullable=False, default="export")
+    note = Column(Text)
+
+    # Set once the run has been bulk-marked as gemeldet.
+    marked_melded_at = Column(TIMESTAMP)
+    marked_count = Column(Integer)
+
+    created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
+
+    items = relationship(
+        "SightingExportItem",
+        back_populates="export",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
+    __table_args__ = (Index("idx_sighting_exports_org_created", "org_id", "created_at"),)
+
+
+class SightingExportItem(Base):
+    """A single sighting contained in one export run.
+
+    ``sighting_id`` deliberately carries no foreign key: deleting a sighting must
+    not erase the record of what was once delivered to the Vogelwarte.
+    """
+
+    __tablename__ = "sighting_export_items"
+
+    export_id = Column(
+        GUID(),
+        ForeignKey("sighting_exports.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    sighting_id = Column(GUID(), primary_key=True, index=True)
+
+    # True only for sightings whose melded flag was actually flipped by this run's
+    # bulk-mark (i.e. they were unreported at that moment). Lets the mark be undone
+    # without touching sightings that were already gemeldet beforehand.
+    marked_melded = Column(Boolean, nullable=False, default=False)
+
+    export = relationship("SightingExport", back_populates="items")

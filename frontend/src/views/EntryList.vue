@@ -30,6 +30,23 @@
         </v-tooltip>
       </v-btn>
       <v-btn
+        prepend-icon="mdi-history"
+        variant="tonal"
+        @click="exportHistoryDialog = true"
+        class="me-2"
+      >
+        Exporte
+        <v-badge
+          v-if="pendingExportCount > 0"
+          :content="pendingExportCount"
+          color="warning"
+          inline
+        ></v-badge>
+        <v-tooltip activator="parent" location="bottom">
+          Frühere Exporte ansehen und ihre Einträge als gemeldet markieren
+        </v-tooltip>
+      </v-btn>
+      <v-btn
         icon="mdi-refresh"
         @click="loadSightings"
         :loading="store.loading"
@@ -74,7 +91,7 @@
     <v-snackbar
       v-model="showMeldedSnackbar"
       color="success"
-      :timeout="3000"
+      :timeout="6000"
     >
       {{ meldedSnackbarText }}
     </v-snackbar>
@@ -126,6 +143,11 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <export-history-dialog
+      v-model="exportHistoryDialog"
+      @changed="handleExportHistoryChanged"
+    ></export-history-dialog>
   </div>
 </template>
 
@@ -134,9 +156,10 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { useSightingsStore } from '@/stores/sightings';
 import SightingsFilter from '@/components/sightings/SightingsFilter.vue';
 import SightingsTable from '@/components/sightings/SightingsTable.vue';
+import ExportHistoryDialog from '@/components/sightings/ExportHistoryDialog.vue';
 import type { Sighting } from '@/types';
 import { useRouter } from 'vue-router';
-import { exportSightingsVogelwarte } from '@/api';
+import { exportSightingsVogelwarte, getSightingExports } from '@/api';
 
 const store = useSightingsStore();
 const router = useRouter();
@@ -148,6 +171,19 @@ const exportDialog = ref(false);
 const exportStartDate = ref('2026-01-01');
 const exportEndDate = ref('');
 
+const exportHistoryDialog = ref(false);
+// Exports still waiting to be confirmed by the Vogelwarte — badged on the button.
+const pendingExportCount = ref(0);
+
+const refreshPendingExports = async () => {
+  try {
+    const runs = await getSightingExports();
+    pendingExportCount.value = runs.filter((run) => run.pending_count > 0).length;
+  } catch (error) {
+    console.error('Error loading export history:', error);
+  }
+};
+
 const handleExport = async () => {
   exporting.value = true;
   try {
@@ -156,12 +192,24 @@ const handleExport = async () => {
     if (exportEndDate.value) params.end_date = exportEndDate.value;
     await exportSightingsVogelwarte(params);
     exportDialog.value = false;
+    // The export leaves the entries ungemeldet on purpose — point at where they
+    // get marked once the Vogelwarte has accepted the delivery.
+    meldedSnackbarText.value =
+      'Export erstellt. Nach Bestätigung der Vogelwarte unter „Exporte“ als gemeldet markieren.';
+    showMeldedSnackbar.value = true;
+    await refreshPendingExports();
   } catch (error) {
     console.error('Error exporting Wiederfunde:', error);
     store.error = 'Export fehlgeschlagen. Bitte erneut versuchen.';
   } finally {
     exporting.value = false;
   }
+};
+
+const handleExportHistoryChanged = async (message: string) => {
+  meldedSnackbarText.value = message;
+  showMeldedSnackbar.value = true;
+  await Promise.all([loadSightings(), refreshPendingExports()]);
 };
 
 const filters = computed({
@@ -295,5 +343,6 @@ onMounted(async () => {
   if (!store.initialized) {
     await loadSightings();
   }
+  refreshPendingExports();
 });
 </script>

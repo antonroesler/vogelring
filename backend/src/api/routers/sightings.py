@@ -5,14 +5,18 @@ Sightings API router
 import io
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
+from sqlalchemy import func as sa_func
 from sqlalchemy.orm import Session
-from datetime import date as DateType
+from datetime import date as DateType, datetime as DateTimeType, timezone
+from uuid import UUID, uuid4
 from pydantic import BaseModel
 
 from ...utils.auth import get_current_user
 from ...database.connection import get_db
 from ...database.user_models import User
 from ...database.models import Sighting as SightingDB
+from ...database.models import SightingExport as SightingExportDB
+from ...database.models import SightingExportItem as SightingExportItemDB
 from ...utils.sighting_coding import ring_age_label, ring_sex_label
 from ...utils.ring_places import lookup_place, smart_match_place
 from ..services.sighting_service import SightingService
@@ -201,6 +205,74 @@ def _build_bemerkungen(s: SightingDB) -> str:
     return " / ".join(parts)
 
 
+def _utcnow() -> DateTimeType:
+    """Naive UTC, matching how the DB's own CURRENT_TIMESTAMP columns are stored.
+
+    ``datetime.now()`` would follow the container's local timezone and silently
+    skew these timestamps against every other created_at in the schema.
+    """
+    return DateTimeType.now(timezone.utc).replace(tzinfo=None)
+
+
+def _unreported_sightings_query(
+    db: Session,
+    org_id,
+    start_date: DateType,
+    end_date: DateType | None,
+    created_before: DateTimeType | None = None,
+):
+    """The exact set the Wiederfunde export ships: not-yet-reported sightings in range.
+
+    ``created_before`` additionally excludes sightings entered after a given moment
+    — used when reconstructing an export that was taken in the past, so entries
+    added since then don't get swept in.
+    """
+    query = db.query(SightingDB).filter(
+        SightingDB.org_id == org_id,
+        SightingDB.date >= start_date,
+        SightingDB.melded.isnot(True),  # False or NULL: not yet reported
+    )
+    if end_date is not None:
+        query = query.filter(SightingDB.date <= end_date)
+    if created_before is not None:
+        query = query.filter(SightingDB.created_at <= created_before)
+    return query
+
+
+def _record_export_run(
+    db: Session,
+    org_id,
+    sightings: list[SightingDB],
+    start_date: DateType,
+    end_date: DateType | None,
+    filename: str | None,
+    source: str = "export",
+    note: str | None = None,
+) -> SightingExportDB:
+    """Persist which sightings went into one export, so they can be marked later."""
+    run = SightingExportDB(
+        id=uuid4(),
+        org_id=org_id,
+        # Set explicitly rather than via the server default: SQLite's
+        # CURRENT_TIMESTAMP is only second-granular, which would make two exports
+        # in the same second sort unpredictably in the history list.
+        created_at=_utcnow(),
+        start_date=start_date,
+        end_date=end_date,
+        row_count=len(sightings),
+        filename=filename,
+        source=source,
+        note=note,
+    )
+    db.add(run)
+    db.flush()
+    for s in sightings:
+        db.add(SightingExportItemDB(export_id=run.id, sighting_id=s.id))
+    db.commit()
+    db.refresh(run)
+    return run
+
+
 @router.get("/sightings/export/vogelwarte")
 async def export_sightings_vogelwarte(
     start_date: DateType = Query(
@@ -221,7 +293,10 @@ async def export_sightings_vogelwarte(
     is matched to its RING place name + coordinates: Ingo's explicit map first, else
     the GPS-nearest RING place within 500 m whose name overlaps (flagged "(auto)"),
     else blank. Non-RING Vogelring fields are bundled into a "Bemerkungen" column.
-    The melded flag is NOT modified by this export.
+
+    The melded flag is NOT modified here — the Vogelwarte only accepts a delivery
+    days later. Instead the run is recorded (see ``GET /sightings/exports``) so the
+    exact set can be bulk-marked as gemeldet once the delivery is confirmed.
     """
     try:
         from openpyxl import Workbook
@@ -232,16 +307,11 @@ async def export_sightings_vogelwarte(
             detail="Excel export dependency (openpyxl) is not installed",
         ) from exc
 
-    query = db.query(SightingDB).filter(
-        SightingDB.org_id == current_user.org_id,
-        SightingDB.date >= start_date,
-        SightingDB.melded.isnot(True),  # False or NULL: not yet reported
+    sightings = (
+        _unreported_sightings_query(db, current_user.org_id, start_date, end_date)
+        .order_by(SightingDB.date.asc(), SightingDB.place.asc())
+        .all()
     )
-    if end_date is not None:
-        query = query.filter(SightingDB.date <= end_date)
-    sightings = query.order_by(
-        SightingDB.date.asc(), SightingDB.place.asc()
-    ).all()
 
     headers = [
         "Datum",
@@ -297,6 +367,19 @@ async def export_sightings_vogelwarte(
     buffer.seek(0)
 
     filename = f"vogelring_wiederfunde_{DateType.today().isoformat()}.xlsx"
+
+    # Remember what went out, so it can be marked gemeldet once the Vogelwarte
+    # accepts it. An empty export has nothing to mark — don't clutter the list.
+    if sightings:
+        _record_export_run(
+            db,
+            current_user.org_id,
+            sightings,
+            start_date,
+            end_date,
+            filename,
+        )
+
     return StreamingResponse(
         buffer,
         media_type=(
@@ -304,6 +387,326 @@ async def export_sightings_vogelwarte(
         ),
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+class ExportRunOut(BaseModel):
+    """One recorded export run, plus how much of it is still unreported."""
+
+    id: str
+    created_at: DateTimeType | None = None
+    start_date: DateType | None = None
+    end_date: DateType | None = None
+    row_count: int
+    filename: str | None = None
+    source: str
+    note: str | None = None
+    marked_melded_at: DateTimeType | None = None
+    marked_count: int | None = None
+    # Sightings from this run that are still not gemeldet — what a mark would flip.
+    pending_count: int
+
+
+class ExportBackfillRequest(BaseModel):
+    """Reconstruct an export that was delivered before runs were recorded."""
+
+    start_date: DateType
+    end_date: DateType | None = None
+    # Optional cut-off: ignore sightings entered after the export was taken.
+    created_before: DateTimeType | None = None
+    note: str | None = None
+    # Preview only — nothing is written and nothing is marked.
+    dry_run: bool = True
+
+
+# Postgres caps bind parameters per statement; chunk large id lists.
+_ID_CHUNK = 500
+
+
+def _chunks(values: list, size: int = _ID_CHUNK):
+    for start in range(0, len(values), size):
+        yield values[start : start + size]
+
+
+def _pending_counts(db: Session, run_ids: list) -> dict:
+    """For each run id: how many of its sightings are still not gemeldet."""
+    counts: dict = {}
+    for chunk in _chunks(run_ids):
+        rows = (
+            db.query(SightingExportItemDB.export_id, sa_func.count())
+            .join(SightingDB, SightingDB.id == SightingExportItemDB.sighting_id)
+            .filter(
+                SightingExportItemDB.export_id.in_(chunk),
+                SightingDB.melded.isnot(True),
+            )
+            .group_by(SightingExportItemDB.export_id)
+            .all()
+        )
+        for export_id, count in rows:
+            counts[export_id] = count
+    return counts
+
+
+def _run_out(run: SightingExportDB, pending: int) -> ExportRunOut:
+    return ExportRunOut(
+        id=str(run.id),
+        created_at=run.created_at,
+        start_date=run.start_date,
+        end_date=run.end_date,
+        row_count=run.row_count,
+        filename=run.filename,
+        source=run.source,
+        note=run.note,
+        marked_melded_at=run.marked_melded_at,
+        marked_count=run.marked_count,
+        pending_count=pending,
+    )
+
+
+def _get_run(db: Session, export_id: str, org_id) -> SightingExportDB:
+    try:
+        run_uuid = UUID(export_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Export not found")
+    run = (
+        db.query(SightingExportDB)
+        .filter(SightingExportDB.id == run_uuid, SightingExportDB.org_id == org_id)
+        .first()
+    )
+    if run is None:
+        raise HTTPException(status_code=404, detail="Export not found")
+    return run
+
+
+@router.get("/sightings/exports")
+async def list_sighting_exports(
+    limit: int = Query(20, ge=1, le=100, description="How many runs to return"),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """List recent Wiederfunde export runs, newest first."""
+    runs = (
+        db.query(SightingExportDB)
+        .filter(SightingExportDB.org_id == current_user.org_id)
+        .order_by(SightingExportDB.created_at.desc(), SightingExportDB.id.desc())
+        .limit(limit)
+        .all()
+    )
+    pending = _pending_counts(db, [r.id for r in runs])
+    return [_run_out(r, pending.get(r.id, 0)) for r in runs]
+
+
+@router.get("/sightings/exports/{export_id}/sightings")
+async def get_sighting_export_items(
+    export_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """The sightings contained in one export run, with their current melded state."""
+    run = _get_run(db, export_id, current_user.org_id)
+    rows = (
+        db.query(SightingDB)
+        .join(
+            SightingExportItemDB,
+            SightingExportItemDB.sighting_id == SightingDB.id,
+        )
+        .filter(SightingExportItemDB.export_id == run.id)
+        .order_by(SightingDB.date.asc(), SightingDB.place.asc())
+        .all()
+    )
+    return [
+        {
+            "id": str(s.id),
+            "date": s.date,
+            "ring": s.ring,
+            "species": s.species,
+            "place": s.place,
+            "melder": s.melder,
+            "melded": bool(s.melded),
+        }
+        for s in rows
+    ]
+
+
+@router.post("/sightings/exports/{export_id}/mark-melded")
+async def mark_export_melded(
+    export_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Mark every sighting of this export run as gemeldet.
+
+    Only flips sightings that are not already gemeldet, and remembers exactly which
+    ones it flipped so the run can be undone. Safe to call twice.
+    """
+    run = _get_run(db, export_id, current_user.org_id)
+
+    pending_ids = [
+        row[0]
+        for row in db.query(SightingDB.id)
+        .join(
+            SightingExportItemDB,
+            SightingExportItemDB.sighting_id == SightingDB.id,
+        )
+        .filter(
+            SightingExportItemDB.export_id == run.id,
+            SightingDB.org_id == current_user.org_id,
+            SightingDB.melded.isnot(True),
+        )
+        .all()
+    ]
+
+    for chunk in _chunks(pending_ids):
+        db.query(SightingDB).filter(
+            SightingDB.org_id == current_user.org_id,
+            SightingDB.id.in_(chunk),
+        ).update({SightingDB.melded: True}, synchronize_session=False)
+        db.query(SightingExportItemDB).filter(
+            SightingExportItemDB.export_id == run.id,
+            SightingExportItemDB.sighting_id.in_(chunk),
+        ).update({SightingExportItemDB.marked_melded: True}, synchronize_session=False)
+
+    run.marked_melded_at = _utcnow()
+    run.marked_count = (run.marked_count or 0) + len(pending_ids)
+    db.commit()
+    db.refresh(run)
+
+    return {
+        "marked": len(pending_ids),
+        "already_melded": run.row_count - len(pending_ids),
+        "total": run.row_count,
+        "run": _run_out(run, 0),
+    }
+
+
+@router.post("/sightings/exports/{export_id}/unmark-melded")
+async def unmark_export_melded(
+    export_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Undo this run's bulk-mark.
+
+    Resets only the sightings this run actually flipped — anything that was already
+    gemeldet before the run, or marked by a different run, stays untouched.
+    """
+    run = _get_run(db, export_id, current_user.org_id)
+
+    marked_ids = [
+        row[0]
+        for row in db.query(SightingExportItemDB.sighting_id)
+        .filter(
+            SightingExportItemDB.export_id == run.id,
+            SightingExportItemDB.marked_melded.is_(True),
+        )
+        .all()
+    ]
+
+    for chunk in _chunks(marked_ids):
+        db.query(SightingDB).filter(
+            SightingDB.org_id == current_user.org_id,
+            SightingDB.id.in_(chunk),
+        ).update({SightingDB.melded: False}, synchronize_session=False)
+        db.query(SightingExportItemDB).filter(
+            SightingExportItemDB.export_id == run.id,
+            SightingExportItemDB.sighting_id.in_(chunk),
+        ).update({SightingExportItemDB.marked_melded: False}, synchronize_session=False)
+
+    run.marked_melded_at = None
+    run.marked_count = None
+    db.commit()
+    db.refresh(run)
+
+    pending = _pending_counts(db, [run.id]).get(run.id, 0)
+    return {"unmarked": len(marked_ids), "run": _run_out(run, pending)}
+
+
+@router.post("/sightings/exports/backfill")
+async def backfill_sighting_export(
+    payload: ExportBackfillRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Record an export that was already delivered, and mark its sightings gemeldet.
+
+    Reconstructs the set the export would have contained (unreported sightings in
+    the range, optionally limited to those entered before ``created_before``).
+    With ``dry_run`` (the default) nothing is written — it only reports what would
+    be affected, so the range can be verified before any data changes.
+    """
+    sightings = (
+        _unreported_sightings_query(
+            db,
+            current_user.org_id,
+            payload.start_date,
+            payload.end_date,
+            payload.created_before,
+        )
+        .order_by(SightingDB.date.asc(), SightingDB.place.asc())
+        .all()
+    )
+
+    preview = [
+        {
+            "id": str(s.id),
+            "date": s.date,
+            "ring": s.ring,
+            "species": s.species,
+            "place": s.place,
+        }
+        for s in sightings[:20]
+    ]
+
+    if payload.dry_run:
+        return {
+            "dry_run": True,
+            "matched": len(sightings),
+            "preview": preview,
+            "run": None,
+        }
+
+    if not sightings:
+        raise HTTPException(
+            status_code=400,
+            detail="Keine nicht gemeldeten Einträge in diesem Zeitraum",
+        )
+
+    # Read the ids up front: recording the run commits, which expires the loaded
+    # instances — touching them afterwards would re-select every single row.
+    ids = [s.id for s in sightings]
+
+    run = _record_export_run(
+        db,
+        current_user.org_id,
+        sightings,
+        payload.start_date,
+        payload.end_date,
+        filename=None,
+        source="manual",
+        note=payload.note,
+    )
+
+    for chunk in _chunks(ids):
+        db.query(SightingDB).filter(
+            SightingDB.org_id == current_user.org_id,
+            SightingDB.id.in_(chunk),
+        ).update({SightingDB.melded: True}, synchronize_session=False)
+        db.query(SightingExportItemDB).filter(
+            SightingExportItemDB.export_id == run.id,
+            SightingExportItemDB.sighting_id.in_(chunk),
+        ).update({SightingExportItemDB.marked_melded: True}, synchronize_session=False)
+
+    run.marked_melded_at = _utcnow()
+    run.marked_count = len(ids)
+    db.commit()
+    db.refresh(run)
+
+    return {
+        "dry_run": False,
+        "matched": len(sightings),
+        "marked": len(ids),
+        "preview": preview,
+        "run": _run_out(run, 0),
+    }
 
 
 @router.get("/sightings/{id}")
