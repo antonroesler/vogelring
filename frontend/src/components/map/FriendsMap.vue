@@ -117,6 +117,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import '@/utils/leaflet-extensions';
 import { BirdMeta, AnalyticsBirdMeta, SeenStatus } from '@/types';
 import { format } from 'date-fns';
+import { baseMaps } from '@/config/basemaps';
 
 interface SelectedBird {
   ring: string;
@@ -141,24 +142,6 @@ const selectedBirds = ref<SelectedBird[] | null>(null);
 const showOnlyJointSightings = ref(false);
 const currentBaseMap = ref('cartoLight');
 const baseMapLayer = ref<L.TileLayer | null>(null);
-
-const baseMaps = {
-  osm: {
-    name: 'Standard',
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '© OpenStreetMap contributors'
-  },
-  cartoLight: {
-    name: 'Hell',
-    url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-    attribution: '© OpenStreetMap contributors, © CARTO'
-  },
-  cartoDark: {
-    name: 'Dunkel',
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-    attribution: '© OpenStreetMap contributors, © CARTO'
-  }
-};
 
 const formatDate = (date: string) => {
   return format(new Date(date), 'dd.MM.yyyy');

@@ -159,6 +159,7 @@ import { useSightingsStore } from '@/stores/sightings';
 import ShareDialog from '@/components/dialogs/ShareDialog.vue';
 import MissingRingDetails from '@/components/birds/MissingRingDetails.vue';
 import { formatRingingAge } from '@/utils/ageMapping';
+import { baseMaps } from '@/config/basemaps';
 
 const route = useRoute();
 const router = useRouter();
@@ -611,23 +612,7 @@ const generateStaticHTML = () => {
     <script>
       window.onload = function() {
         // Base maps configuration
-        const baseMaps = {
-          osm: {
-            name: 'Standard',
-            url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-            attribution: '© OpenStreetMap contributors'
-          },
-          cartoLight: {
-            name: 'Hell',
-            url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-            attribution: '© OpenStreetMap contributors, © CARTO'
-          },
-          cartoDark: {
-            name: 'Dunkel',
-            url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-            attribution: '© OpenStreetMap contributors, © CARTO'
-          }
-        };
+        const baseMaps = ${JSON.stringify(baseMaps)};
 
         // Create map controls
         const mapControls = document.createElement('div');
