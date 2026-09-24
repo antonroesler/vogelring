@@ -27,7 +27,7 @@
             <v-icon icon="mdi-bird" class="me-2"></v-icon>
             <div>
               <strong>Bekannter Vogel gefunden:</strong><br>
-              Ring {{ ring }} ist ein <strong>{{ suggestedSpecies }}</strong>
+              Ring {{ ring }} ist ein <strong>{{ resolveSpeciesName(suggestedSpecies) }}</strong>
             </div>
           </div>
         </v-alert>
@@ -57,7 +57,7 @@
           :disabled="isLoading"
         >
           <v-icon icon="mdi-bird" class="me-2"></v-icon>
-          {{ suggestedSpecies }} verwenden
+          {{ resolveSpeciesName(suggestedSpecies) }} verwenden
         </v-btn>
         
         <v-btn
@@ -89,6 +89,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveSpeciesName } from '@/utils/species';
 import { ref, watch, onMounted } from 'vue';
 import * as api from '@/api';
 

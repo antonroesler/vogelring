@@ -34,7 +34,7 @@
         <v-list>
           <v-list-item>
             <v-list-item-title>Spezies</v-list-item-title>
-            <v-list-item-subtitle>{{ bird.species || 'Unbekannt' }}</v-list-item-subtitle>
+            <v-list-item-subtitle>{{ resolveSpeciesName(bird.species) }}</v-list-item-subtitle>
           </v-list-item>
           <v-list-item>
             <v-list-item-title>Ring</v-list-item-title>
@@ -164,12 +164,12 @@
         <h3 class="text-h6 mb-2">Andere Artenbestimmungen</h3>
         <v-list v-if="bird.other_species_identifications && Object.keys(bird.other_species_identifications).length > 0">
           <v-list-item v-for="(count, species) in bird.other_species_identifications" :key="species">
-            <v-list-item-title>{{ species }}</v-list-item-title>
+            <v-list-item-title>{{ resolveSpeciesName(species) }}</v-list-item-title>
             <v-list-item-subtitle>{{ count }} mal</v-list-item-subtitle>
           </v-list-item>
         </v-list>
         <p v-else class="text-body-1">
-          {{ bird.species ? `Ausschließlich als ${bird.species} identifiziert.` : 'Keine Artenbestimmungen verfügbar.' }}
+          {{ bird.species ? `Ausschließlich als ${resolveSpeciesName(bird.species)} identifiziert.` : 'Keine Artenbestimmungen verfügbar.' }}
         </p>
       </template>
     </v-card-text>
@@ -177,6 +177,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveSpeciesName } from '@/utils/species';
 import { ref } from 'vue';
 import { format } from 'date-fns';
 import { formatBirdStatus, getBirdStatusColor, getBirdStatusIcon } from '@/utils/statusUtils';

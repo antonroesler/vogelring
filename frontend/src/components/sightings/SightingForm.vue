@@ -124,6 +124,9 @@
         <v-autocomplete
           v-model="localSighting.species"
           :items="filteredSpecies"
+          :item-title="resolveSpeciesName"
+                    :item-value="species => species"
+                    no-filter
           label="Spezies"
           @update:search="filterSpecies"
           :loading="!suggestions.species.length"
@@ -365,6 +368,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveSpeciesName } from '@/utils/species';
 import { ref, watch, computed, onMounted } from 'vue';
 import type { Sighting, SuggestionBird, SuggestionLists } from '@/types';
 import { BirdStatus, PairType } from '@/types';
@@ -523,7 +527,7 @@ const createFilter = (field: keyof typeof suggestions.value) => {
     
     const searchTerm = input.toLowerCase().trim();
     const filtered = sourceArray
-      .filter(item => item && item.toLowerCase().includes(searchTerm))
+      .filter(item => item && (item.toLowerCase().includes(searchTerm) || (field === 'species' && resolveSpeciesName(item).toLowerCase().includes(searchTerm))))
       .slice(0, 5);
     
     if (searchTerm && !filtered.includes(input)) {

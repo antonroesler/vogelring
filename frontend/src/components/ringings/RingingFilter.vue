@@ -29,7 +29,7 @@
 
         <!-- Species Filter -->
         <v-col cols="12" sm="6" md="3">
-          <v-select
+          <v-autocomplete
             v-model="localFilters.species"
             :items="speciesOptions"
             label="Spezies"
@@ -37,7 +37,7 @@
             variant="outlined"
             density="compact"
             @update:model-value="updateFilters"
-          ></v-select>
+          ></v-autocomplete>
         </v-col>
 
         <!-- Place Filter -->
@@ -99,6 +99,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue';
+import { resolveSpeciesName } from '@/utils/species';
 // Using a simple debounce implementation instead of lodash-es
 const debounce = <T extends (...args: any[]) => any>(func: T, wait: number): ((...args: Parameters<T>) => void) => {
   let timeout: ReturnType<typeof setTimeout>;
@@ -119,6 +120,7 @@ interface Filters {
 
 const props = defineProps<{
   filters: Filters;
+  speciesOptions: { title: string; value: string }[];
 }>();
 
 const emit = defineEmits<{
@@ -126,15 +128,6 @@ const emit = defineEmits<{
 }>();
 
 const localFilters = ref<Filters>({ ...props.filters });
-
-// Species options for the dropdown
-const speciesOptions = [
-  { title: 'Kanadagans', value: '01660' },
-  { title: 'Graugans', value: '01610' },
-  { title: 'Höckerschwan', value: '01520' },
-  { title: 'Nilgans', value: '01700' },
-  { title: 'Weißwangengans', value: '01670' }
-];
 
 const activeFilters = computed(() => {
   const active = [];
@@ -153,11 +146,10 @@ const activeFilters = computed(() => {
     });
   }
   if (localFilters.value.species) {
-    const speciesOption = speciesOptions.find(opt => opt.value === localFilters.value.species);
     active.push({ 
       key: 'species', 
       value: localFilters.value.species, 
-      label: `Spezies: ${speciesOption?.title || localFilters.value.species}` 
+      label: `Spezies: ${resolveSpeciesName(localFilters.value.species)}`
     });
   }
   if (localFilters.value.place) {

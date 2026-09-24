@@ -46,7 +46,7 @@
             <v-list-item-title class="d-flex align-center">
               <span class="font-weight-medium font-monospace">{{ bird.ring }}</span>
               <span class="mx-1">-</span>
-              <span>{{ bird.species }}</span>
+              <span>{{ resolveSpeciesName(bird.species) }}</span>
             </v-list-item-title>
             <v-list-item-subtitle class="d-flex flex-wrap">
               <span class="me-2">
@@ -74,6 +74,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveSpeciesName } from '@/utils/species';
 import { ref, onMounted, computed } from 'vue';
 import { format } from 'date-fns';
 import type { BirdMeta, Sighting } from '@/types';

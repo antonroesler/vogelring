@@ -5,7 +5,7 @@
       <v-card-text>
         <div class="d-flex align-center mb-2">
           <h2 class="text-h5 font-weight-bold mb-0">
-            {{ bird?.species || 'Vogel' }}
+            {{ bird?.species ? resolveSpeciesName(bird.species) : 'Vogel' }}
           </h2>
           <v-chip
             class="ml-4 ring-chip"
@@ -71,7 +71,7 @@
                   ></v-icon>
                 </v-list-item-title>
                 <v-list-item-subtitle class="text-medium-emphasis">
-                  {{ friend.species }} | Sichtungen: {{ friend.sharedCount }}
+                  {{ resolveSpeciesName(friend.species) }} | Sichtungen: {{ friend.sharedCount }}
                 </v-list-item-subtitle>
               </v-list-item>
               
@@ -132,6 +132,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveSpeciesName } from '@/utils/species';
 import { ref, onMounted, watch } from 'vue';
 import L from 'leaflet';
 import { useRoute } from 'vue-router';
@@ -373,7 +374,7 @@ const updateMarkers = (birdSightings: Sighting[], friends: AnalyticsBirdMeta[]) 
 
       const popupContent = `
         <a href="/birds/${sighting.ring}" target="_blank">${sighting.ring}</a>
-        <div>${sighting.species}</div>
+        <div>${resolveSpeciesName(sighting.species)}</div>
         <div>${new Date(sighting.date).toLocaleDateString('de-DE')}</div>
         <div>${sighting.place}</div>
       `;
@@ -427,7 +428,7 @@ const updateMarkers = (birdSightings: Sighting[], friends: AnalyticsBirdMeta[]) 
 
         const popupContent = `
           <a href="/birds/${friend.ring}" target="_blank">${friend.ring}</a>
-          <div>${friend.species}</div>
+          <div>${resolveSpeciesName(friend.species)}</div>
           <div>${sighting.date}</div>
         `;
 
@@ -582,7 +583,7 @@ const updateDateMap = async () => {
 
         const popupContent = `
           <a href="/birds/${sighting.ring}" target="_blank">${sighting.ring}</a>
-          <div>${sighting.species || 'Unbekannte Art'}</div>
+          <div>${resolveSpeciesName(sighting.species)}</div>
           <div>${new Date(sighting.date).toLocaleDateString('de-DE')}</div>
         `;
 
@@ -625,7 +626,7 @@ const updateDateMap = async () => {
 
       const popupContent = `
         <a href="/birds/${birdSighting.ring}" target="_blank">${birdSighting.ring}</a>
-        <div>${birdSighting.species || 'Unbekannte Art'}</div>
+        <div>${resolveSpeciesName(birdSighting.species)}</div>
         <div>${new Date(birdSighting.date).toLocaleDateString('de-DE')}</div>
       `;
 

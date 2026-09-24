@@ -80,7 +80,7 @@
             <div class="d-flex align-center py-1 px-2 suggestion-item" @click="navigateToBird(item.raw)">
               <v-icon icon="mdi-bird" color="primary" size="small" class="mr-2"></v-icon>
               <div class="flex-grow-1">
-                <div><strong>{{ item.raw.ring }}</strong> - {{ item.raw.species }}</div>
+                <div><strong>{{ item.raw.ring }}</strong> - {{ resolveSpeciesName(item.raw.species) }}</div>
                 <div class="text-caption">
                   {{ item.raw.sighting_count }} 
                   Sichtung{{ item.raw.sighting_count !== 1 ? 'en' : '' }} | 
@@ -308,7 +308,7 @@
             <template v-slot:item="{ item }">
               <v-list-item
                 :title="item.raw.ring"
-                :subtitle="`${item.raw.species} - ${item.raw.sighting_count} Sichtung${item.raw.sighting_count !== 1 ? 'en' : ''}`"
+                :subtitle="`${resolveSpeciesName(item.raw.species)} - ${item.raw.sighting_count} Sichtung${item.raw.sighting_count !== 1 ? 'en' : ''}`"
                 @click="navigateFromMobileSearch(item.raw)"
               >
                 <template v-slot:prepend>
@@ -425,6 +425,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveSpeciesName } from '@/utils/species';
 import { ref, onMounted, computed } from 'vue';
 import { api } from './api';
 import { useRouter } from 'vue-router';

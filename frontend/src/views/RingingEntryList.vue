@@ -45,6 +45,7 @@
 
     <ringing-filter
       v-model:filters="filters"
+      :species-options="store.availableSpecies"
     ></ringing-filter>
 
     <ringing-table

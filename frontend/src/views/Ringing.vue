@@ -58,7 +58,7 @@
                   </v-list-item>
                   <v-list-item>
                     <v-list-item-title>Spezies</v-list-item-title>
-                    <v-list-item-subtitle>{{ foundRinging.species }}</v-list-item-subtitle>
+                    <v-list-item-subtitle>{{ resolveSpeciesName(foundRinging.species) }}</v-list-item-subtitle>
                   </v-list-item>
                   <v-list-item>
                     <v-list-item-title>Datum</v-list-item-title>
@@ -163,6 +163,9 @@
                   <v-autocomplete
                     v-model="newRinging.species"
                     :items="filteredSpecies"
+                    :item-title="resolveSpeciesName"
+                    :item-value="species => species"
+                    no-filter
                     label="Spezies*"
                     @update:search="filterSpecies"
                     :loading="!suggestions.species.length"
@@ -377,6 +380,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveSpeciesName, ringSpeciesCodes } from '@/utils/species';
 import { ref, reactive, watch, computed, onMounted } from 'vue';
 import { format } from 'date-fns';
 import { formatBirdStatus, getBirdStatusColor, getBirdStatusIcon } from '@/utils/statusUtils';
@@ -469,7 +473,7 @@ onMounted(async () => {
     const response = await api.api.get('/suggestions');
     suggestions.value = {
       places: Array.isArray(response.data.places) ? response.data.places : [],
-      species: Array.isArray(response.data.species) ? response.data.species : []
+      species: [...new Set([...(Array.isArray(response.data.species) ? response.data.species : []), ...ringSpeciesCodes])]
     };
     filteredPlaces.value = suggestions.value.places;
     filteredSpecies.value = suggestions.value.species;
@@ -498,7 +502,7 @@ const createFilter = (field: keyof typeof suggestions.value) => {
     
     const searchTerm = input.toLowerCase().trim();
     const filtered = sourceArray
-      .filter(item => item && item.toLowerCase().includes(searchTerm))
+      .filter(item => item && (item.toLowerCase().includes(searchTerm) || (field === 'species' && resolveSpeciesName(item).toLowerCase().includes(searchTerm))))
       .slice(0, 5);
     
     if (searchTerm && !filtered.includes(input)) {

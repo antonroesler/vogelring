@@ -57,6 +57,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveSpeciesName } from '@/utils/species';
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import type { Sighting } from '@/types';
@@ -232,7 +233,7 @@ const topBirdsChartOption = computed(() => {
       formatter: (params: any) => {
         const dataIndex = params[0].dataIndex;
         const bird = sortedBirds[dataIndex];
-        return `${bird.ring}${bird.species ? ` (${bird.species})` : ''}: ${bird.count}`;
+        return `${bird.ring}${bird.species ? ` (${resolveSpeciesName(bird.species)})` : ''}: ${bird.count}`;
       }
     },
     grid: {

@@ -22,7 +22,7 @@
           <div class="bird-header-content">
             <div class="bird-header-info">
               <h2 class="text-h5 text-sm-h4 font-weight-bold mb-2 mb-sm-0">
-                {{ bird?.species || 'Loading...' }}
+                {{ bird ? resolveSpeciesName(bird.species) : 'Loading...' }}
               </h2>
               <div class="bird-header-chips">
                 <v-chip
@@ -189,6 +189,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveSpeciesName } from '@/utils/species';
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { format } from 'date-fns';

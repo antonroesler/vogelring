@@ -26,7 +26,7 @@
                   </v-chip>
                 </div>
                 <div class="bird-details text-medium-emphasis">
-                  <span>{{ bird.species }}</span>
+                  <span>{{ resolveSpeciesName(bird.species) }}</span>
                   <span v-if="bird.lastSeen" class="bullet-separator">•</span>
                   <span v-if="bird.lastSeen">Zuletzt: {{ formatDate(bird.lastSeen) }}</span>
                   <span class="bullet-separator">•</span>
@@ -109,6 +109,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveSpeciesName } from '@/utils/species';
 import { ref, onMounted, watch } from 'vue';
 import L from 'leaflet';
 import 'leaflet.markercluster';
