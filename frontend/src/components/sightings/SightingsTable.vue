@@ -80,7 +80,7 @@
             {{ item.ring }}
           </template>
           <template v-else-if="col === 'species'">
-            {{ item.species }}
+            {{ resolveSpeciesName(item.species) }}
           </template>
           <template v-else-if="col === 'place'">
             {{ item.place }}
@@ -193,6 +193,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveSpeciesName } from '@/utils/species';
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { format } from 'date-fns';

@@ -152,6 +152,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveSpeciesName } from '@/utils/species';
 import { ref, onMounted, computed, watch } from 'vue';
 import { useSightingsStore } from '@/stores/sightings';
 import SightingsFilter from '@/components/sightings/SightingsFilter.vue';
@@ -227,7 +228,7 @@ const filteredSightings = computed(() => {
     let matches = true;
     
     if (filters.value.species) {
-      matches = matches && !!(sighting.species && sighting.species.toLowerCase().includes(filters.value.species.toLowerCase()));
+      matches = matches && !!(sighting.species && resolveSpeciesName(sighting.species).toLowerCase().includes(resolveSpeciesName(filters.value.species).toLowerCase()));
     }
     if (filters.value.ring) {
       matches = matches && !!(sighting.ring && sighting.ring.includes(filters.value.ring));

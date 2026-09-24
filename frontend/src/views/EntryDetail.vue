@@ -146,6 +146,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveSpeciesName } from '@/utils/species';
 import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { Sighting, BirdMeta, Ringing } from '@/types';
@@ -431,7 +432,7 @@ const generateStaticHTML = () => {
         </tr>
         <tr>
           <td class="field-label">Spezies</td>
-          <td>${sighting.value?.species || '-'}</td>
+          <td>${sighting.value?.species ? resolveSpeciesName(sighting.value.species) : '-'}</td>
         </tr>
         <tr>
           <td class="field-label">Ort</td>
@@ -502,7 +503,7 @@ const generateStaticHTML = () => {
           </tr>
           <tr>
             <td class="field-label">Spezies</td>
-            <td>${birdDetails.value.species || '-'}</td>
+            <td>${birdDetails.value.species ? resolveSpeciesName(birdDetails.value.species) : '-'}</td>
           </tr>
           <tr>
             <td class="field-label">Erste Sichtung</td>

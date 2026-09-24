@@ -37,7 +37,7 @@
               <v-icon icon="mdi-bird" color="primary" size="small" class="mr-2"></v-icon>
             </template>
             <v-list-item-title>
-              <strong>{{ suggestion.ring }}</strong> - {{ suggestion.species }}
+              <strong>{{ suggestion.ring }}</strong> - {{ resolveSpeciesName(suggestion.species) }}
             </v-list-item-title>
             <v-list-item-subtitle>
               {{ suggestion.sighting_count }} 
@@ -62,6 +62,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveSpeciesName } from '@/utils/species';
 import { ref, watch, onBeforeUnmount } from 'vue';
 import { format } from 'date-fns';
 import { getBirdSuggestions } from '@/api';

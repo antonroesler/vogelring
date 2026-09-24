@@ -32,7 +32,7 @@
                     <div class="d-flex align-center">
                       <v-icon icon="mdi-bird" color="primary" size="small" class="mr-2"></v-icon>
                       <div>
-                        <div><strong>{{ item.raw.ring }}</strong> - {{ item.raw.species || 'Unbekannt' }}</div>
+                        <div><strong>{{ item.raw.ring }}</strong> - {{ resolveSpeciesName(item.raw.species) }}</div>
                         <div class="text-caption text-medium-emphasis">
                           {{ item.raw.sighting_count }} Sichtung{{ item.raw.sighting_count !== 1 ? 'en' : '' }}
                           <span v-if="item.raw.last_seen"> | Letzte: {{ formatDate(item.raw.last_seen) }}</span>
@@ -68,7 +68,7 @@
                     <div class="d-flex align-center">
                       <v-icon icon="mdi-bird" color="primary" size="small" class="mr-2"></v-icon>
                       <div>
-                        <div><strong>{{ item.raw.ring }}</strong> - {{ item.raw.species || 'Unbekannt' }}</div>
+                        <div><strong>{{ item.raw.ring }}</strong> - {{ resolveSpeciesName(item.raw.species) }}</div>
                         <div class="text-caption text-medium-emphasis">
                           {{ item.raw.sighting_count }} Sichtung{{ item.raw.sighting_count !== 1 ? 'en' : '' }}
                           <span v-if="item.raw.last_seen"> | Letzte: {{ formatDate(item.raw.last_seen) }}</span>
@@ -161,6 +161,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveSpeciesName } from '@/utils/species';
 import { ref, watch, computed } from 'vue';
 import debounce from 'lodash/debounce';
 import { api } from '@/api';

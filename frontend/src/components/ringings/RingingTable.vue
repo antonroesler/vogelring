@@ -1,31 +1,5 @@
 <template>
   <div>
-    <!-- Species Info Box -->
-    <v-alert
-      type="info"
-      variant="tonal"
-      class="mb-4"
-      closable
-      v-model="showSpeciesInfo"
-    >
-      <v-alert-title>Artencodes</v-alert-title>
-      <div class="mt-2">
-        <div class="species-mapping">
-          <div v-for="(name, code) in speciesMapping" :key="code" class="species-item">
-            <strong>{{ code }}:</strong> {{ name }}
-          </div>
-        </div>
-      </div>
-      <template v-slot:append>
-        <v-btn
-          icon="mdi-information"
-          variant="text"
-          size="small"
-          @click="showSpeciesInfo = !showSpeciesInfo"
-        />
-      </template>
-    </v-alert>
-
     <!-- Settings Menu -->
     <div class="d-flex justify-end mb-3" v-if="showSettings">
       <v-menu v-model="settingsOpen" :close-on-content-click="false">
@@ -200,6 +174,7 @@ import { format } from 'date-fns';
 import type { Ringing } from '@/types';
 import draggable from 'vuedraggable';
 import { formatRingingAge } from '@/utils/ageMapping';
+import { resolveSpeciesName } from '@/utils/species';
 
 const props = withDefaults(defineProps<{
   ringings: Ringing[];
@@ -226,19 +201,9 @@ const emit = defineEmits<{
 }>();
 
 // const router = useRouter(); // Not used currently
-const showSpeciesInfo = ref(true);
 const showDeleteDialog = ref(false);
 const deleteLoading = ref(false);
 const selectedRinging = ref<Ringing | null>(null);
-
-// Species code to name mapping
-const speciesMapping = {
-  '01660': 'Kanadagans',
-  '01610': 'Graugans',
-  '01520': 'Höckerschwan',
-  '01700': 'Nilgans',
-  '01670': 'Weißwangengans'
-} as const;
 
 const allColumnDefs = [
   { key: 'id', title: 'ID' },
@@ -351,15 +316,6 @@ const saveSettings = () => {
 
 // Watch for changes and save
 watch([orderedColumnKeys, selectedSet, hoverExpandEnabled], saveSettings, { deep: true });
-
-const resolveSpeciesName = (species: string): string => {
-  // If it's a numeric code, try to resolve it
-  if (species in speciesMapping) {
-    return speciesMapping[species as keyof typeof speciesMapping];
-  }
-  // Otherwise return the species as is (for entries that already have names)
-  return species;
-};
 
 const formatDate = (date: string): string => {
   try {

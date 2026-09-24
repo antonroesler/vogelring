@@ -50,7 +50,7 @@
                 @click="selectBird(bird)"
               >
                 <v-list-item-title>
-                  {{ bird.ring }} - {{ bird.species }}
+                  {{ bird.ring }} - {{ resolveSpeciesName(bird.species) }}
                 </v-list-item-title>
                 <v-list-item-subtitle>
                   {{ bird.sighting_count }} Sichtung{{ bird.sighting_count !== 1 ? 'en' : '' }} | Letzte Sichtung: {{ formatDate(bird.last_seen) }}
@@ -99,7 +99,7 @@
                     ></div>
                   </template>
                   <v-list-item-title>
-                    {{ friend.ring }} - {{ friend.species }}
+                    {{ friend.ring }} - {{ resolveSpeciesName(friend.species) }}
                   </v-list-item-title>
                   <v-list-item-subtitle>
                     <v-container class="pa-0">
@@ -138,6 +138,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveSpeciesName } from '@/utils/species';
 import { ref, computed, onMounted, watch } from 'vue';
 import { format } from 'date-fns';
 import type { BirdMeta, AnalyticsBirdMeta, Ringing, FriendResponse } from '@/types';

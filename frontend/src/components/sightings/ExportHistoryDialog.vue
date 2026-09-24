@@ -106,7 +106,7 @@
                       <tr v-for="item in items" :key="item.id">
                         <td>{{ formatDate(item.date) }}</td>
                         <td>{{ item.ring || '—' }}</td>
-                        <td>{{ item.species || '—' }}</td>
+                        <td>{{ item.species ? resolveSpeciesName(item.species) : '—' }}</td>
                         <td>{{ item.place || '—' }}</td>
                         <td>
                           <v-icon
@@ -202,7 +202,7 @@
                 <tr v-for="row in checkResult.preview" :key="row.id">
                   <td>{{ formatDate(row.date) }}</td>
                   <td>{{ row.ring || '—' }}</td>
-                  <td>{{ row.species || '—' }}</td>
+                  <td>{{ row.species ? resolveSpeciesName(row.species) : '—' }}</td>
                   <td>{{ row.place || '—' }}</td>
                 </tr>
               </tbody>
@@ -264,6 +264,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveSpeciesName } from '@/utils/species';
 import { ref, watch } from 'vue';
 import {
   getSightingExports,
