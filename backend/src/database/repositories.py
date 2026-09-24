@@ -107,7 +107,12 @@ class SightingRepository(BaseRepository):
             self.db.query(Sighting)
             .filter(Sighting.org_id == org_id)
             .outerjoin(
-                Ringing, and_(Sighting.ring == Ringing.ring, Sighting.ring.isnot(None))
+                Ringing,
+                and_(
+                    Sighting.ring == Ringing.ring,
+                    Sighting.org_id == Ringing.org_id,
+                    Sighting.ring.isnot(None),
+                ),
             )
             .options(joinedload(Sighting.ringing_data))
             .order_by(desc(Sighting.date), desc(Sighting.created_at))
@@ -214,7 +219,7 @@ class SightingRepository(BaseRepository):
             return query.order_by(desc(Sighting.date)).all()
 
     def get_autocomplete_suggestions(
-        self, field: str, query: str, limit: int = 10
+        self, org_id: str, field: str, query: str, limit: int = 10
     ) -> List[str]:
         """Get autocomplete suggestions for a specific field using optimized case-insensitive search"""
         if not hasattr(Sighting, field):
@@ -225,7 +230,8 @@ class SightingRepository(BaseRepository):
 
         # Use case-insensitive search with optimized indexes
         results = (
-            self.db.query(column)
+            self.db.query(column, func.lower(column))
+            .filter(Sighting.org_id == org_id)
             .filter(
                 and_(
                     column.isnot(None),
@@ -242,12 +248,13 @@ class SightingRepository(BaseRepository):
 
         return [result[0] for result in results if result[0]]
 
-    def get_species_list(self) -> List[str]:
+    def get_species_list(self, org_id: str) -> List[str]:
         """Get list of all unique species with caching"""
 
         def fetch_species():
             results = (
-                self.db.query(Sighting.species)
+                self.db.query(Sighting.species, func.lower(Sighting.species))
+                .filter(Sighting.org_id == org_id)
                 .filter(Sighting.species.isnot(None))
                 .distinct()
                 .order_by(func.lower(Sighting.species))
@@ -255,14 +262,15 @@ class SightingRepository(BaseRepository):
             )
             return [result[0] for result in results if result[0]]
 
-        return get_cached_data("sighting_species_list", fetch_species)
+        return get_cached_data(f"sighting_species_list:{org_id}", fetch_species)
 
-    def get_place_list(self) -> List[str]:
+    def get_place_list(self, org_id: str) -> List[str]:
         """Get list of all unique places with caching"""
 
         def fetch_places():
             results = (
-                self.db.query(Sighting.place)
+                self.db.query(Sighting.place, func.lower(Sighting.place))
+                .filter(Sighting.org_id == org_id)
                 .filter(Sighting.place.isnot(None))
                 .distinct()
                 .order_by(func.lower(Sighting.place))
@@ -270,14 +278,15 @@ class SightingRepository(BaseRepository):
             )
             return [result[0] for result in results if result[0]]
 
-        return get_cached_data("sighting_place_list", fetch_places)
+        return get_cached_data(f"sighting_place_list:{org_id}", fetch_places)
 
-    def get_ring_list(self) -> List[str]:
+    def get_ring_list(self, org_id: str) -> List[str]:
         """Get list of all unique rings with caching"""
 
         def fetch_rings():
             results = (
-                self.db.query(Sighting.ring)
+                self.db.query(Sighting.ring, func.lower(Sighting.ring))
+                .filter(Sighting.org_id == org_id)
                 .filter(Sighting.ring.isnot(None))
                 .distinct()
                 .order_by(func.lower(Sighting.ring))
@@ -285,14 +294,15 @@ class SightingRepository(BaseRepository):
             )
             return [result[0] for result in results if result[0]]
 
-        return get_cached_data("sighting_ring_list", fetch_rings)
+        return get_cached_data(f"sighting_ring_list:{org_id}", fetch_rings)
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self, org_id: str) -> Dict[str, Any]:
         """Get basic statistics about sightings"""
-        total_count = self.db.query(Sighting).count()
+        total_count = self.db.query(Sighting).filter(Sighting.org_id == org_id).count()
 
         species_count = (
             self.db.query(Sighting.species)
+            .filter(Sighting.org_id == org_id)
             .filter(Sighting.species.isnot(None))
             .distinct()
             .count()
@@ -300,6 +310,7 @@ class SightingRepository(BaseRepository):
 
         ring_count = (
             self.db.query(Sighting.ring)
+            .filter(Sighting.org_id == org_id)
             .filter(Sighting.ring.isnot(None))
             .distinct()
             .count()
@@ -307,6 +318,7 @@ class SightingRepository(BaseRepository):
 
         place_count = (
             self.db.query(Sighting.place)
+            .filter(Sighting.org_id == org_id)
             .filter(Sighting.place.isnot(None))
             .distinct()
             .count()
@@ -315,6 +327,7 @@ class SightingRepository(BaseRepository):
         # Get date range
         date_range = (
             self.db.query(func.min(Sighting.date), func.max(Sighting.date))
+            .filter(Sighting.org_id == org_id)
             .filter(Sighting.date.isnot(None))
             .first()
         )
@@ -476,7 +489,7 @@ class RingingRepository(BaseRepository):
             raise
 
     def get_autocomplete_suggestions(
-        self, field: str, query: str, limit: int = 10
+        self, org_id: str, field: str, query: str, limit: int = 10
     ) -> List[str]:
         """Get autocomplete suggestions for a specific field using optimized case-insensitive search"""
         if not hasattr(Ringing, field):
@@ -487,7 +500,8 @@ class RingingRepository(BaseRepository):
 
         # Use case-insensitive search with optimized indexes
         results = (
-            self.db.query(column)
+            self.db.query(column, func.lower(column))
+            .filter(Ringing.org_id == org_id)
             .filter(
                 and_(
                     column.isnot(None),
@@ -504,46 +518,65 @@ class RingingRepository(BaseRepository):
 
         return [result[0] for result in results if result[0]]
 
-    def get_species_list(self) -> List[str]:
+    def get_species_list(self, org_id: str) -> List[str]:
         """Get list of all unique species from ringings with caching"""
 
         def fetch_species():
             results = (
-                self.db.query(Ringing.species)
+                self.db.query(Ringing.species, func.lower(Ringing.species))
+                .filter(Ringing.org_id == org_id)
                 .distinct()
                 .order_by(func.lower(Ringing.species))
                 .all()
             )
             return [result[0] for result in results]
 
-        return get_cached_data("ringing_species_list", fetch_species)
+        return get_cached_data(f"ringing_species_list:{org_id}", fetch_species)
 
-    def get_ringer_list(self) -> List[str]:
+    def get_ringer_list(self, org_id: str) -> List[str]:
         """Get list of all unique ringers with caching"""
 
         def fetch_ringers():
             results = (
-                self.db.query(Ringing.ringer)
+                self.db.query(Ringing.ringer, func.lower(Ringing.ringer))
+                .filter(Ringing.org_id == org_id)
                 .distinct()
                 .order_by(func.lower(Ringing.ringer))
                 .all()
             )
             return [result[0] for result in results]
 
-        return get_cached_data("ringing_ringer_list", fetch_ringers)
+        return get_cached_data(f"ringing_ringer_list:{org_id}", fetch_ringers)
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self, org_id: str) -> Dict[str, Any]:
         """Get basic statistics about ringings"""
-        total_count = self.db.query(Ringing).count()
+        total_count = self.db.query(Ringing).filter(Ringing.org_id == org_id).count()
 
-        species_count = self.db.query(Ringing.species).distinct().count()
-        ringer_count = self.db.query(Ringing.ringer).distinct().count()
-        place_count = self.db.query(Ringing.place).distinct().count()
+        species_count = (
+            self.db.query(Ringing.species)
+            .filter(Ringing.org_id == org_id)
+            .distinct()
+            .count()
+        )
+        ringer_count = (
+            self.db.query(Ringing.ringer)
+            .filter(Ringing.org_id == org_id)
+            .distinct()
+            .count()
+        )
+        place_count = (
+            self.db.query(Ringing.place)
+            .filter(Ringing.org_id == org_id)
+            .distinct()
+            .count()
+        )
 
         # Get date range
-        date_range = self.db.query(
-            func.min(Ringing.date), func.max(Ringing.date)
-        ).first()
+        date_range = (
+            self.db.query(func.min(Ringing.date), func.max(Ringing.date))
+            .filter(Ringing.org_id == org_id)
+            .first()
+        )
 
         return {
             "total_ringings": total_count,

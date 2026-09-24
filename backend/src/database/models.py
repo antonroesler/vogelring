@@ -15,6 +15,7 @@ from sqlalchemy import (
     Index,
     JSON,
     ForeignKey,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PostgresUUID
 from sqlalchemy.types import TypeDecorator, CHAR
@@ -74,7 +75,7 @@ class Ringing(Base):
     __tablename__ = "ringings"
 
     id = Column(GUID(), primary_key=True, default=uuid4)
-    ring = Column(String(50), unique=True, nullable=False, index=True)
+    ring = Column(String(50), nullable=False, index=True)
     ring_scheme = Column(String(50), nullable=False)
     species = Column(String(100), nullable=False, index=True)
     date = Column(Date, nullable=False, index=True)
@@ -100,13 +101,14 @@ class Ringing(Base):
     # Relationship to sightings (one-to-many, since one ring can have multiple sightings)
     sightings = relationship(
         "Sighting",
-        primaryjoin="Ringing.ring == Sighting.ring",
+        primaryjoin="and_(Ringing.ring == Sighting.ring, Ringing.org_id == Sighting.org_id)",
         foreign_keys="Sighting.ring",
         viewonly=True,
     )
 
     # Additional indexes for performance
     __table_args__ = (
+        UniqueConstraint("org_id", "ring", name="uq_ringings_org_ring"),
         Index("idx_ringings_species_date", "species", "date"),
         Index("idx_ringings_place_date", "place", "date"),
         Index("idx_ringings_ringer", "ringer"),
@@ -163,7 +165,7 @@ class Sighting(Base):
     # Note: This is a "loose" relationship since not all sightings have corresponding ringings
     ringing_data = relationship(
         "Ringing",
-        primaryjoin="and_(Sighting.ring == Ringing.ring, Sighting.ring.isnot(None))",
+        primaryjoin="and_(Sighting.ring == Ringing.ring, Sighting.org_id == Ringing.org_id, Sighting.ring.isnot(None))",
         foreign_keys=[ring],
         uselist=False,
         viewonly=True,
@@ -217,7 +219,9 @@ class SightingExport(Base):
         passive_deletes=True,
     )
 
-    __table_args__ = (Index("idx_sighting_exports_org_created", "org_id", "created_at"),)
+    __table_args__ = (
+        Index("idx_sighting_exports_org_created", "org_id", "created_at"),
+    )
 
 
 class SightingExportItem(Base):

@@ -66,7 +66,7 @@ async def get_ringings_statistics(
 ):
     """Get ringings statistics"""
     service = RingingService(db)
-    return service.get_statistics()
+    return service.get_statistics(current_user.org_id)
 
 
 @router.get("/ringings/autocomplete/{field}")
@@ -79,7 +79,9 @@ async def get_autocomplete_suggestions(
 ):
     """Get autocomplete suggestions for a field"""
     service = RingingService(db)
-    suggestions = service.get_autocomplete_suggestions(field, q, limit)
+    suggestions = service.get_autocomplete_suggestions(
+        current_user.org_id, field, q, limit
+    )
     return {"suggestions": suggestions}
 
 

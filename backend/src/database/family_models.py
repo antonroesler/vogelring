@@ -126,6 +126,7 @@ class BirdRelationship(Base):
     __table_args__ = (
         # One record per (bird1, bird2, type, year) — enforced by normalization in repository
         UniqueConstraint(
+            "org_id",
             "bird1_ring",
             "bird2_ring",
             "relationship_type",

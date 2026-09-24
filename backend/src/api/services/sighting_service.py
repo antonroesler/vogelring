@@ -149,23 +149,23 @@ class SightingService:
 
     # Autocomplete and suggestion methods
     def get_autocomplete_suggestions(
-        self, field: str, query: str, limit: int = 10
+        self, org_id: str, field: str, query: str, limit: int = 10
     ) -> List[str]:
         """Get autocomplete suggestions for a field"""
-        return self.repository.get_autocomplete_suggestions(field, query, limit)
+        return self.repository.get_autocomplete_suggestions(org_id, field, query, limit)
 
-    def get_species_list(self) -> List[str]:
+    def get_species_list(self, org_id: str) -> List[str]:
         """Get list of all unique species"""
-        return self.repository.get_species_list()
+        return self.repository.get_species_list(org_id)
 
-    def get_place_list(self) -> List[str]:
+    def get_place_list(self, org_id: str) -> List[str]:
         """Get list of all unique places"""
-        return self.repository.get_place_list()
+        return self.repository.get_place_list(org_id)
 
-    def get_ring_list(self) -> List[str]:
+    def get_ring_list(self, org_id: str) -> List[str]:
         """Get list of all unique rings"""
-        return self.repository.get_ring_list()
+        return self.repository.get_ring_list(org_id)
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self, org_id: str) -> Dict[str, Any]:
         """Get basic statistics about sightings"""
-        return self.repository.get_statistics()
+        return self.repository.get_statistics(org_id)

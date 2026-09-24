@@ -114,7 +114,7 @@ async def get_sightings_statistics(
 ):
     """Get sightings statistics"""
     service = SightingService(db)
-    return service.get_statistics()
+    return service.get_statistics(current_user.org_id)
 
 
 @router.get("/sightings/autocomplete/{field}")
@@ -127,7 +127,9 @@ async def get_autocomplete_suggestions(
 ):
     """Get autocomplete suggestions for a field"""
     service = SightingService(db)
-    suggestions = service.get_autocomplete_suggestions(field, q, limit)
+    suggestions = service.get_autocomplete_suggestions(
+        current_user.org_id, field, q, limit
+    )
     return {"suggestions": suggestions}
 
 
@@ -145,6 +147,7 @@ _PAIR_LABELS = {
     "F": "Familie",
     "S": "Schule",
 }
+
 
 def _melder_for_bemerkungen(s: SightingDB):
     """Melder for the Bemerkungen field — omitted when it's IR (the default enterer)."""

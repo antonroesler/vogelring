@@ -96,22 +96,22 @@ class RingingService:
 
     # Autocomplete and suggestion methods
     def get_autocomplete_suggestions(
-        self, field: str, query: str, limit: int = 10
+        self, org_id: str, field: str, query: str, limit: int = 10
     ) -> List[str]:
         """Get autocomplete suggestions for a field"""
-        return self.repository.get_autocomplete_suggestions(field, query, limit)
+        return self.repository.get_autocomplete_suggestions(org_id, field, query, limit)
 
-    def get_species_list(self) -> List[str]:
+    def get_species_list(self, org_id: str) -> List[str]:
         """Get list of all unique species from ringings"""
-        return self.repository.get_species_list()
+        return self.repository.get_species_list(org_id)
 
-    def get_ringer_list(self) -> List[str]:
+    def get_ringer_list(self, org_id: str) -> List[str]:
         """Get list of all unique ringers"""
-        return self.repository.get_ringer_list()
+        return self.repository.get_ringer_list(org_id)
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self, org_id: str) -> Dict[str, Any]:
         """Get basic statistics about ringings"""
-        return self.repository.get_statistics()
+        return self.repository.get_statistics(org_id)
 
     def get_entry_list_ringings(
         self,

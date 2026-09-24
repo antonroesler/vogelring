@@ -153,10 +153,9 @@ class SuggestionService:
 
         return [result[0] for result in places_query]
 
-    @cached(ttl=600)  # Cache for 10 minutes
     def get_ringer_list(self, org_id: str) -> List[str]:
-        """Get list of all unique ringers"""
-        return self.ringing_repository.get_ringer_list()
+        """Use the repository's organization-scoped cache without nesting locks."""
+        return self.ringing_repository.get_ringer_list(org_id)
 
     @cached(ttl=600)  # Cache for 10 minutes
     def get_habitat_list(self, org_id: str) -> List[str]:
