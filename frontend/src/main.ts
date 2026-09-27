@@ -104,6 +104,10 @@ const router = createRouter({
       ]
     },
     {
+      path: '/birds/farbring/:colorRingId',
+      component: BirdDetail
+    },
+    {
       path: '/birds/:ring',
       component: BirdDetail
     },

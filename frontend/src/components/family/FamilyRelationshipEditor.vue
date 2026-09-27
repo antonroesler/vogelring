@@ -227,7 +227,9 @@ const searchBird1 = debounce(async (query: string) => {
   }
   bird1Loading.value = true;
   try {
-    const response = await api.get<BirdSuggestion[]>(`/birds/suggestions/${query}`);
+    // Relationships need a metal ring
+    const response = await api.get<BirdSuggestion[]>(`/birds/suggestions/${encodeURIComponent(query)}`);
+    response.data = response.data.filter(bird => bird.ring);
     bird1Suggestions.value = response.data.slice(0, 30);
   } catch (error) {
     console.error('Error fetching bird suggestions:', error);
@@ -244,7 +246,9 @@ const searchBird2 = debounce(async (query: string) => {
   }
   bird2Loading.value = true;
   try {
-    const response = await api.get<BirdSuggestion[]>(`/birds/suggestions/${query}`);
+    // Relationships need a metal ring
+    const response = await api.get<BirdSuggestion[]>(`/birds/suggestions/${encodeURIComponent(query)}`);
+    response.data = response.data.filter(bird => bird.ring);
     bird2Suggestions.value = response.data.slice(0, 30);
   } catch (error) {
     console.error('Error fetching bird suggestions:', error);

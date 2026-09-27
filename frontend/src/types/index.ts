@@ -15,8 +15,8 @@ export interface Sighting {
   comment?: string;
   melder?: string;
   melded?: boolean;
-  lat?: number;
-  lon?: number;
+  lat?: number | null;
+  lon?: number | null;
   is_exact_location?: boolean;
   partner?: string | null;
   status?: 'BV' | 'MG' | 'NB' | 'RV' | 'TF' | null;
@@ -25,6 +25,21 @@ export interface Sighting {
   family_size?: number | null;
   pair?: PairType | null;
   sex?: SightingSexCode | null;
+  color_ring_color?: string | null;
+  color_ring_text_color?: string | null;
+  color_ring_code?: string | null;
+}
+
+export interface ColorRing {
+  id: string;
+  ring?: string | null;
+  ring_color: string;
+  text_color?: string | null;
+  code: string;
+  mark_type?: 'leg' | 'neck' | 'wing' | null;
+  leg?: 'left' | 'right' | null;
+  project?: string | null;
+  comment?: string | null;
 }
 
 export enum BirdStatus {
@@ -38,6 +53,7 @@ export enum BirdStatus {
 export interface BirdMeta {
   species: string;
   ring: string;
+  color_ring?: ColorRing | null;
   sighting_count: number;
   first_seen: string;
   last_seen: string;
@@ -75,7 +91,8 @@ export interface SimplePlaceMeta {
 }
 
 export interface SuggestionBird {
-  ring: string;
+  ring: string | null;
+  color_ring?: ColorRing | null;
   species: string;
   sighting_count: number;
   last_seen: string;

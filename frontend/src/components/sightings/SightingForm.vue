@@ -140,6 +140,12 @@
       </v-col>
     </v-row>
 
+    <color-ring-input
+      v-model="colorRingValue"
+      :show-suggestions="showBirdSuggestions"
+      @select-suggestion="handleSuggestionSelect"
+    />
+
     <!-- Group 3: Additional Information -->
     <v-card-subtitle class="px-0 mt-4">Zusätzliche Informationen</v-card-subtitle>
     <v-row dense>
@@ -376,6 +382,8 @@ import { getSightingAgeOptions, getSightingSexOptions, invertSightingSex } from 
 import LeafletMap from '@/components/map/LeafletMap.vue';
 import BirdSuggestions from '@/components/birds/BirdSuggestions.vue';
 import MissingRingDialog from '@/components/dialogs/MissingRingDialog.vue';
+import ColorRingInput, { type ColorRingFormValue } from '@/components/rings/ColorRingInput.vue';
+import { useColorRingsStore } from '@/stores/colorRings';
 import MissingSpeciesDialog from '@/components/dialogs/MissingSpeciesDialog.vue';
 import ChildrenForm from '@/components/sightings/ChildrenForm.vue';
 import FamilyConfirmationDialog, { type FamilySelections } from '@/components/dialogs/FamilyConfirmationDialog.vue';
@@ -544,13 +552,35 @@ const filterHabitats = createFilter('habitats');
 const filterMelders = createFilter('melders');
 const filterFieldFruits = createFilter('field_fruits');
 
+// Farbring fields live flat on the sighting (color_ring_*)
+const colorRingValue = computed<ColorRingFormValue>({
+  get: () => ({
+    ring_color: localSighting.value.color_ring_color,
+    text_color: localSighting.value.color_ring_text_color,
+    code: localSighting.value.color_ring_code,
+  }),
+  set: (value) => {
+    localSighting.value.color_ring_color = value.ring_color ?? null;
+    localSighting.value.color_ring_text_color = value.text_color ?? null;
+    localSighting.value.color_ring_code = value.code ?? null;
+  },
+});
+
+const colorRings = useColorRingsStore();
+
+const hasColorRing = (sighting: Partial<Sighting>) =>
+  !!(sighting.color_ring_color && sighting.color_ring_code);
+
 const handleSuggestionSelect = (suggestion: SuggestionBird) => {
-  localSighting.value.ring = suggestion.ring;
+  if (suggestion.ring) localSighting.value.ring = suggestion.ring;
   localSighting.value.species = suggestion.species;
+  if (suggestion.color_ring) {
+    colorRingValue.value = suggestion.color_ring;
+  }
 };
 
 const handlePartnerSelect = (suggestion: SuggestionBird) => {
-  localSighting.value.partner = suggestion.ring;
+  if (suggestion.ring) localSighting.value.partner = suggestion.ring;
 };
 
 /**
@@ -559,6 +589,7 @@ const handlePartnerSelect = (suggestion: SuggestionBird) => {
  */
 const createSingleSightingAndReset = async (sightingData: Partial<Sighting>) => {
   const createdSighting = await createSighting(sightingData);
+  if (hasColorRing(createdSighting)) colorRings.load(true);
   emit('created', createdSighting);
 
   // Reset form using clear fields settings
@@ -576,7 +607,8 @@ const handleSubmit = async () => {
   const cleanedSighting = cleanSightingData(localSighting.value);
 
   // Check if we need to show dialogs for missing data
-  const missingRing = !cleanedSighting.ring;
+  // A color ring alone identifies the bird; the backend fills in a known metal ring
+  const missingRing = !cleanedSighting.ring && !hasColorRing(cleanedSighting);
   const missingSpecies = !cleanedSighting.species;
 
   if (props.isNewEntry && (missingRing || missingSpecies)) {
@@ -684,6 +716,9 @@ const getPartnerSighting = () => {
     ring: pendingSighting.value.partner,
     partner: pendingSighting.value.ring,
     reading: undefined,
+    color_ring_color: null,
+    color_ring_text_color: null,
+    color_ring_code: null,
     comment: 'Diese Sichtung wurde automatisch generiert',
     sex: partnerSex
   };
@@ -697,6 +732,9 @@ const getChildSightings = () => {
       ring: child.ring,
       partner: undefined,
       reading: undefined,
+      color_ring_color: null,
+      color_ring_text_color: null,
+      color_ring_code: null,
       comment: 'Diese Sichtung wurde automatisch generiert',
       // age/sex are already RING integer codes — no coercion needed
       age: child.age ?? undefined,
@@ -809,6 +847,7 @@ const handleFamilyConfirm = async (selections: FamilySelections) => {
     // parent, and reset the form, even if a secondary sighting/relationship step
     // failed. Otherwise the filled fields linger and have to be cleared by hand.
     showFamilyConfirmationDialog.value = false;
+    if (hasColorRing(mainSighting)) colorRings.load(true);
     emit('created', mainSighting);
 
     if (props.clearFieldsSettings) {

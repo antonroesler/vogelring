@@ -12,6 +12,7 @@ from .api.routers import (
     ringings,
     analytics,
     birds,
+    color_rings,
     places,
     species,
     dashboard,
@@ -74,6 +75,7 @@ app.add_middleware(
 app.include_router(sightings.router, prefix="/api", tags=["sightings"])
 app.include_router(ringings.router, prefix="/api", tags=["ringings"])
 app.include_router(birds.router, prefix="/api", tags=["birds"])
+app.include_router(color_rings.router, prefix="/api", tags=["color-rings"])
 app.include_router(analytics.router, prefix="/api", tags=["analytics"])
 app.include_router(places.router, prefix="/api", tags=["places"])
 app.include_router(species.router, prefix="/api", tags=["species"])

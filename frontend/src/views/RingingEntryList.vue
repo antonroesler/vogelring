@@ -54,7 +54,7 @@
       :use-store-pagination="true"
       settings-key="ringing-entry-list"
       :show-settings="true"
-      :default-columns="['date','ring','species','place','ringer','sex','age']"
+      :default-columns="['date','ring','color_ring','species','place','ringer','sex','age']"
       :default-hover-expand="true"
       @row-clicked="handleRingingClicked"
       @deleted="handleRingingDeleted"

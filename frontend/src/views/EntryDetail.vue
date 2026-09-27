@@ -80,7 +80,7 @@
 
       <v-col cols="12" md="4">
         <bird-details
-          v-if="sighting?.ring"
+          v-if="sighting?.ring || birdDetails?.color_ring"
           :bird="birdDetails"
           :ringingData="ringingData"
           class="mb-4"
@@ -120,7 +120,7 @@
               :default-items-per-page="10"
               :show-settings="true"
               settings-key="other-sightings"
-              :default-columns="['date','place','ring','species','status','age']"
+              :default-columns="['date','place','ring','color_ring','species','status','age']"
               :default-hover-expand="true"
               @deleted="handleSightingDeleted"
             ></sightings-table>
@@ -151,6 +151,7 @@ import { ref, onMounted, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import type { Sighting, BirdMeta, Ringing } from '@/types';
 import * as api from '@/api';
+import { useColorRingsStore } from '@/stores/colorRings';
 import { formatSightingAge, formatSightingSex } from '@/utils/sightingCoding';
 import SightingForm from '@/components/sightings/SightingForm.vue';
 import BirdDetails from '@/components/birds/BirdDetails.vue';
@@ -169,6 +170,7 @@ const birdDetails = ref<BirdMeta | null>(null);
 const loading = ref(false);
 const showSnackbar = ref(false);
 const store = useSightingsStore();
+const colorRings = useColorRingsStore();
 const ringingData = ref<Ringing | null>(null);
 const isLoadingRinging = ref(false);
 const showDeleteDialog = ref(false);
@@ -181,6 +183,11 @@ const loadSighting = async () => {
     if (sighting.value?.ring) {
       birdDetails.value = await api.getBirdByRing(sighting.value.ring);
       await loadRingingData(sighting.value.ring);
+    } else if (sighting.value) {
+      // Bird known only by its color ring
+      await colorRings.load(true);
+      const colorRing = colorRings.findForSighting(sighting.value);
+      birdDetails.value = colorRing ? await api.getBirdByColorRing(colorRing.id) : null;
     }
   } catch (error) {
     console.error('Error loading sighting:', error);

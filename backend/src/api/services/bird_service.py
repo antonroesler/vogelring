@@ -8,8 +8,14 @@ from typing import Dict, Any, List
 
 from sqlalchemy.orm import Session
 
-from ...database.repositories import SightingRepository, RingingRepository
+from ...database.repositories import (
+    ColorRingRepository,
+    SightingRepository,
+    RingingRepository,
+)
 from ...database.family_repository import FamilyRepository
+from ...database.models import ColorRing
+from ...utils.color_rings import matches_pattern, parse_ring_query
 
 logger = logging.getLogger(__name__)
 
@@ -22,18 +28,41 @@ class BirdService:
         self.sighting_repository = SightingRepository(db)
         self.ringing_repository = RingingRepository(db)
         self.family_repository = FamilyRepository(db)
+        self.color_ring_repository = ColorRingRepository(db)
 
     def get_bird_meta_by_ring(self, ring: str, org_id: str) -> Dict[str, Any]:
         """Get bird metadata for a specific ring in the shape expected by the frontend"""
-        # Get all sightings for this ring
-        sightings = self.sighting_repository.get_by_ring(ring, org_id)
+        color_ring = self.color_ring_repository.get_by_ring(ring, org_id)
+        if color_ring:
+            sightings = self.color_ring_repository.get_sightings(color_ring)
+        else:
+            sightings = self.sighting_repository.get_by_ring(ring, org_id)
+        return self._build_meta(ring, color_ring, sightings, org_id)
 
-        # Get ringing data if available
-        ringing = self.ringing_repository.get_by_ring(ring, org_id)
+    def get_bird_meta_by_color_ring(
+        self, color_ring_id: str, org_id: str
+    ) -> Dict[str, Any] | None:
+        """Get bird metadata for a bird identified by its color ring"""
+        color_ring = self.color_ring_repository.get_by_id(color_ring_id, org_id)
+        if not color_ring:
+            return None
+        sightings = self.color_ring_repository.get_sightings(color_ring)
+        return self._build_meta(color_ring.ring, color_ring, sightings, org_id)
+
+    def _build_meta(
+        self,
+        ring: str | None,
+        color_ring: ColorRing | None,
+        sightings: list,
+        org_id: str,
+    ) -> Dict[str, Any]:
+        ringing = self.ringing_repository.get_by_ring(ring, org_id) if ring else None
+        color_ring_dict = color_ring.to_dict() if color_ring else None
 
         if not sightings and not ringing:
             return {
                 "ring": ring,
+                "color_ring": color_ring_dict,
                 "species": None,
                 "sighting_count": 0,
                 "last_seen": None,
@@ -80,6 +109,9 @@ class BirdService:
                     "species": s.species,
                     "ring": s.ring,
                     "reading": s.reading,
+                    "color_ring_color": s.color_ring_color,
+                    "color_ring_text_color": s.color_ring_text_color,
+                    "color_ring_code": s.color_ring_code,
                     "date": s.date.isoformat() if s.date else None,
                     "place": s.place,
                     "area": s.area,
@@ -98,11 +130,20 @@ class BirdService:
             )
 
         # Get partners from family tree (placeholder for now)
-        partners = self.family_repository.get_partners(org_id=org_id, bird_ring=ring)
-        children = self.family_repository.get_children(org_id=org_id, parent_ring=ring)
+        partners = (
+            self.family_repository.get_partners(org_id=org_id, bird_ring=ring)
+            if ring
+            else []
+        )
+        children = (
+            self.family_repository.get_children(org_id=org_id, parent_ring=ring)
+            if ring
+            else []
+        )
 
         return {
             "ring": ring,
+            "color_ring": color_ring_dict,
             "species": species,
             "sighting_count": len(sightings),
             "last_seen": last_seen.isoformat() if last_seen else None,
@@ -118,88 +159,87 @@ class BirdService:
     def get_bird_suggestions_by_partial_reading(
         self, partial_reading: str, org_id: str
     ) -> List[Dict[str, Any]]:
-        """Return a list of bird suggestions by partial ring reading.
-        Partial reading can be only front, back, outer or middle reading."""
+        """Return bird suggestions for a partial ring reading.
 
-        # Normalize partial reading (replace ... and … with *)
-        partial_reading = partial_reading.replace("...", "*").replace("…", "*")
+        Matches metal rings and color rings. Accepts wildcards ("280*", "*35",
+        "28*35") and an optional leading ring/text color ("rot H3E4",
+        "rot/weiß H3*"). Without wildcards the reading matches a substring.
+        """
+        query = parse_ring_query(partial_reading)
+        metal_pattern = "".join(query.tokens).upper()
 
-        # Get all sightings from the database
-        all_sightings = self.sighting_repository.get_all(org_id)
+        color_rings = self.color_ring_repository.get_all(org_id)
+        sightings = self.sighting_repository.get_all(org_id)
+        color_ring_by_ring = {cr.ring: cr for cr in color_rings if cr.ring}
 
-        suggestions = {}
+        def color_ring_matches(cr: ColorRing) -> bool:
+            if query.ring_color and cr.ring_color != query.ring_color:
+                return False
+            if query.text_color and cr.text_color not in (None, query.text_color):
+                return False
+            return matches_pattern(query.code_pattern, cr.code)
 
-        for sighting in all_sightings:
-            if len(suggestions) >= 30:  # Limit to 30 suggestions
-                break
+        # Birds keyed by metal ring, or by color ring id when the metal ring is unknown
+        birds: Dict[str, Dict[str, Any]] = {}
 
-            if sighting.ring and self._is_suggestion(partial_reading, sighting.ring):
-                if sighting.ring not in suggestions:
-                    suggestions[sighting.ring] = {
-                        "ring": sighting.ring,
-                        "species": [sighting.species],
-                        "sighting_count": 1,
-                        "last_seen": sighting.date,
-                        "first_seen": sighting.date,
-                    }
-                else:
-                    suggestions[sighting.ring]["sighting_count"] += 1
-                    suggestions[sighting.ring]["species"].append(sighting.species)
-                    suggestions[sighting.ring]["last_seen"] = self._max_or_none(
-                        suggestions[sighting.ring]["last_seen"], sighting.date
-                    )
-                    suggestions[sighting.ring]["first_seen"] = self._min_or_none(
-                        suggestions[sighting.ring]["first_seen"], sighting.date
-                    )
+        def bird_for(ring: str | None, cr: ColorRing | None) -> Dict[str, Any]:
+            key = ring or f"cr:{cr.id}"
+            if key not in birds:
+                birds[key] = {
+                    "ring": ring,
+                    "color_ring": cr.to_dict() if cr else None,
+                    "species": [],
+                    "sighting_count": 0,
+                    "last_seen": None,
+                    "first_seen": None,
+                }
+            return birds[key]
 
-        # Convert to the expected format
+        for cr in color_rings:
+            if color_ring_matches(cr):
+                bird_for(cr.ring, cr)
+        if not query.has_color:
+            for ring in {s.ring for s in sightings}:
+                if ring and matches_pattern(metal_pattern, ring):
+                    bird_for(ring, color_ring_by_ring.get(ring))
+
+        color_only = {
+            (cr.ring_color, cr.code): cr for cr in color_rings if not cr.ring
+        }
+        for sighting in sightings:
+            key = sighting.ring
+            if not key and sighting.color_ring_code:
+                cr = color_only.get((sighting.color_ring_color, sighting.color_ring_code))
+                key = f"cr:{cr.id}" if cr else None
+            bird = birds.get(key) if key else None
+            if not bird:
+                continue
+            bird["sighting_count"] += 1
+            if sighting.species:
+                bird["species"].append(sighting.species)
+            bird["last_seen"] = self._max_or_none(bird["last_seen"], sighting.date)
+            bird["first_seen"] = self._min_or_none(bird["first_seen"], sighting.date)
+
         suggestion_birds = []
-        for suggestion in suggestions.values():
-            # Find most common species
-            from collections import Counter
-
-            species_counter = Counter(suggestion["species"])
-            most_common_species = (
-                species_counter.most_common(1)[0][0] if species_counter else None
-            )
-
+        for bird in birds.values():
+            species_counter = Counter(bird["species"])
             suggestion_birds.append(
-                {
-                    "ring": suggestion["ring"],
-                    "species": most_common_species,
-                    "sighting_count": suggestion["sighting_count"],
-                    "last_seen": suggestion["last_seen"].isoformat()
-                    if suggestion["last_seen"]
+                bird
+                | {
+                    "species": species_counter.most_common(1)[0][0]
+                    if species_counter
                     else None,
-                    "first_seen": suggestion["first_seen"].isoformat()
-                    if suggestion["first_seen"]
+                    "last_seen": bird["last_seen"].isoformat()
+                    if bird["last_seen"]
+                    else None,
+                    "first_seen": bird["first_seen"].isoformat()
+                    if bird["first_seen"]
                     else None,
                 }
             )
 
-        # Sort by sighting count descending
-        return sorted(suggestion_birds, key=lambda x: x["sighting_count"], reverse=True)
-
-    def _is_suggestion(self, partial_reading: str, ring: str) -> bool:
-        """Check if a ring matches the partial reading pattern"""
-        # Case 1: Partial reading is missing both outer endings *8043*
-        if partial_reading.startswith("*") and partial_reading.endswith("*"):
-            if partial_reading[1:-1] in ring:
-                return True
-        # Case 2: Partial reading is missing ending 280*
-        elif partial_reading.endswith("*"):
-            if ring.startswith(partial_reading[:-1]):
-                return True
-        # Case 3: Partial reading is missing starting *35
-        elif partial_reading.startswith("*"):
-            if ring.endswith(partial_reading[1:]):
-                return True
-        # Case 4: Partial reading is missing middle 28*35
-        elif "*" in partial_reading:
-            start, end = partial_reading.split("*", 1)  # Split only on first *
-            if ring.startswith(start) and ring.endswith(end):
-                return True
-        return False
+        suggestion_birds.sort(key=lambda x: x["sighting_count"], reverse=True)
+        return suggestion_birds[:30]
 
     def _max_or_none(self, a, b):
         """Return the maximum of two values, handling None values"""

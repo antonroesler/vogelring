@@ -151,6 +151,12 @@ class Sighting(Base):
     habitat = Column(String(100))
     field_fruit = Column(String(100))
 
+    # Color ring (Farbring) as read in the field; all optional.
+    # Resolved to a ColorRing / metal ring via the color_rings registry.
+    color_ring_color = Column(String(20))
+    color_ring_text_color = Column(String(20))
+    color_ring_code = Column(String(20))
+
     # Multi-tenant support
     org_id = Column(GUID(), ForeignKey("organizations.id"), nullable=False, index=True)
 
@@ -180,6 +186,62 @@ class Sighting(Base):
         Index("idx_sightings_org_ring_date", "org_id", "ring", "date"),
         Index("idx_sightings_org_place", "org_id", "place"),
     )
+
+
+class ColorRing(Base):
+    """
+    Registry of color rings (Farbringe) per organization.
+
+    A color ring is identified by ring color + text color + inscription code and
+    belongs to at most one metal ring (1:1). The metal ring may be unknown when
+    the bird has only ever been identified by its color ring.
+    """
+
+    __tablename__ = "color_rings"
+
+    id = Column(GUID(), primary_key=True, default=uuid4)
+    org_id = Column(GUID(), ForeignKey("organizations.id"), nullable=False, index=True)
+    ring = Column(String(50), index=True)  # Metal ring, optional
+    ring_color = Column(String(20), nullable=False)  # Palette key, see utils.color_rings
+    text_color = Column(String(20))  # Palette key, optional
+    code = Column(String(20), nullable=False)  # Inscription, normalized uppercase
+    mark_type = Column(String(20))  # leg / neck / wing
+    leg = Column(String(10))  # left / right
+    project = Column(String(200))
+    comment = Column(Text)
+
+    created_at = Column(TIMESTAMP, server_default=func.current_timestamp())
+    updated_at = Column(
+        TIMESTAMP,
+        server_default=func.current_timestamp(),
+        onupdate=func.current_timestamp(),
+    )
+
+    __table_args__ = (
+        UniqueConstraint("org_id", "ring", name="uq_color_rings_org_ring"),
+        Index(
+            "uq_color_rings_org_identity",
+            "org_id",
+            "ring_color",
+            func.coalesce(text_color, ""),
+            "code",
+            unique=True,
+        ),
+        Index("idx_color_rings_org_code", "org_id", "code"),
+    )
+
+    def to_dict(self) -> dict:
+        return {
+            "id": str(self.id),
+            "ring": self.ring,
+            "ring_color": self.ring_color,
+            "text_color": self.text_color,
+            "code": self.code,
+            "mark_type": self.mark_type,
+            "leg": self.leg,
+            "project": self.project,
+            "comment": self.comment,
+        }
 
 
 class SightingExport(Base):

@@ -79,6 +79,9 @@
           <template v-else-if="col === 'ring'">
             {{ item.ring }}
           </template>
+          <template v-else-if="col === 'color_ring'">
+            <color-ring-badge v-if="colorRings.forSighting(item)" :color-ring="colorRings.forSighting(item)" :show-label="false" />
+          </template>
           <template v-else-if="col === 'species'">
             {{ resolveSpeciesName(item.species) }}
           </template>
@@ -201,6 +204,8 @@ import { formatBirdStatus, getBirdStatusColor, getBirdStatusIcon } from '@/utils
 import { formatSightingAge, formatSightingSex } from '@/utils/sightingCoding';
 import type { Sighting } from '@/types';
 import { useSightingsStore } from '@/stores/sightings';
+import { useColorRingsStore } from '@/stores/colorRings';
+import ColorRingBadge from '@/components/rings/ColorRingBadge.vue';
 
 const props = withDefaults(defineProps<{
   sightings: Sighting[];
@@ -217,7 +222,7 @@ const props = withDefaults(defineProps<{
   defaultPage: 1,
   defaultItemsPerPage: 10,
   showSettings: true,
-  defaultColumns: () => ['date', 'ring', 'species', 'place', 'pair', 'status', 'melder', 'melded'],
+  defaultColumns: () => ['date', 'ring', 'color_ring', 'species', 'place', 'pair', 'status', 'melder', 'melded'],
   defaultHoverExpand: true
 });
 
@@ -227,6 +232,8 @@ const emit = defineEmits<{
 }>();
 
 const router = useRouter();
+const colorRings = useColorRingsStore();
+colorRings.load();
 const showDeleteDialog = ref(false);
 const deleteLoading = ref(false);
 const selectedSighting = ref<Sighting | null>(null);
@@ -235,6 +242,7 @@ const allColumnDefs = [
   { key: 'id', title: 'ID' },
   { key: 'date', title: 'Datum' },
   { key: 'ring', title: 'Ring' },
+  { key: 'color_ring', title: 'Farbring' },
   { key: 'reading', title: 'Ablesung' },
   { key: 'species', title: 'Spezies' },
   { key: 'place', title: 'Ort' },
@@ -297,7 +305,7 @@ const selectedColumnsOrdered = computed<ColumnKey[]>(() => orderedColumnKeys.val
 const headers = computed(() => {
   const dataHeaders = selectedColumnsOrdered.value.map(col => {
     const def = availableColumns.find(c => c.key === col)!;
-    return { title: def.title, key: col, sortable: true };
+    return { title: def.title, key: col, sortable: col !== 'color_ring' };
   });
   return [
     ...dataHeaders,
@@ -528,12 +536,20 @@ const loadSettings = () => {
     const selectedFromStorage: string[] | undefined = parsed.selected || parsed.columns;
     const orderFromStorage: string[] | undefined = parsed.order;
 
+    let showNewColorRingColumn = false;
     const allKeys = availableColumns.map(c => c.key) as ColumnKey[];
     // Resolve order
     if (Array.isArray(orderFromStorage) && orderFromStorage.length) {
       const filtered = orderFromStorage.filter((k: string) => (allKeys as readonly string[]).includes(k)) as ColumnKey[];
       const missing = allKeys.filter(k => !(filtered as readonly string[]).includes(k as unknown as string)) as ColumnKey[];
       orderedColumnKeys.value = [...(filtered as ColumnKey[]), ...(missing as ColumnKey[])];
+      // Farbring column is newer than most saved settings: show it once, right after Ring
+      if (!(filtered as readonly string[]).includes('color_ring')) {
+        const keys: ColumnKey[] = orderedColumnKeys.value.filter(k => k !== 'color_ring');
+        keys.splice(keys.indexOf('ring') + 1, 0, 'color_ring');
+        orderedColumnKeys.value = keys;
+        showNewColorRingColumn = true;
+      }
     } else {
       initDefaults();
     }
@@ -545,6 +561,7 @@ const loadSettings = () => {
       selectedFromStorage.forEach((k: string) => {
         if ((allKeys as readonly string[]).includes(k)) set[k as ColumnKey] = true;
       });
+      if (showNewColorRingColumn) set.color_ring = true;
     } else {
       // Fallback to defaults
       (props.defaultColumns as ColumnKey[]).forEach(k => { set[k] = true; });

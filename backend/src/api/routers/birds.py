@@ -48,21 +48,31 @@ async def get_bird_by_ring(
     return bird
 
 
+@router.get("/birds/color-ring/{color_ring_id}")
+async def get_bird_by_color_ring(
+    color_ring_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get bird information for a bird identified by its color ring (Farbring)"""
+    service = BirdService(db)
+    bird = service.get_bird_meta_by_color_ring(color_ring_id, current_user.org_id)
+    if not bird:
+        raise HTTPException(status_code=404, detail="Farbring nicht gefunden")
+    return bird
+
+
 @router.get("/birds/suggestions/{partial_reading}")
 async def get_bird_suggestions_by_partial_reading(
     partial_reading: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Get bird suggestions by partial ring reading"""
+    """Get bird suggestions by partial metal or color ring reading"""
     if not partial_reading or len(partial_reading) < 2:
         raise HTTPException(
             status_code=400, detail="Partial reading must be at least 2 characters long"
         )
-
-    # Add wildcards if not present
-    if not any(c in partial_reading for c in ["*", "…", "..."]):
-        partial_reading = f"*{partial_reading}*"
 
     # Get bird suggestions using the service
     service = BirdService(db)

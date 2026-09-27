@@ -31,8 +31,28 @@
                   size="large"
                 >
                   <span class="font-weight-regular">Ring:</span>
-                  <span class="ring-number">{{ bird?.ring }}</span>
+                  <span v-if="bird?.ring" class="ring-number">{{ bird.ring }}</span>
+                  <span v-else class="ring-number font-italic">unbekannt</span>
                 </v-chip>
+                <v-chip
+                  v-if="bird?.color_ring"
+                  class="ring-chip"
+                  color="primary"
+                  size="large"
+                  append-icon="mdi-pencil"
+                  aria-label="Farbring bearbeiten"
+                  @click="showColorRingDialog = true"
+                >
+                  <span class="font-weight-regular mr-2">Farbring:</span>
+                  <color-ring-badge :color-ring="bird.color_ring" :show-label="false" />
+                </v-chip>
+                <v-btn
+                  v-else-if="bird"
+                  prepend-icon="mdi-plus"
+                  text="Farbring"
+                  variant="text"
+                  @click="showColorRingDialog = true"
+                />
                 <v-chip
                   v-if="isBirdDead"
                   color="error"
@@ -55,6 +75,14 @@
           </div>
         </v-card-text>
       </v-card>
+
+      <color-ring-dialog
+        v-model="showColorRingDialog"
+        :color-ring="bird?.color_ring"
+        :locked-ring="bird?.color_ring ? null : bird?.ring ?? null"
+        @saved="onColorRingSaved"
+        @deleted="onColorRingDeleted"
+      />
 
       <v-row>
         <!-- Basic Info Card -->
@@ -190,7 +218,7 @@
 
 <script setup lang="ts">
 import { resolveSpeciesName } from '@/utils/species';
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { format } from 'date-fns';
 import { formatBirdStatus, getBirdStatusColor, getBirdStatusIcon, isBirdDead as isBirdDeadUtil } from '@/utils/statusUtils';
@@ -211,6 +239,9 @@ import {
   VisualMapComponent
 } from 'echarts/components';
 import axios from 'axios';
+import ColorRingBadge from '@/components/rings/ColorRingBadge.vue';
+import ColorRingDialog from '@/components/rings/ColorRingDialog.vue';
+import type { ColorRing } from '@/types';
 
 use([
   CanvasRenderer,
@@ -232,18 +263,43 @@ const ringingData = ref<Ringing | null>(null);
 const isLoading = ref(true);
 const error = ref<string | null>(null);
 
-// Load bird data
-onMounted(async () => {
-  const ring = route.params.ring as string;
+const showColorRingDialog = ref(false);
+
+// Birds known only by their color ring live at /birds/farbring/:colorRingId
+const loadBird = async () => {
+  const colorRingId = route.params.colorRingId as string | undefined;
+  if (colorRingId) {
+    const result = await api.getBirdByColorRing(colorRingId);
+    if (result.ring) {
+      router.replace(`/birds/${encodeURIComponent(result.ring)}`);
+    }
+    return result;
+  }
+  return api.getBirdByRing(route.params.ring as string);
+};
+
+const onColorRingSaved = async (colorRing: ColorRing) => {
+  if (colorRing.ring && colorRing.ring !== bird.value?.ring) {
+    // Linked to a metal ring: the bird now lives at its ring URL
+    await router.replace(`/birds/${encodeURIComponent(colorRing.ring)}`);
+    return;
+  }
+  if (bird.value) bird.value.color_ring = colorRing;
+};
+
+const onColorRingDeleted = () => {
+  if (bird.value) bird.value.color_ring = null;
+};
+
+// Load bird data (again when the URL switches between color ring and metal ring)
+const load = async () => {
   try {
     isLoading.value = true;
     error.value = null;
-    
-    // Add more detailed error logging
-    console.log('Attempting to load bird with ring:', ring);
-    
-    bird.value = await api.getBirdByRing(ring);
-    
+
+    bird.value = await loadBird();
+    ringingData.value = null;
+
     if (bird.value?.ring) {
       try {
         ringingData.value = await api.getRingingByRing(bird.value.ring);
@@ -263,7 +319,9 @@ onMounted(async () => {
   } finally {
     isLoading.value = false;
   }
-});
+};
+
+watch(() => route.fullPath, load, { immediate: true });
 
 const sortedSightings = computed(() => {
   if (!bird.value) return [];
@@ -273,7 +331,7 @@ const sortedSightings = computed(() => {
   });
 });
 
-const formatDate = (date: string | null) => {
+const formatDate = (date?: string | null) => {
   if (!date) return '';
   return format(new Date(date), 'dd.MM.yyyy');
 };
@@ -287,10 +345,6 @@ const isBirdDead = computed(() => {
   return bird.value ? isBirdDeadUtil(bird.value.sightings) : false;
 });
 
-const handleFamilyUpdated = () => {
-  // Optionally reload bird data or show a success message
-  console.log('Family tree updated for bird:', bird.value?.ring);
-};
 
 // Timeline Chart
 const timelineChartOption = computed(() => {

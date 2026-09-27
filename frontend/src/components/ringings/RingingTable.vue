@@ -87,6 +87,9 @@
             <template v-else-if="col === 'ring'">
               {{ item.ring }}
             </template>
+            <template v-else-if="col === 'color_ring'">
+              <color-ring-badge v-if="colorRings.forRing(item.ring)" :color-ring="colorRings.forRing(item.ring)" :show-label="false" />
+            </template>
             <template v-else-if="col === 'species'">
               {{ resolveSpeciesName(item.species) }}
             </template>
@@ -175,6 +178,8 @@ import type { Ringing } from '@/types';
 import draggable from 'vuedraggable';
 import { formatRingingAge } from '@/utils/ageMapping';
 import { resolveSpeciesName } from '@/utils/species';
+import { useColorRingsStore } from '@/stores/colorRings';
+import ColorRingBadge from '@/components/rings/ColorRingBadge.vue';
 
 const props = withDefaults(defineProps<{
   ringings: Ringing[];
@@ -191,9 +196,12 @@ const props = withDefaults(defineProps<{
   defaultPage: 1,
   defaultItemsPerPage: 10,
   showSettings: true,
-  defaultColumns: () => ['date', 'ring', 'species', 'place', 'ringer', 'sex', 'age'],
+  defaultColumns: () => ['date', 'ring', 'color_ring', 'species', 'place', 'ringer', 'sex', 'age'],
   defaultHoverExpand: true
 });
+
+const colorRings = useColorRingsStore();
+colorRings.load();
 
 const emit = defineEmits<{
   'row-clicked': [ringing: Ringing];
@@ -209,6 +217,7 @@ const allColumnDefs = [
   { key: 'id', title: 'ID' },
   { key: 'date', title: 'Datum' },
   { key: 'ring', title: 'Ring' },
+  { key: 'color_ring', title: 'Farbring' },
   { key: 'ring_scheme', title: 'Ring Schema' },
   { key: 'species', title: 'Spezies' },
   { key: 'place', title: 'Ort' },
@@ -252,7 +261,7 @@ const headers = computed(() => {
     return {
       title: colDef?.title || key,
       key: key,
-      sortable: true
+      sortable: key !== 'color_ring'
     };
   });
   
@@ -283,6 +292,14 @@ const initializeColumns = () => {
           props.defaultColumns.includes(col.key);
       });
       
+      // Farbring column is newer than most saved settings: show it once, right after Ring
+      if (!orderedColumnKeys.value.includes('color_ring')) {
+        const keys = [...orderedColumnKeys.value];
+        keys.splice(keys.indexOf('ring') + 1, 0, 'color_ring');
+        orderedColumnKeys.value = keys;
+        selectedSet.value.color_ring = true;
+      }
+
       hoverExpandEnabled.value = settings.hoverExpand !== undefined ? settings.hoverExpand : props.defaultHoverExpand;
     } catch (e) {
       console.warn('Failed to parse saved table settings, using defaults');

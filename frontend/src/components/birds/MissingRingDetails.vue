@@ -77,7 +77,7 @@
 import { resolveSpeciesName } from '@/utils/species';
 import { ref, onMounted, computed } from 'vue';
 import { format } from 'date-fns';
-import type { BirdMeta, Sighting } from '@/types';
+import type { Sighting, SuggestionBird } from '@/types';
 import * as api from '@/api';
 import { useSightingsStore } from '@/stores/sightings';
 
@@ -87,7 +87,9 @@ const props = defineProps<{
 }>();
 
 const store = useSightingsStore();
-const suggestions = ref<BirdMeta[]>([]);
+// Only birds with a metal ring can be assigned here
+type RingSuggestion = SuggestionBird & { ring: string };
+const suggestions = ref<RingSuggestion[]>([]);
 const isLoading = ref(false);
 const isUpdating = ref(false);
 
@@ -98,8 +100,8 @@ const sortedSuggestions = computed(() => {
   if (!suggestions.value.length) return [];
 
   // Split birds into matching and non-matching species
-  const matchingSpecies: BirdMeta[] = [];
-  const otherSpecies: BirdMeta[] = [];
+  const matchingSpecies: RingSuggestion[] = [];
+  const otherSpecies: RingSuggestion[] = [];
 
   suggestions.value.forEach(bird => {
     if (sightingSpecies.value && bird.species === sightingSpecies.value) {
@@ -110,7 +112,7 @@ const sortedSuggestions = computed(() => {
   });
 
   // Sort each group by last_seen date and sighting_count
-  const sortBirds = (birds: BirdMeta[]) => {
+  const sortBirds = (birds: RingSuggestion[]) => {
     return birds.sort((a, b) => {
       // First by last_seen date
       const dateA = a.last_seen ? new Date(a.last_seen).getTime() : 0;
@@ -146,7 +148,7 @@ const formatDate = (date: string | null) => {
   return format(new Date(date), 'dd.MM.yyyy');
 };
 
-const assignRing = async (bird: BirdMeta) => {
+const assignRing = async (bird: RingSuggestion) => {
   isUpdating.value = true;
   try {
     const updatedSighting: Partial<Sighting> = {
@@ -168,7 +170,8 @@ onMounted(async () => {
   if (props.reading) {
     isLoading.value = true;
     try {
-      suggestions.value = await api.getBirdSuggestions(props.reading);
+      suggestions.value = (await api.getBirdSuggestions(props.reading))
+        .filter((bird): bird is RingSuggestion => !!bird.ring);
     } catch (error) {
       console.error('Error fetching suggestions:', error);
     } finally {

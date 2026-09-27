@@ -10,6 +10,7 @@ from uuid import uuid4
 
 from ...database.repositories import SightingRepository
 from ...database.models import Sighting as SightingDB
+from .color_ring_service import ColorRingService
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +100,7 @@ class SightingService:
             if "id" not in sighting_data or not sighting_data["id"]:
                 sighting_data["id"] = str(uuid4())
 
+            ColorRingService(self.db).resolve_sighting(org_id, sighting_data)
             sighting = self.repository.create(org_id, **sighting_data)
             logger.info(f"Created sighting {sighting.id}")
             return sighting
@@ -116,6 +118,10 @@ class SightingService:
             old_sighting = self.repository.get_by_id(sighting_id, org_id)
             if not old_sighting:
                 return None
+
+            ColorRingService(self.db).resolve_sighting(
+                org_id, sighting_data, existing=old_sighting
+            )
 
             # Update the sighting
             updated_sighting = self.repository.update(

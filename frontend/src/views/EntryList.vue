@@ -82,7 +82,7 @@
       :use-store-pagination="true"
       settings-key="entry-list"
       :show-settings="true"
-      :default-columns="['date','ring','species','place','pair','status','melder','melded']"
+      :default-columns="['date','ring','color_ring','species','place','pair','status','melder','melded']"
       :default-hover-expand="true"
       @deleted="handleSightingDeleted"
       @melded-updated="handleMeldedUpdated"
@@ -155,6 +155,8 @@
 import { resolveSpeciesName } from '@/utils/species';
 import { ref, onMounted, computed, watch } from 'vue';
 import { useSightingsStore } from '@/stores/sightings';
+import { useColorRingsStore } from '@/stores/colorRings';
+import { colorRingSearchText, matchesRingSearch } from '@/utils/colorRings';
 import SightingsFilter from '@/components/sightings/SightingsFilter.vue';
 import SightingsTable from '@/components/sightings/SightingsTable.vue';
 import ExportHistoryDialog from '@/components/sightings/ExportHistoryDialog.vue';
@@ -163,6 +165,8 @@ import { useRouter } from 'vue-router';
 import { exportSightingsVogelwarte, getSightingExports } from '@/api';
 
 const store = useSightingsStore();
+const colorRings = useColorRingsStore();
+colorRings.load();
 const router = useRouter();
 const showDeleteSnackbar = ref(false);
 const showMeldedSnackbar = ref(false);
@@ -231,7 +235,9 @@ const filteredSightings = computed(() => {
       matches = matches && !!(sighting.species && resolveSpeciesName(sighting.species).toLowerCase().includes(resolveSpeciesName(filters.value.species).toLowerCase()));
     }
     if (filters.value.ring) {
-      matches = matches && !!(sighting.ring && sighting.ring.includes(filters.value.ring));
+      const colorRing = colorRings.forSighting(sighting);
+      const haystack = `${sighting.ring ?? ''} ${sighting.reading ?? ''} ${colorRingSearchText(colorRing)}`;
+      matches = matches && matchesRingSearch(filters.value.ring, haystack);
     }
     if (filters.value.place) {
       matches = matches && !!(sighting.place && sighting.place.toLowerCase().includes(filters.value.place.toLowerCase()));

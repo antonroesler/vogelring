@@ -64,9 +64,9 @@
           hide-details
           :append-inner-icon="null"
           :no-data-append-icon="null"
-          placeholder="Ring suchen..."
-          item-title="ring"
-          item-value="ring"
+          placeholder="Ring oder Farbring suchen..."
+          :item-title="suggestionTitle"
+          :item-value="suggestionKey"
           return-object
           class="bird-search"
           density="compact"
@@ -80,7 +80,12 @@
             <div class="d-flex align-center py-1 px-2 suggestion-item" @click="navigateToBird(item.raw)">
               <v-icon icon="mdi-bird" color="primary" size="small" class="mr-2"></v-icon>
               <div class="flex-grow-1">
-                <div><strong>{{ item.raw.ring }}</strong> - {{ resolveSpeciesName(item.raw.species) }}</div>
+                <div class="d-flex align-center flex-wrap ga-2">
+                  <strong v-if="item.raw.ring">{{ item.raw.ring }}</strong>
+                  <span v-else class="font-italic text-medium-emphasis">ohne Metallring</span>
+                  <color-ring-badge v-if="item.raw.color_ring" :color-ring="item.raw.color_ring" size="small" :show-label="false" />
+                  <span>– {{ resolveSpeciesName(item.raw.species) }}</span>
+                </div>
                 <div class="text-caption">
                   {{ item.raw.sighting_count }} 
                   Sichtung{{ item.raw.sighting_count !== 1 ? 'en' : '' }} | 
@@ -293,9 +298,9 @@
             :loading="isLoading"
             color="primary"
             hide-details
-            placeholder="Ring eingeben..."
-            item-title="ring"
-            item-value="ring"
+            placeholder="Ring oder Farbring eingeben..."
+            :item-title="suggestionTitle"
+            :item-value="suggestionKey"
             return-object
             density="comfortable"
             variant="outlined"
@@ -307,12 +312,18 @@
           >
             <template v-slot:item="{ item }">
               <v-list-item
-                :title="item.raw.ring"
                 :subtitle="`${resolveSpeciesName(item.raw.species)} - ${item.raw.sighting_count} Sichtung${item.raw.sighting_count !== 1 ? 'en' : ''}`"
                 @click="navigateFromMobileSearch(item.raw)"
               >
                 <template v-slot:prepend>
                   <v-icon icon="mdi-bird" color="primary"></v-icon>
+                </template>
+                <template v-slot:title>
+                  <span class="d-inline-flex align-center flex-wrap ga-2">
+                    <span v-if="item.raw.ring">{{ item.raw.ring }}</span>
+                    <span v-else class="font-italic text-medium-emphasis">ohne Metallring</span>
+                    <color-ring-badge v-if="item.raw.color_ring" :color-ring="item.raw.color_ring" size="small" :show-label="false" />
+                  </span>
                 </template>
               </v-list-item>
             </template>
@@ -427,10 +438,12 @@
 <script setup lang="ts">
 import { resolveSpeciesName } from '@/utils/species';
 import { ref, onMounted, computed } from 'vue';
-import { api } from './api';
+import { getBirdSuggestions } from './api';
+import ColorRingBadge from './components/rings/ColorRingBadge.vue';
+import { birdPath, describeColorRing } from './utils/colorRings';
 import { useRouter } from 'vue-router';
 import debounce from 'lodash/debounce';
-import { SuggestionBird } from './types';
+import type { SuggestionBird } from './types';
 import { useVersionStore } from './stores/version';
 import { useAuthStore } from './stores/auth';
 import ChangelogDialog from './components/dialogs/ChangelogDialog.vue';
@@ -490,7 +503,7 @@ const debouncedSearch = debounce(async (query: string) => {
   
   try {
     console.log(`Sending request for query "${query}" (request ID: ${currentRequestId})`);
-    const response = await api.get<BirdSuggestion[]>(`/birds/suggestions/${query}`);
+    const response = { data: await getBirdSuggestions(query) };
     
     // Only update if this is still the latest request
     if (currentRequestId === latestRequestId.value) {
@@ -520,10 +533,19 @@ const debouncedSearch = debounce(async (query: string) => {
   }
 }, 900);
 
+const suggestionKey = (bird: BirdSuggestion) => bird.ring ?? `cr:${bird.color_ring?.id}`;
+const suggestionTitle = (bird: BirdSuggestion) =>
+  bird.ring ?? (bird.color_ring ? describeColorRing(bird.color_ring) : '');
+
+const goToBird = (bird: BirdSuggestion) => {
+  const path = birdPath(bird);
+  if (path) router.push(path);
+};
+
 // Handle bird selection
 const onBirdSelected = (bird: BirdSuggestion | null) => {
   if (bird) {
-    router.push(`/birds/${bird.ring}`);
+    goToBird(bird);
     selectedBird.value = null;
     searchQuery.value = '';
   }
@@ -531,7 +553,7 @@ const onBirdSelected = (bird: BirdSuggestion | null) => {
 
 // Navigate to bird details page
 const navigateToBird = (bird: BirdSuggestion) => {
-  router.push(`/birds/${bird.ring}`);
+  goToBird(bird);
   selectedBird.value = null;
   searchQuery.value = '';
 };
@@ -550,7 +572,7 @@ const onMobileBirdSelected = (bird: BirdSuggestion | null) => {
 };
 
 const navigateFromMobileSearch = (bird: BirdSuggestion) => {
-  router.push(`/birds/${bird.ring}`);
+  goToBird(bird);
   closeMobileSearch();
 };
 

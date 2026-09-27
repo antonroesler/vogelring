@@ -141,14 +141,15 @@
 import { resolveSpeciesName } from '@/utils/species';
 import { ref, computed, onMounted, watch } from 'vue';
 import { format } from 'date-fns';
-import type { BirdMeta, AnalyticsBirdMeta, Ringing, FriendResponse } from '@/types';
+import type { BirdMeta, AnalyticsBirdMeta, Ringing, FriendResponse, SuggestionBird } from '@/types';
 import * as api from '@/api';
 import BirdDetails from '@/components/birds/BirdDetails.vue';
 import FriendsMap from '@/components/map/FriendsMap.vue';
 import { useRoute, useRouter } from 'vue-router';
 
 const searchQuery = ref('');
-const suggestions = ref<BirdMeta[]>([]);
+// Only birds with a metal ring can be analysed here
+const suggestions = ref<(SuggestionBird & { ring: string })[]>([]);
 const selectedBird = ref<BirdMeta | null>(null);
 const friends = ref<AnalyticsBirdMeta[]>([]);
 const friendResponse = ref<FriendResponse | null>(null);
@@ -189,7 +190,8 @@ const handleSearch = async () => {
   
   isLoadingSuggestions.value = true;
   try {
-    suggestions.value = await api.getBirdSuggestions(searchQuery.value);
+    suggestions.value = (await api.getBirdSuggestions(searchQuery.value))
+        .filter((bird): bird is SuggestionBird & { ring: string } => !!bird.ring);
   } catch (error) {
     console.error('Error fetching suggestions:', error);
   } finally {
@@ -217,7 +219,7 @@ const loadBirdByRing = async (ring: string) => {
   }
 };
 
-const selectBird = async (bird: BirdMeta) => {
+const selectBird = async (bird: { ring: string }) => {
   isLoadingFriends.value = true;
   try {
     friendResponse.value = await api.getBirdFriends(bird.ring);

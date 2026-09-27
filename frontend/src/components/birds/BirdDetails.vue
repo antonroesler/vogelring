@@ -13,10 +13,10 @@
         <v-icon>mdi-account-group</v-icon>
       </v-btn>
       <v-btn
-        v-if="bird?.ring"
+        v-if="birdLink"
         icon
         variant="text"
-        :to="`/birds/${bird.ring}`"
+        :to="birdLink"
         v-tooltip="'Detailansicht öffnen'"
       >
         <v-icon>mdi-open-in-new</v-icon>
@@ -39,6 +39,13 @@
           <v-list-item>
             <v-list-item-title>Ring</v-list-item-title>
             <v-list-item-subtitle>{{ bird.ring || 'Unbekannt' }}</v-list-item-subtitle>
+          </v-list-item>
+          <v-list-item v-if="bird.color_ring">
+            <v-list-item-title>Farbring</v-list-item-title>
+            <div class="py-1">
+              <color-ring-badge :color-ring="bird.color_ring" />
+            </div>
+            <v-list-item-subtitle v-if="colorRingDetails">{{ colorRingDetails }}</v-list-item-subtitle>
           </v-list-item>
           <v-list-item>
             <v-list-item-title>Anzahl Sichtungen</v-list-item-title>
@@ -178,16 +185,33 @@
 
 <script setup lang="ts">
 import { resolveSpeciesName } from '@/utils/species';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
+import ColorRingBadge from '@/components/rings/ColorRingBadge.vue';
+import { MARK_TYPES, LEGS } from '@/utils/colorRings';
 import { format } from 'date-fns';
 import { formatBirdStatus, getBirdStatusColor, getBirdStatusIcon } from '@/utils/statusUtils';
 import type { BirdMeta, Ringing } from '@/types';
 import { formatRingingAge } from '@/utils/ageMapping';
 
-defineProps<{
+const props = defineProps<{
   bird: BirdMeta | null;
   ringingData: Ringing | null;
 }>();
+
+const birdLink = computed(() => {
+  if (props.bird?.ring) return `/birds/${encodeURIComponent(props.bird.ring)}`;
+  if (props.bird?.color_ring) return `/birds/farbring/${props.bird.color_ring.id}`;
+  return null;
+});
+
+// Mark type, leg and project as one readable line
+const colorRingDetails = computed(() => {
+  const cr = props.bird?.color_ring;
+  if (!cr) return '';
+  const markType = MARK_TYPES.find(m => m.value === cr.mark_type)?.title;
+  const leg = LEGS.find(l => l.value === cr.leg)?.title;
+  return [markType, leg && `Bein ${leg}`, cr.project].filter(Boolean).join(' · ');
+});
 
 const isLoadingRinging = ref(false);
 const showAllRingingData = ref(false);

@@ -56,7 +56,8 @@
         <v-col cols="12" sm="6" md="3">
           <v-text-field
             v-model="localFilters.ring"
-            label="Ring"
+            label="Ring / Farbring"
+            hint="z.B. 282326, H3E4 oder rot H3E4"
             clearable
             variant="outlined"
             density="compact"

@@ -51,6 +51,9 @@ class SightingCreate(BaseModel):
     is_exact_location: bool | None = False
     habitat: str | None = None
     field_fruit: str | None = None
+    color_ring_color: str | None = None
+    color_ring_text_color: str | None = None
+    color_ring_code: str | None = None
 
 
 class SightingUpdate(BaseModel):
@@ -81,6 +84,9 @@ class SightingUpdate(BaseModel):
     is_exact_location: bool | None = False
     habitat: str | None = None
     field_fruit: str | None = None
+    color_ring_color: str | None = None
+    color_ring_text_color: str | None = None
+    color_ring_code: str | None = None
 
 
 @router.get("/sightings/count")

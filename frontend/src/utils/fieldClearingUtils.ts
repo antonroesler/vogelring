@@ -15,7 +15,7 @@ export function createClearedSighting(
   // Preserve fields based on settings
   Object.keys(currentSighting).forEach(key => {
     if (!clearFieldsSettings[key]) {
-      preservedSighting[key as keyof Sighting] = currentSighting[key as keyof Sighting];
+      (preservedSighting as Record<string, unknown>)[key] = currentSighting[key as keyof Sighting];
     }
   });
 
@@ -34,6 +34,9 @@ export function createClearedSighting(
   // These should never be preserved to avoid duplicate entries
   preservedSighting.ring = undefined;
   preservedSighting.reading = undefined;
+  preservedSighting.color_ring_color = null;
+  preservedSighting.color_ring_text_color = null;
+  preservedSighting.color_ring_code = null;
 
   // Always reset melded status
   preservedSighting.melded = false;

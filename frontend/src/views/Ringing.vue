@@ -15,8 +15,8 @@
               <v-col cols="12" sm="6">
                 <v-text-field
                   v-model="searchRing"
-                  label="Ringnummer"
-                  placeholder="Ringnummer eingeben"
+                  label="Ringnummer oder Farbring"
+                  placeholder="z.B. 282326 oder rot H3E4"
                   @keyup.enter="searchRinging"
                 ></v-text-field>
               </v-col>
@@ -51,6 +51,12 @@
                   <v-list-item>
                     <v-list-item-title>Ring</v-list-item-title>
                     <v-list-item-subtitle>{{ foundRinging.ring }}</v-list-item-subtitle>
+                  </v-list-item>
+                  <v-list-item v-if="colorRings.forRing(foundRinging.ring)">
+                    <v-list-item-title>Farbring</v-list-item-title>
+                    <div class="py-1">
+                      <color-ring-badge :color-ring="colorRings.forRing(foundRinging.ring)" />
+                    </div>
                   </v-list-item>
                   <v-list-item>
                     <v-list-item-title>Ring Schema</v-list-item-title>
@@ -249,6 +255,9 @@
                 </v-col>
               </v-row>
 
+              <!-- Color Ring Section -->
+              <color-ring-input v-model="colorRingForm" extended />
+
               <!-- Parent Fields Section -->
               <v-card-subtitle class="px-0 mt-4">Eltern (optional)</v-card-subtitle>
               <v-row>
@@ -388,6 +397,11 @@ import type { Ringing } from '@/types';
 import { BirdStatus } from '@/types';
 import * as api from '@/api';
 import LeafletMap from '@/components/map/LeafletMap.vue';
+import ColorRingBadge from '@/components/rings/ColorRingBadge.vue';
+import ColorRingInput, { type ColorRingFormValue } from '@/components/rings/ColorRingInput.vue';
+import { useColorRingsStore } from '@/stores/colorRings';
+import { colorRingSearchText, matchesRingSearch, describeColorRing } from '@/utils/colorRings';
+import axios from 'axios';
 import RingingEntryList from '@/views/RingingEntryList.vue';
 import { getRingingAgeOptions, formatRingingAge } from '@/utils/ageMapping';
 
@@ -440,6 +454,42 @@ const newRinging = reactive({
   lat: undefined as number | undefined,
   lon: undefined as number | undefined
 });
+
+const colorRings = useColorRingsStore();
+colorRings.load();
+const colorRingForm = ref<ColorRingFormValue>({});
+
+const loadColorRingForm = (ring: string) => {
+  const existing = colorRings.forRing(ring);
+  colorRingForm.value = existing ? { ...existing } : {};
+};
+
+// Create, update or remove the Farbring that belongs to the saved ringing
+const saveColorRing = async (ring: string) => {
+  const existing = colorRings.forRing(ring);
+  const value = colorRingForm.value;
+  const filled = !!(value.ring_color || value.code);
+  if (!filled) {
+    if (existing) {
+      await api.deleteColorRing(existing.id);
+      colorRings.remove(existing.id);
+    }
+    return;
+  }
+  const payload = {
+    ring,
+    ring_color: value.ring_color!,
+    text_color: value.text_color ?? null,
+    code: value.code!,
+    mark_type: (value.mark_type ?? null) as 'leg' | 'neck' | 'wing' | null,
+    leg: (value.leg ?? null) as 'left' | 'right' | null,
+    project: value.project ?? null,
+  };
+  const saved = existing
+    ? await api.updateColorRing(existing.id, payload)
+    : await api.createColorRing(payload);
+  colorRings.upsert(saved);
+};
 
 const hasCoordinates = computed(() => {
   return typeof latitude.value === 'number' && 
@@ -529,6 +579,8 @@ watch(() => newRinging.ring, async (newValue) => {
         date: existingRinging.date.split('T')[0] // Format date for input field
       });
       isUpdateMode.value = true;
+      await colorRings.load();
+      loadColorRingForm(newValue);
       showNotification('Beringung gefunden. Daten wurden vorausgefüllt.', false);
     } else {
       isUpdateMode.value = false;
@@ -590,7 +642,21 @@ const searchRinging = async () => {
   foundRinging.value = null;
 
   try {
-    const result = await api.getRingingByRing(searchRing.value);
+    let result = await api.getRingingByRing(searchRing.value);
+    if (!result) {
+      // Not a metal ring: try the Farbring registry ("rot H3E4", "H3E4")
+      await colorRings.load();
+      const matches = colorRings.colorRings.filter(cr =>
+        cr.ring && matchesRingSearch(searchRing.value, colorRingSearchText(cr))
+      );
+      if (matches.length > 1) {
+        searchError.value = `Mehrere Farbringe passen: ${matches.map(describeColorRing).join(', ')}. Bitte Farbe angeben.`;
+        return;
+      }
+      if (matches.length === 1) {
+        result = await api.getRingingByRing(matches[0].ring!);
+      }
+    }
     if (result) {
       foundRinging.value = result;
       showNotification('Beringung gefunden.');
@@ -657,6 +723,14 @@ const submitForm = async () => {
       showNotification('Beringung wurde erfolgreich erstellt.');
     }
 
+    let colorRingError: string | null = null;
+    try {
+      await saveColorRing(newRinging.ring);
+    } catch (error) {
+      const detail = axios.isAxiosError(error) ? error.response?.data?.detail : undefined;
+      colorRingError = detail ?? 'unbekannter Fehler';
+    }
+
     // Then, add parent relationships if provided
     const currentYear = new Date().getFullYear();
     
@@ -703,6 +777,15 @@ const submitForm = async () => {
       }
     }
     
+    if (colorRingError) {
+      // Ringing is saved; keep the form so the Farbring can be corrected
+      showNotification(`Beringung gespeichert, Farbring nicht: ${colorRingError}`, true);
+      parent1Ring.value = '';
+      parent2Ring.value = '';
+      isUpdateMode.value = true;
+      return;
+    }
+
     // Store current values that should be preserved
     const preservedValues = {
       date: newRinging.date,
@@ -733,6 +816,8 @@ const submitForm = async () => {
       lat: preservedValues.lat,
       lon: preservedValues.lon
     });
+
+    colorRingForm.value = {};
 
     // Reset parent fields
     parent1Ring.value = '';

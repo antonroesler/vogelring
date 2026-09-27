@@ -6,13 +6,40 @@ import logging
 from typing import List, Optional, Dict, Any
 from datetime import date
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import and_, or_, func, desc
+from sqlalchemy import and_, or_, func, desc, select
 from sqlalchemy.exc import IntegrityError
 
-from .models import Sighting, Ringing
+from .models import Sighting, Ringing, ColorRing
 from ..utils.cache import get_cached_data
+from ..utils.color_rings import parse_ring_query
 
 logger = logging.getLogger(__name__)
+
+
+def ring_search_condition(ring_column, org_column, term: str):
+    """Match a metal ring substring, or the metal ring of a matching color ring.
+
+    Accepts the same input as the bird suggestions: "282", "H3E4", "rot H3E4".
+    """
+    query = parse_ring_query(term)
+    code_like = f"%{query.code_pattern.replace('*', '%')}%"
+    color_ring_filter = [
+        ColorRing.org_id == org_column,
+        ColorRing.ring.isnot(None),
+        ColorRing.code.like(code_like),
+    ]
+    if query.ring_color:
+        color_ring_filter.append(ColorRing.ring_color == query.ring_color)
+    if query.text_color:
+        color_ring_filter.append(
+            or_(ColorRing.text_color == query.text_color, ColorRing.text_color.is_(None))
+        )
+    color_ring_match = ring_column.in_(
+        select(ColorRing.ring).where(*color_ring_filter)
+    )
+    if query.has_color:
+        return color_ring_match
+    return or_(func.lower(ring_column).like(f"%{term.strip().lower()}%"), color_ring_match)
 
 
 class BaseRepository:
@@ -181,7 +208,7 @@ class SightingRepository(BaseRepository):
 
         if filters.get("ring"):
             query = query.filter(
-                func.lower(Sighting.ring).like(f"%{filters['ring'].lower()}%")
+                ring_search_condition(Sighting.ring, Sighting.org_id, filters["ring"])
             )
 
         if filters.get("place"):
@@ -428,7 +455,7 @@ class RingingRepository(BaseRepository):
 
         if filters.get("ring"):
             query = query.filter(
-                func.lower(Ringing.ring).like(f"%{filters['ring'].lower()}%")
+                ring_search_condition(Ringing.ring, Ringing.org_id, filters["ring"])
             )
 
         if filters.get("place"):
@@ -621,7 +648,7 @@ class RingingRepository(BaseRepository):
 
         if filters.get("ring"):
             query = query.filter(
-                func.lower(Ringing.ring).like(f"%{filters['ring'].lower()}%")
+                ring_search_condition(Ringing.ring, Ringing.org_id, filters["ring"])
             )
 
         if filters.get("place"):
@@ -682,7 +709,7 @@ class RingingRepository(BaseRepository):
 
         if filters.get("ring"):
             query = query.filter(
-                func.lower(Ringing.ring).like(f"%{filters['ring'].lower()}%")
+                ring_search_condition(Ringing.ring, Ringing.org_id, filters["ring"])
             )
 
         if filters.get("place"):
@@ -702,3 +729,94 @@ class RingingRepository(BaseRepository):
             query = query.filter(Ringing.date <= filters["end_date"])
 
         return query.count()
+
+
+class ColorRingRepository(BaseRepository):
+    """Repository for the color ring (Farbring) registry"""
+
+    def __init__(self, db: Session):
+        super().__init__(db, ColorRing)
+
+    def get_all(self, org_id: str) -> List[ColorRing]:
+        return (
+            self.db.query(ColorRing)
+            .filter(ColorRing.org_id == org_id)
+            .order_by(ColorRing.code)
+            .all()
+        )
+
+    def get_by_ring(self, ring: str, org_id: str) -> Optional[ColorRing]:
+        return (
+            self.db.query(ColorRing)
+            .filter(ColorRing.ring == ring, ColorRing.org_id == org_id)
+            .first()
+        )
+
+    def find_by_identity(
+        self, org_id: str, ring_color: str, code: str, text_color: Optional[str]
+    ) -> List[ColorRing]:
+        """Find color rings by color + code.
+
+        An unknown text color on either side counts as a match, so the result can
+        hold several rings when the text color is what tells them apart.
+        """
+        query = self.db.query(ColorRing).filter(
+            ColorRing.org_id == org_id,
+            ColorRing.ring_color == ring_color,
+            ColorRing.code == code,
+        )
+        if text_color:
+            query = query.filter(
+                or_(ColorRing.text_color == text_color, ColorRing.text_color.is_(None))
+            )
+        return query.all()
+
+    def get_sightings(self, color_ring: ColorRing) -> List[Sighting]:
+        """Sightings that recorded this color ring or its metal ring"""
+        color_match = and_(
+            Sighting.color_ring_color == color_ring.ring_color,
+            Sighting.color_ring_code == color_ring.code,
+        )
+        if color_ring.text_color:
+            color_match = and_(
+                color_match,
+                or_(
+                    Sighting.color_ring_text_color == color_ring.text_color,
+                    Sighting.color_ring_text_color.is_(None),
+                ),
+            )
+        condition = color_match
+        if color_ring.ring:
+            condition = or_(Sighting.ring == color_ring.ring, color_match)
+        return (
+            self.db.query(Sighting)
+            .filter(Sighting.org_id == color_ring.org_id, condition)
+            .order_by(desc(Sighting.date))
+            .all()
+        )
+
+    def backfill_sighting_rings(self, color_ring: ColorRing) -> int:
+        """Set the metal ring on sightings that only recorded this color ring"""
+        if not color_ring.ring:
+            return 0
+        condition = and_(
+            Sighting.org_id == color_ring.org_id,
+            Sighting.ring.is_(None),
+            Sighting.color_ring_color == color_ring.ring_color,
+            Sighting.color_ring_code == color_ring.code,
+        )
+        if color_ring.text_color:
+            condition = and_(
+                condition,
+                or_(
+                    Sighting.color_ring_text_color == color_ring.text_color,
+                    Sighting.color_ring_text_color.is_(None),
+                ),
+            )
+        count = (
+            self.db.query(Sighting)
+            .filter(condition)
+            .update({Sighting.ring: color_ring.ring}, synchronize_session=False)
+        )
+        self.db.commit()
+        return count

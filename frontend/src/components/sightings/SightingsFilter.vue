@@ -121,8 +121,9 @@
             <!-- Text Filters -->
             <template v-if="['species', 'ring', 'place', 'melder'].includes(filterId)">
               <v-text-field
-                v-model="filters[filterId]"
+                v-model="filters[filterId as TextFilterKey]"
                 :label="getFilterById(filterId).title"
+                :hint="filterId === 'ring' ? 'z.B. 282326, H3E4 oder rot H3E4' : undefined"
                 density="compact"
                 variant="outlined"
                 @update:model-value="emitFilters"
@@ -172,8 +173,9 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import type { BirdStatus } from '@/types';
-import { useSightingsStore } from '@/stores/sightings';
+import { useSightingsStore, type Filters } from '@/stores/sightings';
+
+type TextFilterKey = 'species' | 'ring' | 'place' | 'melder';
 
 const store = useSightingsStore();
 
@@ -202,7 +204,7 @@ const availableFilters = [
   { id: 'dateRange', title: 'Datumsbereich', icon: 'mdi-calendar-range' },
   { id: 'monthRange', title: 'Monatsbereich', icon: 'mdi-calendar-month' },
   { id: 'species', title: 'Spezies', icon: 'mdi-bird' },
-  { id: 'ring', title: 'Ring', icon: 'mdi-ring' },
+  { id: 'ring', title: 'Ring / Farbring', icon: 'mdi-ring' },
   { id: 'place', title: 'Ort', icon: 'mdi-map-marker' },
   { id: 'melder', title: 'Melder', icon: 'mdi-account' },
   { id: 'status', title: 'Status', icon: 'mdi-flag' },

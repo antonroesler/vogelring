@@ -29,15 +29,23 @@
         <v-list v-if="suggestions.length > 0">
           <v-list-item
             v-for="suggestion in suggestions"
-            :key="suggestion.ring || ''"
+            :key="suggestion.ring || suggestion.color_ring?.id || ''"
             @click="selectSuggestion(suggestion)"
             class="suggestion-item"
           >
             <template v-slot:prepend>
               <v-icon icon="mdi-bird" color="primary" size="small" class="mr-2"></v-icon>
             </template>
-            <v-list-item-title>
-              <strong>{{ suggestion.ring }}</strong> - {{ resolveSpeciesName(suggestion.species) }}
+            <v-list-item-title class="d-flex align-center flex-wrap ga-2">
+              <strong v-if="suggestion.ring">{{ suggestion.ring }}</strong>
+              <span v-else class="text-medium-emphasis font-italic">ohne Metallring</span>
+              <color-ring-badge
+                v-if="suggestion.color_ring"
+                :color-ring="suggestion.color_ring"
+                size="small"
+                :show-label="false"
+              />
+              <span>– {{ resolveSpeciesName(suggestion.species) || 'Art unbekannt' }}</span>
             </v-list-item-title>
             <v-list-item-subtitle>
               {{ suggestion.sighting_count }} 
@@ -66,6 +74,7 @@ import { resolveSpeciesName } from '@/utils/species';
 import { ref, watch, onBeforeUnmount } from 'vue';
 import { format } from 'date-fns';
 import { getBirdSuggestions } from '@/api';
+import ColorRingBadge from '@/components/rings/ColorRingBadge.vue';
 import type { SuggestionBird } from '@/types';
 
 const props = defineProps<{

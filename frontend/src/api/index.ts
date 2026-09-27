@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Sighting, BirdMeta, FriendResponse, Dashboard, Ringing, ShareableReport, SuggestionBird, FamilyTreeEntry } from '../types';
+import type { Sighting, BirdMeta, FriendResponse, Dashboard, Ringing, ShareableReport, SuggestionBird, ColorRing } from '../types';
 
 // API configuration - uses relative /api path (works with nginx and vite proxy)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -177,14 +177,14 @@ export const deleteSighting = async (id: string) => {
 
 export const getBirdSuggestions = async (partialReading: string) => {
   console.log('Fetching bird suggestions for:', partialReading);
-  const response = await api.get<SuggestionBird[]>(`/birds/suggestions/${partialReading}`);
+  const response = await api.get<SuggestionBird[]>(`/birds/suggestions/${encodeURIComponent(partialReading)}`);
   console.log('Received suggestions:', response.data);
   return response.data;
 };
 
 export const getBirdByRing = async (ring: string): Promise<BirdMeta | null> => {
   try {
-    const response = await api.get<BirdMeta>(`/birds/${ring}`);
+    const response = await api.get<BirdMeta>(`/birds/${encodeURIComponent(ring)}`);
     return response.data;
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 404) {
@@ -232,6 +232,30 @@ export const getShareableReportUrls = async (days: number, htmlContent?: string)
     console.error('Error getting shareable report URL:', error);
     throw new Error('Failed to generate shareable report');
   }
+};
+
+export const getBirdByColorRing = async (colorRingId: string): Promise<BirdMeta> => {
+  const response = await api.get<BirdMeta>(`/birds/color-ring/${encodeURIComponent(colorRingId)}`);
+  return response.data;
+};
+
+export const getColorRings = async (): Promise<ColorRing[]> => {
+  const response = await api.get<ColorRing[]>('/color-rings');
+  return response.data;
+};
+
+export const createColorRing = async (colorRing: Omit<ColorRing, 'id'>): Promise<ColorRing> => {
+  const response = await api.post<ColorRing>('/color-rings', colorRing);
+  return response.data;
+};
+
+export const updateColorRing = async (id: string, colorRing: Partial<ColorRing>): Promise<ColorRing> => {
+  const response = await api.put<ColorRing>(`/color-rings/${encodeURIComponent(id)}`, colorRing);
+  return response.data;
+};
+
+export const deleteColorRing = async (id: string): Promise<void> => {
+  await api.delete(`/color-rings/${encodeURIComponent(id)}`);
 };
 
 export const getRingingByRing = async (ring: string) => {
