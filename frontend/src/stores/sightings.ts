@@ -1,9 +1,8 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
 import type { Sighting, BirdStatus, SightingAgeCode } from '../types';
 import * as api from '../api';
 
-interface Filters {
+export interface Filters {
   start_date?: string;
   end_date?: string;
   species?: string;

@@ -5,7 +5,7 @@
  * Age labels come from AGE_MAPPING (ageMapping.ts) so sightings and ringings
  * share one legend. Sightings render them as "<code> <label>" (e.g. "3 Diesjährig").
  */
-import { SightingAgeCode, SightingSexCode } from '@/types';
+import { SightingSexCode } from '@/types';
 import { AGE_MAPPING, AGE_CODE_ORDER } from '@/utils/ageMapping';
 
 export interface CodeOption {

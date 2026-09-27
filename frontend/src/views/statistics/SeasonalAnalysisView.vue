@@ -150,9 +150,6 @@ const getChartOption = (species: string) => {
   const recentData = speciesData.map((count: { recent_count: number }) => 
     (count.recent_count / maxValue) * 100
   );
-  const q1Data = speciesData.map((count: { q1_avg: number }) => 
-    (count.q1_avg / maxValue) * 100
-  );
   const q3Data = speciesData.map((count: { q3_avg: number }) => 
     (count.q3_avg / maxValue) * 100
   );

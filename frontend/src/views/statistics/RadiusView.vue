@@ -18,7 +18,7 @@
                 :tick-size="4"
                 :min="Math.min(...radiusValues)"
                 :max="Math.max(...radiusValues)"
-                :step="null"
+                :step="0"
                 thumb-label
                 :thumb-label-value="formatRadiusLabel(radius)"
                 class="mt-4"
@@ -59,8 +59,6 @@
 <script setup lang="ts">
 import { resolveSpeciesName } from '@/utils/species';
 import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
-import type { Sighting } from '@/types';
 import * as api from '@/api';
 import LeafletMap from '@/components/map/LeafletMap.vue';
 import VChart from 'vue-echarts';
@@ -79,7 +77,6 @@ use([
   LegendComponent
 ]);
 
-const router = useRouter();
 const selectedLat = ref<number | null>(50.1109);
 const selectedLon = ref<number | null>(8.6821);
 const radius = ref(100);
