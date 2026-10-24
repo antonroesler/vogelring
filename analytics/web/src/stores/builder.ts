@@ -79,11 +79,17 @@ export const defaultForm = (): BuilderForm => ({
 const RAW = new Set(['timeline', 'calendar', 'scatter', 'boxplot', 'sankey', 'graph', 'histogram'])
 
 /** Strip defaults/empties so the spec stays small and valid (extra=forbid on the server). */
-export function toSpec(f: BuilderForm): any {
+/** Only the filters that are actually set (what the engine receives). */
+export function cleanFilters(src: Filters): Record<string, any> {
   const filters: Record<string, any> = {}
-  for (const [k, v] of Object.entries(f.filters)) {
-    if (Array.isArray(v) ? v.length : v !== null && v !== false && v !== '' && !(k === 'around_place_km' && !f.filters.around_place)) filters[k] = v
+  for (const [k, v] of Object.entries(src)) {
+    if (Array.isArray(v) ? v.length : v !== null && v !== false && v !== '' && !(k === 'around_place_km' && !src.around_place)) filters[k] = v
   }
+  return filters
+}
+
+export function toSpec(f: BuilderForm): any {
+  const filters = cleanFilters(f.filters)
   const spec: any = { kind: f.kind, source: f.source, filters }
   if (f.title) spec.title = f.title
   if (f.subtitle) spec.subtitle = f.subtitle

@@ -14,7 +14,7 @@ from . import engine, runtime
 from .api import body, err, ok, user_of, validation_message
 from .decks import DeckSpec
 from .reports import ReportSpec
-from .sources import SourceError, choices, describe_sources, get_source
+from .sources import FilterSpec, SourceError, choices, describe_sources, get_source
 from .views import dimension_options
 from .workbooks import WorkbookSpec
 
@@ -47,12 +47,17 @@ async def api_dimensions(request: Request) -> Response:
 
 
 async def api_choices(request: Request) -> Response:
+    """GET ?q=&limit= lists global counts; POST {q, limit, filters} lists counts within the other active filters."""
     source, column = request.path_params["source"], request.path_params["column"]
+    data = await body(request) if request.method == "POST" else {}
+    q = data.get("q") if data.get("q") is not None else request.query_params.get("q", "")
+    limit = int(data.get("limit") or request.query_params.get("limit", "50"))
     try:
         get_source(source)
-        items = await choices(source, column, search=request.query_params.get("q", ""), limit=min(int(request.query_params.get("limit", "50")), 500))
-    except SourceError as exc:
-        return err(str(exc))
+        filters = FilterSpec.model_validate(data.get("filters") or {}) if data.get("filters") else None
+        items = await choices(source, column, search=q or "", limit=min(limit, 500), filters=filters)
+    except (SourceError, ValidationError) as exc:
+        return err(str(exc) if isinstance(exc, SourceError) else validation_message(exc))
     return ok({"items": items})
 
 
@@ -276,7 +281,7 @@ async def api_deck_create(request: Request) -> Response:
 routes: list[Route] = [
     Route("/api/sources", api_sources),
     Route("/api/sources/{source}/dimensions", api_dimensions),
-    Route("/api/sources/{source}/choices/{column}", api_choices),
+    Route("/api/sources/{source}/choices/{column}", api_choices, methods=["GET", "POST"]),
     Route("/api/views", api_views_list),
     Route("/api/views/preview", api_view_preview, methods=["POST"]),
     Route("/api/views", api_view_create, methods=["POST"]),

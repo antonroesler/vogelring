@@ -7,7 +7,9 @@ statement is a single parameterised SELECT and still passes ``db.guard_sql`` bef
 
 from __future__ import annotations
 
+import json
 import re
+from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
@@ -74,6 +76,26 @@ class Source:
         return self.extra.get(kind)
 
 
+
+# ---------------------------------------------------------------- RING species codes
+# ringings.species (and v_sightings.ringed_as_species) hold EURING codes such as "01660"; sightings hold German names.
+# The official RING code→name list is bundled (same file as frontend/src/data/ring-species.json). Unknown values pass through.
+
+_SPECIES_FILE = Path(__file__).parent / "data" / "ring_species.json"
+RING_SPECIES: dict[str, str] = json.loads(_SPECIES_FILE.read_text(encoding="utf-8")) if _SPECIES_FILE.exists() else {}
+_SPECIES_JSONB = "'" + json.dumps(RING_SPECIES, ensure_ascii=False, separators=(",", ":")).replace("'", "''").replace("%", "%%") + "'::jsonb"
+
+
+def species_name_sql(column: str) -> str:
+    """SQL expression turning a RING code column into the German species name (names and unknown codes pass through)."""
+    if not RING_SPECIES:
+        return column
+    return f"COALESCE({_SPECIES_JSONB} ->> {column}, {column})"
+
+
+def species_name(value: str | None) -> str | None:
+    return RING_SPECIES.get(value, value) if value is not None else None
+
 def _c(name: str, label: str, type: ColumnType = "text", role: ColumnRole = "dimension", filterable: bool = True) -> Column:
     return Column(name, label, type, role, filterable)
 
@@ -118,7 +140,7 @@ SOURCES: dict[str, Source] = {
         base_sql=(
             "SELECT id, ring, reading, species, date, place, area, lat, lon, is_exact_location, age, sex, status, melder, "
             "large_group_size, small_group_size, breed_size, family_size, partner, comment, ringing_date, ringing_place, "
-            "ringing_lat, ringing_lon, ringer, ring_scheme, ringing_age, ringed_as_species, "
+            "ringing_lat, ringing_lon, ringer, ring_scheme, ringing_age, " + species_name_sql("ringed_as_species") + " AS ringed_as_species, "
             f"CASE WHEN lat IS NULL OR lon IS NULL OR ringing_lat IS NULL OR ringing_lon IS NULL THEN NULL ELSE {_KM_FROM_RINGING} END AS km_from_ringing "
             "FROM v_sightings WHERE date IS NOT NULL"
         ),
@@ -137,11 +159,12 @@ SOURCES: dict[str, Source] = {
         key="ringings",
         label="Beringungen",
         description="Eine Zeile je Beringung: wann, wo und von wem ein Ring angelegt wurde.",
-        base_sql="SELECT ring, ring_scheme, species, date, place, lat, lon, ringer, age, sex, status, comment FROM ringings",
+        base_sql="SELECT ring, ring_scheme, " + species_name_sql("species") + " AS species, species AS species_code, date, place, lat, lon, ringer, age, sex, status, comment FROM ringings",
         columns=(
             _c("ring", "Ring", "text", "id"),
             _c("ring_scheme", "Ringzentrale"),
             _c("species", "Art"),
+            _c("species_code", "Artcode (RING)", "text", "meta", False),
             _c("date", "Beringungsdatum", "date"),
             _c("place", "Beringungsort"),
             _c("lat", "Breite", "number", "coord", False),
@@ -167,7 +190,7 @@ SOURCES: dict[str, Source] = {
         label="Vögel",
         description="Eine Zeile je Ring: Beringungsdaten, Anzahl und Zeitraum der Sichtungen, Anzahl Orte, weitester Fund.",
         base_sql=(
-            "SELECT ring, MAX(ringed_as_species) AS species, MAX(ringing_date) AS ringing_date, MAX(ringing_place) AS ringing_place, "
+            "SELECT ring, " + species_name_sql("MAX(ringed_as_species)") + " AS species, MAX(ringing_date) AS ringing_date, MAX(ringing_place) AS ringing_place, "
             "MAX(ringing_lat) AS ringing_lat, MAX(ringing_lon) AS ringing_lon, MAX(ringing_age) AS ringing_age, MAX(ringer) AS ringer, "
             "COUNT(date) AS sightings, MIN(date) AS first_sighting, MAX(date) AS last_sighting, COUNT(DISTINCT place) AS places, "
             "COUNT(DISTINCT EXTRACT(YEAR FROM date)) AS years_seen, MAX(km) AS max_km, (MAX(date) - MAX(ringing_date)) AS days_known "
@@ -820,8 +843,38 @@ def describe_sources() -> dict[str, Any]:
 _CHOICE_LABELS: dict[str, dict[Any, str]] = {"age": AGE_LABELS, "sex": SEX_LABELS, "status": STATUS_LABELS, "ringing_age": RINGING_AGE_LABELS}
 
 
-async def choices(source_key: str, column: str, search: str = "", limit: int = 50) -> list[dict[str, Any]]:
-    """Distinct values of a column with counts (for dropdowns); parameterised ILIKE search."""
+# which FilterSpec fields target a column – they are ignored while listing that column's own choices
+_CHOICE_OWN_FIELDS: dict[str, tuple[str, ...]] = {
+    "species": ("species",),
+    "place": ("places", "exclude_places"),
+    "ringing_place": ("ringing_places",),
+    "ring": ("rings", "ring_contains", "ring_groups"),
+    "melder": ("melder",),
+    "year": ("years", "year_from", "year_to"),
+    "status": ("status",),
+    "age": ("age",),
+    "sex": ("sex",),
+    "ringing_age": ("ringing_age",),
+}
+
+
+def choices_context(column: str, filters: FilterSpec | None) -> FilterSpec | None:
+    """The filters that should narrow a column's choice list: everything except the filters on that column itself."""
+    if filters is None or filters.is_empty():
+        return None
+    drop = _CHOICE_OWN_FIELDS.get(column, (column,))
+    data = filters.model_dump(exclude_defaults=True)
+    for k in drop:
+        data.pop(k, None)
+    ctx = FilterSpec.model_validate(data)
+    return None if ctx.is_empty() else ctx
+
+
+async def choices(source_key: str, column: str, search: str = "", limit: int = 50, filters: FilterSpec | None = None) -> list[dict[str, Any]]:
+    """Distinct values of a column with counts (for dropdowns); parameterised ILIKE search.
+
+    With `filters`, the counts are those of rows matching all *other* active filters, so a dropdown shows how many
+    results each choice would leave (Tableau-style) instead of global totals."""
     source = get_source(source_key)
     if column == "year" and source.default_date_column:
         expr = f"EXTRACT(YEAR FROM {source.default_date_column})::int"
@@ -831,6 +884,11 @@ async def choices(source_key: str, column: str, search: str = "", limit: int = 5
         raise SourceError(f"Unbekannte Spalte „{column}“ für „{source.label}“.")
     params: list[Any] = []
     where = f"{expr} IS NOT NULL"
+    ctx = choices_context(column, filters)
+    if ctx is not None:
+        cond, cparams = compile_filters(source, ctx)
+        where += f" AND ({cond})"
+        params.extend(cparams)
     if search:
         where += f" AND ({expr})::text ILIKE %s"
         params.append("%" + search.strip().strip("%") + "%")

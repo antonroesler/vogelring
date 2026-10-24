@@ -8,6 +8,14 @@ export class ApiError extends Error {
   }
 }
 
+function statusMessage(status: number): string {
+  if (status === 502 || status === 503 || status === 504) return 'Der Analyse-Server ist gerade nicht erreichbar (wird vermutlich neu gestartet). Bitte in ein paar Sekunden noch einmal versuchen.'
+  if (status === 401 || status === 403) return 'Anmeldung abgelaufen. Bitte die Seite neu laden.'
+  if (status === 404) return 'Nicht gefunden.'
+  if (status >= 500) return `Serverfehler (${status}). Bitte noch einmal versuchen.`
+  return `Fehler ${status}`
+}
+
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(path, {
     method,
@@ -20,9 +28,10 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   try {
     data = text ? JSON.parse(text) : null
   } catch {
-    data = { error: text }
+    // not JSON: an HTML error page from Cloudflare or the proxy (e.g. 502 while the server restarts)
+    data = { error: /^\s*<(!doctype|html)/i.test(text) ? '' : text.slice(0, 300) }
   }
-  if (!res.ok) throw new ApiError(data?.error || `Fehler ${res.status}`, res.status)
+  if (!res.ok) throw new ApiError(data?.error || statusMessage(res.status), res.status)
   return data as T
 }
 
@@ -265,7 +274,10 @@ export const api = {
   navigate: (target: string, id?: string) => post('/api/navigate', { target, id }),
   sources: () => get<SourcesInfo>('/api/sources'),
   dimensions: (source: string) => get<{ items: { key: string; label: string }[] }>(`/api/sources/${source}/dimensions`),
-  choices: (source: string, column: string, q = '', limit = 50) => get<{ items: Choice[] }>(`/api/sources/${source}/choices/${column}${qs({ q, limit })}`),
+  choices: (source: string, column: string, q = '', limit = 50, filters?: Record<string, any>) =>
+    filters && Object.keys(filters).length
+      ? post<{ items: Choice[] }>(`/api/sources/${source}/choices/${column}`, { q, limit, filters })
+      : get<{ items: Choice[] }>(`/api/sources/${source}/choices/${column}${qs({ q, limit })}`),
   previewView: (spec: any) => post<Preview>('/api/views/preview', { spec }),
   createView: (spec: any, title?: string, render = true) => post<any>('/api/views', { spec, title, render }),
   updateView: (id: string, spec: any, title?: string, render = true) => put<any>(`/api/views/${id}`, { spec, title, render }),

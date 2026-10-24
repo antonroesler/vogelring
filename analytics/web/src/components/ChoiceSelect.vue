@@ -40,7 +40,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { api, type Choice } from '@/api/client'
 
-const props = withDefaults(defineProps<{ modelValue: any[]; source: string; column: string; label: string; freeText?: boolean; staticItems?: { value: any; label: string }[] }>(), { freeText: false, staticItems: undefined })
+const props = withDefaults(defineProps<{ modelValue: any[]; source: string; column: string; label: string; freeText?: boolean; staticItems?: { value: any; label: string }[]; filters?: Record<string, any> }>(), { freeText: false, staticItems: undefined, filters: undefined })
 const emit = defineEmits<{ (e: 'update:modelValue', v: any[]): void }>()
 const model = ref<any[]>(props.modelValue || [])
 const items = ref<(Choice | { value: any; label: string })[]>([])
@@ -57,7 +57,7 @@ async function load(q = '') {
   }
   loading.value = true
   try {
-    const res = await api.choices(props.source, props.column, q, 60)
+    const res = await api.choices(props.source, props.column, q, 60, props.filters)
     items.value = res.items.map((c) => ({ value: c.value, label: c.count ? `${c.label} (${c.count})` : c.label, count: c.count }))
     // keep selected values visible even when not in the current result page
     for (const v of model.value) if (!items.value.some((i) => i.value === v)) items.value.push({ value: v, label: String(v) })
@@ -67,9 +67,22 @@ async function load(q = '') {
 }
 function onSearch(q: string) {
   if (props.staticItems) return
+  onSearchQuery(q || '')
   clearTimeout(timer)
   timer = setTimeout(() => load(q || ''), 250)
 }
+let lastQuery = ''
+function onSearchQuery(q: string) {
+  lastQuery = q
+}
 onMounted(() => load())
 watch(() => props.source, () => load())
+// other filters changed → counts change; the server ignores the filters on this very column
+watch(
+  () => JSON.stringify(props.filters || {}),
+  () => {
+    clearTimeout(timer)
+    timer = setTimeout(() => load(lastQuery), 300)
+  },
+)
 </script>

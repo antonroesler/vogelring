@@ -20,7 +20,7 @@ from . import analysis, engine, runtime
 from .decks import DeckSpec
 from .groups import GroupSpec, resolve_group
 from .pipelines import PipelineSpec
-from .sources import SourceError, choices, describe_sources
+from .sources import SourceError, choices, describe_sources, FilterSpec
 from .views import ViewSpec
 from .visual_service import VisualError, VisualOut, create_visual, visual_urls
 from .workbooks import WorkbookSpec
@@ -511,10 +511,11 @@ async def filter_choices(
     column: Annotated[str, Field(description="Column such as species, place, status, melder, year.")] = "place",
     search: Annotated[str, Field(description="Substring to narrow the values (case-insensitive).")] = "",
     limit: Annotated[int, Field(ge=1, le=500)] = 50,
+    filters: Annotated[FilterSpec | None, Field(description="Optional: the other active filters; counts then show how many rows each value would leave (filters on the column itself are ignored).")] = None,
 ) -> list[dict[str, Any]]:
     """List the distinct values of a column with counts – e.g. to find the exact place name or species spelling."""
     try:
-        return await choices(source, column, search=search, limit=limit)
+        return await choices(source, column, search=search, limit=limit, filters=filters)
     except SourceError as exc:
         raise ToolError(str(exc)) from exc
 
