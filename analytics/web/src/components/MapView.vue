@@ -40,6 +40,7 @@ watch(isDark, () => {
   handle?.setBasemap(basemap.value)
 })
 onBeforeUnmount(() => handle?.destroy())
+defineExpose({ getBounds: () => handle?.getBounds() || null })
 </script>
 
 <style scoped>

@@ -69,6 +69,20 @@
         <v-checkbox v-model="f.map.bubbles_by_place" label="Ein Kreis je Ort (Größe = Vögel)" hide-details />
         <v-checkbox v-model="f.map.labels" label="Ortsnamen beschriften" hide-details />
         <v-select v-model="f.map.basemap" :items="BASEMAPS" item-title="label" item-value="value" label="Hintergrundkarte" hide-details class="mt-3" />
+
+        <div class="section-label mt-4">Kartenausschnitt für Bild, PDF &amp; Berichte</div>
+        <template v-if="f.map.bounds">
+          <div class="d-flex align-center ga-2 flex-wrap">
+            <v-chip size="small" color="primary" variant="tonal" prepend-icon="mdi-crop" closable @click:close="f.map.bounds = null">Fester Ausschnitt</v-chip>
+            <v-btn size="small" variant="text" @click="takeBounds">Neu übernehmen</v-btn>
+          </div>
+          <div class="muted text-xs mt-1">Bild und PDF zeigen genau diesen Ausschnitt. Mit × wieder automatisch anpassen.</div>
+        </template>
+        <template v-else>
+          <v-btn size="small" variant="tonal" prepend-icon="mdi-crop" :disabled="b.preview?.kind !== 'map'" @click="takeBounds">Aktuellen Ausschnitt übernehmen</v-btn>
+          <div class="muted text-xs mt-1">Zoome die Karte rechts auf den gewünschten Bereich und übernimm ihn. Ohne Festlegung passt sich der Ausschnitt den Daten an; einzelne weit entfernte Punkte bleiben außerhalb und werden in der Fußnote genannt.</div>
+          <v-checkbox :model-value="f.map.fit === 'all'" label="Alle Punkte zeigen (auch weit entfernte)" hide-details @update:model-value="f.map.fit = $event ? 'all' : 'auto'" />
+        </template>
       </template>
 
       <template v-else>
@@ -113,7 +127,7 @@
 
       <v-alert v-if="b.error" type="warning" variant="tonal" class="mb-3" :text="b.error" />
       <template v-if="b.preview">
-        <VisualStage :kind="b.preview.kind" :model="b.preview.model" :height="stageHeight" footer-right="Vorschau" />
+        <VisualStage ref="stage" :kind="b.preview.kind" :model="b.preview.model" :height="stageHeight" footer-right="Vorschau" />
         <div class="muted mt-2" style="font-size: 13.5px"><strong>Datengrundlage:</strong> {{ b.preview.description }} <span v-if="b.preview.row_count !== undefined">· {{ fmtInt.format(b.preview.row_count) }} Zeilen</span></div>
         <div v-for="n in b.preview.notes" :key="n" class="muted" style="font-size: 13px">{{ n }}</div>
       </template>
@@ -279,6 +293,17 @@ async function doSave() {
     saving.value = false
   }
 }
+const stage = ref<InstanceType<typeof VisualStage> | null>(null)
+function takeBounds() {
+  const bounds = stage.value?.mapBounds()
+  if (!bounds) {
+    meta.notify('Keine Karte sichtbar.', 'error')
+    return
+  }
+  f.value.map.bounds = bounds
+  meta.notify('Kartenausschnitt übernommen – gilt für Bild, PDF und Berichte, sobald die Ansicht gespeichert ist.')
+}
+
 async function download(what: 'png' | 'pdf' | 'xlsx' | 'open') {
   saving.value = true
   try {

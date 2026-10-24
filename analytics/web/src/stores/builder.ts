@@ -135,7 +135,7 @@ export interface BuilderForm {
   color_column: string | null
   source_column: string | null
   target_column: string | null
-  map: { color_mode: string; color_column: string | null; show_ringing_sites: boolean; tracks: boolean; bubbles_by_place: boolean; labels: boolean; basemap: string }
+  map: { color_mode: string; color_column: string | null; show_ringing_sites: boolean; tracks: boolean; bubbles_by_place: boolean; labels: boolean; basemap: string; bounds: [[number, number], [number, number]] | null; fit: 'auto' | 'all' }
   columns: string[]
   group_by: string[]
   sort_by: string | null
@@ -148,7 +148,7 @@ export const defaultForm = (): BuilderForm => ({
   kind: 'chart', source: 'sightings', filters: emptyFilters(), title: '', subtitle: '', chart_kind: 'bar', metric_kind: 'birds', metric_column: null,
   dimension: 'month', color: null, facet: null, sort: 'none', limit: null, show_values: false, show_totals: false, annotate_moult: false,
   x_column: 'date', series_column: 'ring', y_column: null, color_column: null, source_column: 'ringing_place', target_column: 'place',
-  map: { color_mode: 'season', color_column: null, show_ringing_sites: true, tracks: false, bubbles_by_place: false, labels: false, basemap: 'light' },
+  map: { color_mode: 'season', color_column: null, show_ringing_sites: true, tracks: false, bubbles_by_place: false, labels: false, basemap: 'light', bounds: null, fit: 'auto' },
   columns: [], group_by: [], sort_by: null, sort_desc: true, totals_row: false, bins: {},
 })
 
@@ -207,6 +207,8 @@ export function toSpec(f: BuilderForm): any {
   } else if (f.kind === 'map') {
     spec.map = { ...f.map }
     if (!spec.map.color_column) delete spec.map.color_column
+    if (!spec.map.bounds) delete spec.map.bounds
+    if (spec.map.fit === 'auto') delete spec.map.fit
   } else {
     if (f.columns.length) spec.columns = f.columns
     if (f.group_by.length) {

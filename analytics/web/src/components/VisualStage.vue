@@ -6,7 +6,7 @@
     </div>
     <div class="body" :style="{ height: bodyHeight }">
       <ChartView v-if="kind === 'chart'" :model="model" />
-      <MapView v-else-if="kind === 'map'" :model="model" />
+      <MapView v-else-if="kind === 'map'" ref="mapRef" :model="model" />
       <TableView v-else-if="kind === 'table'" :model="model" />
     </div>
     <div v-if="model.footnote || footerRight" class="foot">
@@ -17,10 +17,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import ChartView from './ChartView.vue'
 import MapView from './MapView.vue'
 import TableView from './TableView.vue'
+
+const mapRef = ref<InstanceType<typeof MapView> | null>(null)
+defineExpose({ mapBounds: () => mapRef.value?.getBounds() || null })
 
 const props = withDefaults(defineProps<{ kind: 'chart' | 'map' | 'table'; model: any; height?: number; footerRight?: string }>(), { height: 0, footerRight: '' })
 const bodyHeight = computed(() => {

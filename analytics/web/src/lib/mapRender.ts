@@ -74,6 +74,8 @@ export interface MapHandle {
   map: L.Map
   setBasemap: (name: string) => void
   relayout: () => void
+  /** Current extent as [[south, west], [north, east]] – what „Ausschnitt übernehmen“ stores for exports. */
+  getBounds: () => [[number, number], [number, number]]
   destroy: () => void
 }
 
@@ -298,6 +300,11 @@ export function renderMap(mapEl: HTMLElement, M: MapModel, opts: { interactive?:
     map,
     setBasemap,
     relayout,
+    getBounds: () => {
+      const b = map.getBounds()
+      const r = (x: number) => Math.round(x * 1e5) / 1e5
+      return [[r(b.getSouth()), r(b.getWest())], [r(b.getNorth()), r(b.getEast())]]
+    },
     destroy: () => {
       ro?.disconnect()
       map.off()

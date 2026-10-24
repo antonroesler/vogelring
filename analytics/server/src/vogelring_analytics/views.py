@@ -78,6 +78,8 @@ class MapOptions(_Spec):
     basemap: Literal["light", "dark", "osm", "voyager"] = "light"
     zoom: int | None = Field(None, ge=5, le=18)
     center: tuple[float, float] | None = None
+    bounds: list[list[float]] | None = Field(None, description="Fester Kartenausschnitt [[lat, lon], [lat, lon]] (Südwest, Nordost) für Bild, PDF und Berichte – in Erkunden per „Ausschnitt übernehmen“. Standard: automatisch an die Daten angepasst, einzelne weit entfernte Punkte bleiben außerhalb (Fußnote).")
+    fit: Literal["auto", "all"] = Field("auto", description="auto: Ausschnitt um den Großteil der Punkte (Ausreißer außerhalb, in der Fußnote genannt). all: alle Punkte im Bild.")
     markers: list[MarkerSpec] = Field(default_factory=list)
     exclude_star: bool = Field(True, description="Ausgeschlossene Orte (filters.exclude_places) mit Stern markieren.")
     legend_title: str | None = None
@@ -512,7 +514,7 @@ async def _build_map(spec: ViewSpec, source: Source, max_rows: int | None) -> Vi
     legend_title = o.legend_title or {"season": "Jahreszeit der Sichtung", "species": "Art", "individual": "Vögel", "year": "Jahr", "category": auto_label(o.color_column or ""), "fixed": None}[o.color_mode]
     try:
         ms = MapSpec(title=title, subtitle=spec.subtitle if spec.subtitle is not None else ("Kreis = Sichtung, Dreieck = Beringungsort" if (o.show_ringing_sites and source.key == "sightings" and not o.bubbles_by_place) else None),
-                     points=points, tracks=tracks, markers=markers, legend=LegendSpec(title=legend_title), footnote=footnote, zoom=o.zoom, center=o.center, basemap=o.basemap, **size)
+                     points=points, tracks=tracks, markers=markers, legend=LegendSpec(title=legend_title), footnote=footnote, zoom=o.zoom, center=o.center, bounds=o.bounds, fit=o.fit, basemap=o.basemap, **size)
         model, summary = build_map_model(ms, runtime.datasets())
     except ValueError as exc:
         raise ViewError(str(exc)) from exc

@@ -386,19 +386,30 @@ def build_map_model(spec: MapSpec, store: DatasetStore) -> tuple[dict[str, Any],
         seen.add(k)
         merged.append(e)
 
-    bounds = None
-    if lats and lons:
-        bounds = [[min(lats), min(lons)], [max(lats), max(lons)]]
-        if bounds[0] == bounds[1]:
-            d = 0.01
-            bounds = [[bounds[0][0] - d, bounds[0][1] - d], [bounds[1][0] + d, bounds[1][1] + d]]
     if not lats:
         raise MapBuildError("No drawable coordinates in any layer.")
+    bounds_all = _pad_bounds([[min(lats), min(lons)], [max(lats), max(lons)]])
+    footnote = spec.footnote
+    if spec.bounds:
+        bounds = [[float(spec.bounds[0][0]), float(spec.bounds[0][1])], [float(spec.bounds[1][0]), float(spec.bounds[1][1])]]
+        outside = sum(1 for la, lo in zip(lats, lons) if not _inside(la, lo, bounds))
+        if outside:
+            msg = f"{outside} Punkt{'' if outside == 1 else 'e'} außerhalb des gewählten Kartenausschnitts"
+            notes.append(msg)
+            footnote = "; ".join(x for x in (footnote, msg) if x)
+    elif spec.fit == "all":
+        bounds, outside = bounds_all, 0
+    else:
+        bounds, outside = core_bounds(lats, lons)
+        if outside:
+            msg = f"{outside} weit entfernte{'r' if outside == 1 else ''} Punkt{'' if outside == 1 else 'e'} außerhalb des Kartenausschnitts (in der interaktiven Karte herauszoomen)"
+            notes.append(msg)
+            footnote = "; ".join(x for x in (footnote, msg) if x)
 
     model = {
         "title": spec.title,
         "subtitle": spec.subtitle,
-        "footnote": spec.footnote,
+        "footnote": footnote,
         "width": spec.width,
         "height": spec.height,
         "basemap": basemap_config(spec.basemap),
@@ -406,10 +417,53 @@ def build_map_model(spec: MapSpec, store: DatasetStore) -> tuple[dict[str, Any],
         "zoom": spec.zoom,
         "center": list(spec.center) if spec.center else None,
         "bounds": bounds,
-        "fit_padding": spec.fit_padding,
+        "bounds_all": bounds_all,
+        "outside": outside,
+        "fit_padding": 0 if spec.bounds else spec.fit_padding,
         "scale_bar": spec.scale_bar,
         "legend": {"title": spec.legend.title, "show": spec.legend.show, "position": spec.legend.position, "entries": merged},
         "layers": layers,
     }
     summary = {"layers": summaries, "bounds": bounds, "legend": [e["label"] for e in merged], "notes": notes}
     return model, summary
+
+
+# ---------------------------------------------------------------- extent
+
+
+def _pad_bounds(b: list[list[float]]) -> list[list[float]]:
+    if b[0] == b[1]:
+        d = 0.01
+        return [[b[0][0] - d, b[0][1] - d], [b[1][0] + d, b[1][1] + d]]
+    return b
+
+
+def _inside(lat: float, lon: float, b: list[list[float]]) -> bool:
+    return b[0][0] <= lat <= b[1][0] and b[0][1] <= lon <= b[1][1]
+
+
+def _km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    a = math.sin((p2 - p1) / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(math.radians(lon2 - lon1) / 2) ** 2
+    return 6371.0 * 2 * math.asin(math.sqrt(a))
+
+
+def core_bounds(lats: list[float], lons: list[float]) -> tuple[list[list[float]], int]:
+    """Extent of the bulk of the points: a single sighting in Britain must not shrink 100 Frankfurt points to a dot.
+
+    Points farther from the median position than three times the 95th-percentile distance (at least 15 km) are left
+    out of the extent; the count of those is returned so the map can say so. Fewer than eight points: everything."""
+    n = len(lats)
+    full = _pad_bounds([[min(lats), min(lons)], [max(lats), max(lons)]])
+    if n < 8:
+        return full, 0
+    s_lat, s_lon = sorted(lats), sorted(lons)
+    med_lat, med_lon = s_lat[n // 2], s_lon[n // 2]
+    dist = [_km(med_lat, med_lon, la, lo) for la, lo in zip(lats, lons)]
+    d95 = sorted(dist)[int(0.95 * (n - 1))]
+    radius = 3 * max(d95, 5.0)
+    keep = [i for i, d in enumerate(dist) if d <= radius]
+    if len(keep) == n:
+        return full, 0
+    k_lats, k_lons = [lats[i] for i in keep], [lons[i] for i in keep]
+    return _pad_bounds([[min(k_lats), min(k_lons)], [max(k_lats), max(k_lons)]]), n - len(keep)

@@ -131,6 +131,8 @@ class MapSpec(_Spec):
     footnote: str | None = Field(None, description="Small text under the map, e.g. counts of hidden points.")
     zoom: int | None = Field(None, ge=5, le=18, description="Fixed zoom. Default: fit to data.")
     center: tuple[float, float] | None = Field(None, description="[lat, lon] centre when zoom is fixed.")
+    bounds: list[list[float]] | None = Field(None, description="Fixed extent [[lat, lon], [lat, lon]] (south-west, north-east). Default: fit to the data, far-away outliers left out and counted in the footnote.")
+    fit: Literal["auto", "all"] = Field("auto", description="auto: extent of the bulk of the points (outliers outside, noted in the footnote). all: every point in view.")
     basemap: Literal["light", "dark", "osm", "voyager"] = "light"
     width: int = Field(1400, ge=600, le=2400)
     height: int = Field(900, ge=400, le=2000)

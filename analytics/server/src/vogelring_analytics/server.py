@@ -415,8 +415,10 @@ async def create_chart(spec: ChartSpec) -> CallToolResult:
 async def create_map(spec: MapSpec) -> CallToolResult:
     """Render a map from datasets with lat/lon. Layers: points (circle/triangle/star…, colour by season/individual/
     category/species, size by a count column, labels), tracks (per-bird polylines), flows (aggregated movement lines),
-    markers (fixed symbols such as an excluded place ★). Returns the image inline plus links; include the interactive
-    link in your answer. Typical: ringing sites as triangles + recaptures as circles coloured by season."""
+    markers (fixed symbols such as an excluded place ★). The extent fits the bulk of the points; a few far-away
+    outliers stay outside and are counted in the footnote (fit="all" shows everything, bounds=[[lat,lon],[lat,lon]]
+    fixes the extent). Returns the image inline plus links; include the interactive link in your answer. Typical:
+    ringing sites as triangles + recaptures as circles coloured by season."""
     return await _render_and_store("map", spec)
 
 
