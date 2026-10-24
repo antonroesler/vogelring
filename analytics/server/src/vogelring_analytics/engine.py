@@ -19,7 +19,7 @@ from .events import bus
 from .pipelines import PipelineError, PipelineSpec, describe_pipeline, run_pipeline, validate_params
 from .reports import ReportBuildError, ReportSpec, build_report_model, write_docx
 from .settings import settings
-from .groups import GroupError, GroupSpec, group_condition, legacy_id, legacy_to_spec, read_legacy_dir, resolve_group
+from .groups import GroupError, GroupSpec, defining_condition, group_condition, legacy_id, legacy_to_spec, read_legacy_dir, resolve_group
 from .sources import FilterSpec, SourceError, get_source
 from .views import ViewError, ViewSpec, build_view, preview_view
 from .visual_service import VisualError, VisualOut, create_visual, kind_of, visual_urls
@@ -315,7 +315,7 @@ def group_summary(item: CatalogItem) -> dict[str, Any]:
     except ValidationError:
         describe = "ungültige Gruppe"
     d.update({
-        "name": item.title, "color": doc.get("color"), "describe": describe, "ring_count": len(doc.get("ring_list") or []),
+        "name": item.title, "color": doc.get("color"), "describe": describe, "scope": doc.get("scope") or "sightings", "ring_count": len(doc.get("ring_list") or []),
         "excluded_count": len(doc.get("excluded_ids") or []), "filter_count": sum(1 for k, v in f.items() if v not in (None, [], "", False) and v != _FILTER_DEFAULTS.get(k)),
         "stats": (item.extra or {}).get("stats"),
     })
@@ -371,8 +371,13 @@ async def group_stats(group_id: str) -> dict[str, Any]:
         raise EngineError(str(exc)) from exc
     db = runtime.database()
     base = f"FROM ({source.base_sql}) s WHERE {cond}"
+    matching: int | None = None
     try:
         tot = await db.query(f"SELECT COUNT(*) AS n, COUNT(DISTINCT ring) AS birds, COUNT(DISTINCT place) AS places, MIN(date) AS first, MAX(date) AS last {base}", params=tuple(params))
+        if spec.scope == "birds":
+            inner, iparams = defining_condition(source, spec)
+            m = await db.query(f"SELECT COUNT(*) {base} AND {inner}", params=tuple(params) + tuple(iparams))
+            matching = int(m.rows[0][0] or 0) if m.rows else 0
         sp = await db.query(f"SELECT COALESCE(species, 'unbekannt') AS k, COUNT(*) AS n, COUNT(DISTINCT ring) AS birds {base} GROUP BY 1 ORDER BY 2 DESC LIMIT 8", params=tuple(params))
         st = await db.query(f"SELECT COALESCE(status, 'ohne') AS k, COUNT(*) AS n {base} GROUP BY 1 ORDER BY 2 DESC LIMIT 8", params=tuple(params))
         yr = await db.query(f"SELECT EXTRACT(YEAR FROM date)::int AS k, COUNT(*) AS n {base} GROUP BY 1 ORDER BY 1", params=tuple(params))
@@ -385,6 +390,7 @@ async def group_stats(group_id: str) -> dict[str, Any]:
 
     row = tot.rows[0] if tot.rows else (0, 0, 0, None, None)
     stats = {
+        "scope": spec.scope, "matching_sightings": matching,
         "sightings": int(row[0] or 0), "birds": int(row[1] or 0), "places": int(row[2] or 0), "first": _v(row[3]), "last": _v(row[4]),
         "species": [{"label": _v(k), "sightings": int(n), "birds": int(b)} for k, n, b in sp.rows],
         "status": [{"label": _v(k), "sightings": int(n)} for k, n in st.rows],
@@ -411,10 +417,15 @@ async def group_preview(group_id: str, *, limit: int = 50, offset: int = 0, with
     limit = max(1, min(int(limit), 500))
     offset = max(0, int(offset))
     cols = ", ".join(GROUP_PREVIEW_COLUMNS)
+    sel_params: list[Any] = []
+    if spec.scope == "birds":
+        # flag the rows that themselves satisfy the rule (the „defining“ sightings) vs. the birds' other sightings
+        inner, sel_params = defining_condition(source, spec)
+        cols += f", ({inner}) AS matches"
     db = runtime.database()
     try:
         cnt = await db.query(f"SELECT COUNT(*) FROM ({source.base_sql}) s WHERE {cond}", params=tuple(params))
-        res = await db.query(f"SELECT {cols} FROM ({source.base_sql}) s WHERE {cond} ORDER BY date DESC, ring LIMIT {limit} OFFSET {offset}", params=tuple(params))
+        res = await db.query(f"SELECT {cols} FROM ({source.base_sql}) s WHERE {cond} ORDER BY date DESC, ring LIMIT {limit} OFFSET {offset}", params=tuple(sel_params) + tuple(params))
     except Exception as exc:
         raise EngineError(f"Abfrage fehlgeschlagen: {str(exc).strip()[:300]}") from exc
     excluded = set(spec.excluded_ids)
@@ -426,7 +437,37 @@ async def group_preview(group_id: str, *, limit: int = 50, offset: int = 0, with
             d[k] = v.isoformat()[:10] if hasattr(v, "isoformat") else (str(v) if k == "id" else v)
         d["excluded"] = d["id"] in excluded
         rows.append(d)
-    return {"group_id": item.id, "name": item.title, "columns": GROUP_PREVIEW_COLUMNS, "rows": rows, "total": int(cnt.rows[0][0]) if cnt.rows else 0, "offset": offset, "limit": limit, "with_excluded": with_excluded}
+    return {"group_id": item.id, "name": item.title, "scope": spec.scope, "columns": GROUP_PREVIEW_COLUMNS, "rows": rows, "total": int(cnt.rows[0][0]) if cnt.rows else 0, "offset": offset, "limit": limit, "with_excluded": with_excluded}
+
+
+COMBINE_OPS = {"union": "Vereinigung", "intersection": "Schnittmenge", "difference": "Differenz"}
+
+
+def combine_groups(name: str, op: str, group_ids: list[str], *, scope: str = "sightings", description: str = "", color: str | None = None, by: str = "") -> dict[str, Any]:
+    """A new group built from existing ones: union (in at least one), intersection (in all), difference (first minus the rest).
+
+    The new group references the others, so it follows their later changes."""
+    if op not in COMBINE_OPS:
+        raise EngineError(f"Unbekannte Verknüpfung „{op}“. Erlaubt: {', '.join(COMBINE_OPS)}.")
+    try:
+        items = [resolve_group(g)[0] for g in group_ids if g and str(g).strip()]
+    except SourceError as exc:
+        raise EngineError(str(exc)) from exc
+    if len(items) < 2:
+        raise EngineError("Bitte mindestens zwei Gruppen angeben.")
+    ids = [i.id for i in items]
+    names = [i.title for i in items]
+    if op == "union":
+        filters: dict[str, Any] = {"groups": ids}
+        auto = "Alles aus " + " oder ".join(f"„{n}“" for n in names)
+    elif op == "intersection":
+        filters = {"all_groups": ids}
+        auto = "Nur, was zugleich in " + " und ".join(f"„{n}“" for n in names) + " liegt"
+    else:
+        filters = {"groups": ids[:1], "exclude_groups": ids[1:]}
+        auto = f"„{names[0]}“ ohne " + " und ohne ".join(f"„{n}“" for n in names[1:])
+    spec = parse_group({"name": name, "description": description or auto, "filters": filters, "scope": scope, "color": color, "tags": ["Verknüpfung"]})
+    return create_group(spec, by=by)
 
 
 def compare_spec(group_ids: list[str], *, metric: str = "sightings", dimension: str = "year", chart_kind: str = "bar", title: str | None = None) -> ViewSpec:

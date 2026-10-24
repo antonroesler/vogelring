@@ -4,6 +4,7 @@
       <template #actions>
         <v-text-field v-model="q" label="Suchen" prepend-inner-icon="mdi-magnify" hide-details clearable style="width: 260px" />
         <v-btn variant="tonal" prepend-icon="mdi-compare-horizontal" :disabled="items.length < 2" @click="openCompare()">Vergleichen</v-btn>
+        <v-btn variant="tonal" prepend-icon="mdi-set-center" :disabled="items.length < 2" @click="combineDialog = true">Verknüpfen</v-btn>
         <v-btn color="primary" prepend-icon="mdi-plus" @click="openNew">Neue Gruppe</v-btn>
       </template>
     </PageHeader>
@@ -31,6 +32,7 @@
             <span v-else class="muted">Zahlen werden geladen …</span>
           </div>
           <div class="d-flex flex-wrap ga-1 mt-3">
+            <v-chip v-if="g.scope === 'birds'" size="x-small" variant="tonal" color="primary" prepend-icon="mdi-bird">Vogelgruppe</v-chip>
             <v-chip v-for="t in g.tags" :key="t" size="x-small" variant="tonal">{{ t }}</v-chip>
             <v-chip v-if="g.ring_count" size="x-small" variant="tonal" color="secondary">{{ g.ring_count }} Ringe</v-chip>
             <v-chip v-if="g.excluded_count" size="x-small" variant="tonal" color="warning">{{ g.excluded_count }} ausgeschlossen</v-chip>
@@ -58,6 +60,7 @@
     </v-dialog>
 
     <GroupCompareDialog v-model="compareDialog" :groups="items" :preselect="comparePreselect" />
+    <GroupCombineDialog v-model="combineDialog" :groups="items" />
   </div>
 </template>
 
@@ -66,6 +69,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { api, type GroupSummary } from '@/api/client'
 import EmptyState from '@/components/EmptyState.vue'
+import GroupCombineDialog from '@/components/GroupCombineDialog.vue'
 import GroupCompareDialog from '@/components/GroupCompareDialog.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { fmtInt, friendlyError, relTime } from '@/lib/format'
@@ -82,6 +86,7 @@ const newDialog = ref(false)
 const newName = ref('')
 const newDesc = ref('')
 const compareDialog = ref(false)
+const combineDialog = ref(false)
 const comparePreselect = ref<string[]>([])
 
 const filtered = computed(() => items.value.filter((g) => !q.value || `${g.name} ${g.description} ${g.describe} ${g.tags.join(' ')}`.toLowerCase().includes(q.value.toLowerCase())))

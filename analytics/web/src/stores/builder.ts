@@ -3,7 +3,8 @@ import { defineStore } from 'pinia'
 import { api, type Preview } from '@/api/client'
 import { friendlyError } from '@/lib/format'
 
-export interface Filters {
+/** One AND-combination of simple filters (what the server calls FilterFields). */
+export interface FilterFields {
   species: string[]
   places: string[]
   place_groups: string[]
@@ -13,6 +14,8 @@ export interface Filters {
   ring_groups: string[]
   ring_contains: string[]
   groups: string[]
+  all_groups: string[]
+  exclude_groups: string[]
   exclude_ids: string[]
   date_from: string | null
   date_to: string | null
@@ -31,11 +34,35 @@ export interface Filters {
   only_exact_location: boolean
 }
 
-export const emptyFilters = (): Filters => ({
-  species: [], places: [], place_groups: [], exclude_places: [], ringing_places: [], rings: [], ring_groups: [], ring_contains: [], groups: [], exclude_ids: [],
+/** FilterFields plus one level of OR / NOT blocks (server: FilterBlock). */
+export interface FilterBlock extends FilterFields {
+  any_of: FilterFields[]
+  none_of: FilterFields[]
+}
+
+/** The full filter language (server: FilterSpec): a block plus bird-level selection. */
+export interface Filters extends FilterBlock {
+  birds_of: FilterBlock | null
+  birds_not_of: FilterBlock | null
+}
+
+export const emptyFields = (): FilterFields => ({
+  species: [], places: [], place_groups: [], exclude_places: [], ringing_places: [], rings: [], ring_groups: [], ring_contains: [], groups: [], all_groups: [], exclude_groups: [], exclude_ids: [],
   date_from: null, date_to: null, months: [], seasons: [], periods: [], years: [], status: [], age: [], sex: [], melder: [], ringing_age: [],
   around_place: null, around_place_km: 5, only_with_coords: false, only_exact_location: false,
 })
+export const emptyBlock = (): FilterBlock => ({ ...emptyFields(), any_of: [], none_of: [] })
+export const emptyFilters = (): Filters => ({ ...emptyBlock(), birds_of: null, birds_not_of: null })
+
+/** Fill a saved filter spec (any depth) with form defaults so every v-model has a value. */
+export function toFilterForm(spec: any): Filters {
+  const fields = (x: any): FilterFields => ({ ...emptyFields(), ...(x || {}) })
+  const block = (x: any): FilterBlock => ({ ...fields(x), any_of: ((x && x.any_of) || []).map(fields), none_of: ((x && x.none_of) || []).map(fields) })
+  const f = { ...block(spec), birds_of: null as FilterBlock | null, birds_not_of: null as FilterBlock | null }
+  if (spec?.birds_of) f.birds_of = block(spec.birds_of)
+  if (spec?.birds_not_of) f.birds_not_of = block(spec.birds_not_of)
+  return f
+}
 
 export interface BuilderForm {
   kind: 'chart' | 'map' | 'table'
@@ -80,10 +107,19 @@ const RAW = new Set(['timeline', 'calendar', 'scatter', 'boxplot', 'sankey', 'gr
 
 /** Strip defaults/empties so the spec stays small and valid (extra=forbid on the server). */
 /** Only the filters that are actually set (what the engine receives). */
-export function cleanFilters(src: Filters): Record<string, any> {
+export function cleanFilters(src: Partial<Filters> | FilterFields | FilterBlock): Record<string, any> {
   const filters: Record<string, any> = {}
-  for (const [k, v] of Object.entries(src)) {
-    if (Array.isArray(v) ? v.length : v !== null && v !== false && v !== '' && !(k === 'around_place_km' && !src.around_place)) filters[k] = v
+  const s = src as any
+  for (const [k, v] of Object.entries(s)) {
+    if (k === 'any_of' || k === 'none_of') {
+      const blocks = ((v as any[]) || []).map((b) => cleanFilters(b)).filter((b) => Object.keys(b).length)
+      if (blocks.length) filters[k] = blocks
+    } else if (k === 'birds_of' || k === 'birds_not_of') {
+      if (v) {
+        const b = cleanFilters(v as FilterBlock)
+        if (Object.keys(b).length) filters[k] = b
+      }
+    } else if (Array.isArray(v) ? v.length : v !== null && v !== false && v !== '' && !(k === 'around_place_km' && !s.around_place)) filters[k] = v
   }
   return filters
 }
@@ -140,7 +176,7 @@ export function fromSpec(spec: any): BuilderForm {
   const f = defaultForm()
   f.kind = spec.kind || 'chart'
   f.source = spec.source || 'sightings'
-  f.filters = { ...emptyFilters(), ...(spec.filters || {}) }
+  f.filters = toFilterForm(spec.filters)
   f.title = spec.title || ''
   f.subtitle = spec.subtitle || ''
   f.chart_kind = spec.chart_kind || 'bar'

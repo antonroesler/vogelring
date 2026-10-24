@@ -27,7 +27,7 @@
   }
 
   // ---------- map
-  var map = L.map(mapEl, { zoomControl: !RENDER, attributionControl: true, preferCanvas: false, zoomSnap: RENDER ? 0.25 : 1, fadeAnimation: false, zoomAnimation: false, markerZoomAnimation: false });
+  var map = L.map(mapEl, { zoomControl: !RENDER, attributionControl: true, preferCanvas: false, zoomSnap: RENDER ? 0.25 : 0.5, zoomDelta: 0.5, wheelPxPerZoomLevel: 240, wheelDebounceTime: 60, fadeAnimation: false, zoomAnimation: false, markerZoomAnimation: false });
   var tile = null;
   function basemapFor(name) {
     if (!name || name === M.basemap_name) return M.basemap;

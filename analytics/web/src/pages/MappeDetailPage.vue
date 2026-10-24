@@ -87,7 +87,7 @@ import { api, type CatalogItem, type ViewSummary } from '@/api/client'
 import FilterPanel from '@/components/FilterPanel.vue'
 import VisualStage from '@/components/VisualStage.vue'
 import { friendlyError } from '@/lib/format'
-import { emptyFilters, type Filters } from '@/stores/builder'
+import { cleanFilters, emptyFilters, toFilterForm, type Filters } from '@/stores/builder'
 import { useLiveStore } from '@/stores/live'
 import { useMetaStore } from '@/stores/meta'
 
@@ -122,7 +122,7 @@ async function load() {
   const id = route.params.id as string
   wb.value = await api.item('workbook', id)
   tiles.value = (wb.value.doc.tiles || []).map((t: any) => ({ tile: t }))
-  sharedFilters.value = { ...emptyFilters(), ...(wb.value.doc.filters || {}) }
+  sharedFilters.value = toFilterForm(wb.value.doc.filters)
   await render(false)
 }
 async function render(force: boolean) {
@@ -183,8 +183,7 @@ async function saveNote() {
 }
 async function saveFilters() {
   if (!wb.value) return
-  const f: Record<string, any> = {}
-  for (const [k, v] of Object.entries(sharedFilters.value)) if (Array.isArray(v) ? v.length : v !== null && v !== false && v !== '' && !(k === 'around_place_km' && !sharedFilters.value.around_place)) f[k] = v
+  const f = cleanFilters(sharedFilters.value)
   filterDialog.value = false
   await saveSpec({ ...wb.value.doc, filters: f })
 }

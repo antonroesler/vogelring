@@ -9,3 +9,8 @@ server/data/
 .DS_Store
 # local secrets
 .env*
+# re-include source folders that the root (Python-template) .gitignore would hide (lib/, data, sql)
+!web/src/lib/
+!server/src/vogelring_analytics/data/
+!server/sql/
+!server/sql/*.sql

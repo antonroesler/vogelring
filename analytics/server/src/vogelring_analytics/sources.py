@@ -7,6 +7,7 @@ statement is a single parameterised SELECT and still passes ``db.guard_sql`` bef
 
 from __future__ import annotations
 
+import contextvars
 import json
 import re
 from pathlib import Path
@@ -274,7 +275,9 @@ class Around(_Spec):
     km: float = Field(5, gt=0, le=2000)
 
 
-class FilterSpec(_Spec):
+class FilterFields(_Spec):
+    """One AND-combination of simple filters (every set field must hold)."""
+
     species: list[str] = Field(default_factory=list, description="Arten (exakte Namen, z. B. 'Kanadagans').")
     places: list[str] = Field(default_factory=list, description="Orte: Teilstring im Ortsnamen, z. B. 'Ostpark'.")
     place_groups: list[str] = Field(default_factory=list, description="Gespeicherte Ortsgruppen (Definitionen, z. B. 'Nordufer').")
@@ -282,7 +285,9 @@ class FilterSpec(_Spec):
     rings: list[str] = Field(default_factory=list, description="Ringnummern (exakt).")
     ring_groups: list[str] = Field(default_factory=list, description="Gespeicherte Vogelgruppen (Definitionen).")
     ring_contains: list[str] = Field(default_factory=list, description="Ringnummer enthält diesen Text (z. B. 'W' für Neckar-Nilgänse).")
-    groups: list[str] = Field(default_factory=list, description="Gespeicherte Gruppen (group_id oder Name): deren Filter, Ringliste und Ausschlüsse gelten; mehrere = Vereinigung.")
+    groups: list[str] = Field(default_factory=list, description="Gespeicherte Gruppen (group_id oder Name): deren Filter, Ringliste und Ausschlüsse gelten; mehrere = Vereinigung (in mindestens einer).")
+    all_groups: list[str] = Field(default_factory=list, description="Schnittmenge: Zeile muss in jeder dieser Gruppen liegen.")
+    exclude_groups: list[str] = Field(default_factory=list, description="Differenz: Zeilen aus diesen Gruppen ausschließen.")
     exclude_ids: list[str] = Field(default_factory=list, description="Einzelne Einträge (Sichtungs-IDs) ausschließen.")
     date_from: str | None = Field(None, description="YYYY-MM-DD")
     date_to: str | None = Field(None, description="YYYY-MM-DD")
@@ -306,7 +311,31 @@ class FilterSpec(_Spec):
     custom_sql: str | None = Field(None, description="Nur für den Agenten: zusätzliche SQL-Bedingung über Spalten der Quelle.")
 
     def is_empty(self) -> bool:
-        return self == FilterSpec()
+        return self == type(self)()
+
+
+class FilterBlock(FilterFields):
+    """FilterFields plus one level of boolean composition (AND of ORs, with exclusions)."""
+
+    any_of: list[FilterFields] = Field(
+        default_factory=list,
+        description="Oder: mindestens eine dieser Teilbedingungen trifft zu (jede ist selbst eine Und-Verknüpfung ihrer Felder). Beispiel „Mauser im Ostpark“: places=['Ostpark'], any_of=[{months:[5,6]}, {months:[4], status:['MG']}].",
+    )
+    none_of: list[FilterFields] = Field(default_factory=list, description="Ausschluss: keine dieser Teilbedingungen trifft zu.")
+
+
+class FilterSpec(FilterBlock):
+    """The full filter language: FilterBlock plus bird-level selection."""
+
+    birds_of: FilterBlock | None = Field(
+        None,
+        description="Vogelebene: alle Zeilen von Vögeln (Ringen), die mindestens eine Sichtung mit dieser Bedingung haben. Beispiel: birds_of={groups:['Mausergäste Ostpark']} = alle Sichtungen dieser Vögel, egal wo.",
+    )
+    birds_not_of: FilterBlock | None = Field(None, description="Vogelebene: nur Vögel, die nie eine Sichtung mit dieser Bedingung hatten.")
+
+
+_MAX_NESTING = 4
+_nesting: contextvars.ContextVar[int] = contextvars.ContextVar("filter_nesting", default=0)
 
 
 def _check_custom_sql(fragment: str) -> str:
@@ -360,8 +389,45 @@ def _validate_dates(f: FilterSpec) -> None:
         raise SourceError(f"Ungültige Monate: {bad}.")
 
 
-def compile_filters(source: Source, f: FilterSpec) -> tuple[str, list[Any]]:
+def _sub_conditions(source: Source, blocks: list[FilterFields]) -> list[tuple[str, list[Any]]]:
+    """Compile the non-empty blocks of any_of/none_of (empty blocks would mean „alles“ and are skipped)."""
+    out = []
+    for b in blocks:
+        if b.is_empty():
+            continue
+        out.append(compile_filters(source, b))
+    return out
+
+
+def bird_subquery(block: FilterFields) -> tuple[str, list[Any]]:
+    """`(SELECT DISTINCT ring …)` of the birds that have at least one sighting matching the block."""
+    s = SOURCES["sightings"]
+    cond, params = compile_filters(s, block)
+    return f"(SELECT DISTINCT ring FROM ({s.base_sql}) b WHERE ring IS NOT NULL AND {cond})", params
+
+
+def ring_in_subquery(source: Source, sub: str, params: list[Any], *, negate: bool = False, what: str = "Vogelebene") -> tuple[str, list[Any]]:
+    """`ring IN sub` for the source (relationships: either ring)."""
+    if source.key == "relationships":
+        sql, p = f"(bird1_ring IN {sub} OR bird2_ring IN {sub})", list(params) + list(params)
+    else:
+        sql, p = f"{_need(source, source.ring_column, what)} IN {sub}", list(params)
+    return (f"NOT {sql}" if negate else sql), p
+
+
+def compile_filters(source: Source, f: FilterFields) -> tuple[str, list[Any]]:
     """Return a parameterised boolean SQL expression over the source's column names, plus its params."""
+    depth = _nesting.get()
+    if depth >= _MAX_NESTING:
+        raise SourceError("Bedingungen sind zu tief verschachtelt (höchstens vier Ebenen).")
+    token = _nesting.set(depth + 1)
+    try:
+        return _compile_filters(source, f)
+    finally:
+        _nesting.reset(token)
+
+
+def _compile_filters(source: Source, f: FilterFields) -> tuple[str, list[Any]]:
     _validate_dates(f)
     parts: list[str] = []
     params: list[Any] = []
@@ -404,6 +470,18 @@ def compile_filters(source: Source, f: FilterSpec) -> tuple[str, list[Any]]:
 
         sql, gparams = group_union_sql(source, f.groups)
         parts.append(sql)
+        params.extend(gparams)
+    if f.all_groups:
+        from .groups import group_intersection_sql  # lazy
+
+        sql, gparams = group_intersection_sql(source, f.all_groups)
+        parts.append(sql)
+        params.extend(gparams)
+    if f.exclude_groups:
+        from .groups import group_union_sql  # lazy
+
+        sql, gparams = group_union_sql(source, f.exclude_groups)
+        parts.append(f"NOT {sql}")
         params.extend(gparams)
     if f.exclude_ids:
         if not source.has("id"):
@@ -472,6 +550,25 @@ def compile_filters(source: Source, f: FilterSpec) -> tuple[str, list[Any]]:
     if f.custom_sql:
         parts.append("(" + _check_custom_sql(f.custom_sql) + ")")
 
+    # boolean composition (FilterBlock) and bird-level selection (FilterSpec)
+    alts = _sub_conditions(source, getattr(f, "any_of", []))
+    if alts:
+        parts.append("(" + " OR ".join(f"({c})" for c, _ in alts) + ")")
+        for _, p in alts:
+            params.extend(p)
+    excl = _sub_conditions(source, getattr(f, "none_of", []))
+    if excl:
+        parts.append("NOT (" + " OR ".join(f"({c})" for c, _ in excl) + ")")
+        for _, p in excl:
+            params.extend(p)
+    for attr, negate in (("birds_of", False), ("birds_not_of", True)):
+        block = getattr(f, attr, None)
+        if block is not None and not block.is_empty():
+            sub, sp = bird_subquery(block)
+            sql, p = ring_in_subquery(source, sub, sp, negate=negate, what="Vögel mit Sichtung" if not negate else "Vögel ohne Sichtung")
+            parts.append(sql)
+            params.extend(p)
+
     return (" AND ".join(parts) if parts else "TRUE"), params
 
 
@@ -503,9 +600,20 @@ def _month_phrase(months: list[int]) -> str:
     return _join([_MONTHS[m - 1] for m in ms])
 
 
-def describe_filters(f: FilterSpec, source: Source) -> str:
+def describe_filters(f: FilterFields, source: Source) -> str:
     """Plain German sentence of the selection for non-technical readers."""
-    subject = source.label
+    bits = filter_bits(f, source)
+    if not bits:
+        return f"alle {source.label}"
+    return f"{source.label} {', '.join(bits)}"
+
+
+def _block_phrase(b: FilterFields, source: Source) -> str:
+    return ", ".join(filter_bits(b, source)) or "alles"
+
+
+def filter_bits(f: FilterFields, source: Source) -> list[str]:
+    """The clauses of describe_filters without the subject (reused for nested blocks and groups)."""
     bits: list[str] = []
     if f.species:
         bits.append(("der Art " if len(f.species) == 1 else "der Arten ") + _join(f.species))
@@ -520,6 +628,16 @@ def describe_filters(f: FilterSpec, source: Source) -> str:
 
         names = group_titles(f.groups)
         bits.append(f"aus der Gruppe ‚{names[0]}‘" if len(names) == 1 else "aus den Gruppen " + _join([f"‚{n}‘" for n in names], "oder"))
+    if f.all_groups:
+        from .groups import group_titles  # lazy
+
+        names = group_titles(f.all_groups)
+        bits.append(f"aus der Gruppe ‚{names[0]}‘" if len(names) == 1 else "zugleich in den Gruppen " + _join([f"‚{n}‘" for n in names], "und"))
+    if f.exclude_groups:
+        from .groups import group_titles  # lazy
+
+        names = group_titles(f.exclude_groups)
+        bits.append(f"nicht aus der Gruppe ‚{names[0]}‘" if len(names) == 1 else "nicht aus den Gruppen " + _join([f"‚{n}‘" for n in names], "oder"))
     if f.places:
         bits.append(f"an Orten mit {_quote(f.places)} im Namen")
     for g in f.place_groups:
@@ -572,9 +690,21 @@ def describe_filters(f: FilterSpec, source: Source) -> str:
     if f.exclude_ids:
         n = len(f.exclude_ids)
         bits.append("ohne einen von Hand ausgeschlossenen Eintrag" if n == 1 else f"ohne {n} von Hand ausgeschlossene Einträge")
-    if not bits:
-        return f"alle {subject}"
-    return f"{subject} {', '.join(bits)}"
+    alts = [b for b in getattr(f, "any_of", []) if not b.is_empty()]
+    if alts:
+        bits.append(("entweder " if len(alts) > 1 else "") + " oder ".join(f"({_block_phrase(b, source)})" for b in alts))
+    excl = [b for b in getattr(f, "none_of", []) if not b.is_empty()]
+    if excl:
+        bits.append("aber nicht " + " und nicht ".join(f"({_block_phrase(b, source)})" for b in excl))
+    s_src = SOURCES["sightings"]
+    who = "" if source.key == "birds" else "von Vögeln "
+    block = getattr(f, "birds_of", None)
+    if block is not None and not block.is_empty():
+        bits.append(f"{who}mit mindestens einer Sichtung {_block_phrase(block, s_src)}")
+    block = getattr(f, "birds_not_of", None)
+    if block is not None and not block.is_empty():
+        bits.append(f"{who}ohne jede Sichtung {_block_phrase(block, s_src)}")
+    return bits
 
 
 # ---------------------------------------------------------------- metrics & dimensions
@@ -772,7 +902,9 @@ FILTER_FIELDS: list[dict[str, Any]] = [
     {"name": "rings", "label": "Ring", "widget": "multiselect", "choices": "ring", "free_text": True},
     {"name": "ring_groups", "label": "Vogelgruppe (Definition)", "widget": "multiselect", "choices": "definition:ring_group"},
     {"name": "ring_contains", "label": "Ring enthält", "widget": "multiselect", "choices": "ring", "free_text": True},
-    {"name": "groups", "label": "Gruppe", "widget": "multiselect", "choices": "group"},
+    {"name": "groups", "label": "Gruppe (in mindestens einer)", "widget": "multiselect", "choices": "group"},
+    {"name": "all_groups", "label": "In allen diesen Gruppen", "widget": "multiselect", "choices": "group"},
+    {"name": "exclude_groups", "label": "Gruppe ausschließen", "widget": "multiselect", "choices": "group"},
     {"name": "date_from", "label": "Datum von", "widget": "date"},
     {"name": "date_to", "label": "Datum bis", "widget": "date"},
     {"name": "months", "label": "Monate", "widget": "months"},
@@ -790,6 +922,10 @@ FILTER_FIELDS: list[dict[str, Any]] = [
     {"name": "around", "label": "Umkreis um Koordinate", "widget": "radius_coords"},
     {"name": "only_with_coords", "label": "Nur mit Koordinaten", "widget": "checkbox"},
     {"name": "only_exact_location", "label": "Nur exakte Koordinaten", "widget": "checkbox"},
+    {"name": "any_of", "label": "Oder-Bedingungen (mindestens eine trifft zu)", "widget": "blocks"},
+    {"name": "none_of", "label": "Ausschluss-Bedingungen (keine trifft zu)", "widget": "blocks"},
+    {"name": "birds_of", "label": "Vögel mit mindestens einer Sichtung, die …", "widget": "block"},
+    {"name": "birds_not_of", "label": "Vögel ohne jede Sichtung, die …", "widget": "block"},
 ]
 
 _FILTER_SUPPORT: dict[str, str | None] = {
@@ -807,8 +943,12 @@ def _filter_supported(source: Source, name: str) -> bool:
         return bool(source.col(name))
     if name == "only_exact_location":
         return bool(source.col("exact"))
-    if name == "groups":
+    if name in ("groups", "all_groups", "exclude_groups"):
         return source.key != "relationships"
+    if name in ("any_of", "none_of"):
+        return True
+    if name in ("birds_of", "birds_not_of"):
+        return bool(source.ring_column) or source.key == "relationships"
     if name == "exclude_ids":
         return source.has("id")
     attr = _FILTER_SUPPORT.get(name)

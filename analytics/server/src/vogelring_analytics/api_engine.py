@@ -242,6 +242,14 @@ async def api_groups_compare(request: Request) -> Response:
     return await _handle(engine.compare_groups(ids, metric=data.get("metric") or "sightings", dimension=data.get("dimension") or "year", chart_kind=data.get("chart_kind") or "bar", title=data.get("title"), save=bool(data.get("save")), by=user_of(request) or "app"))
 
 
+async def api_groups_combine(request: Request) -> Response:
+    data = await body(request)
+    try:
+        return ok(engine.combine_groups(str(data.get("name") or ""), str(data.get("op") or "union"), [str(x) for x in (data.get("group_ids") or [])], scope=str(data.get("scope") or "sightings"), description=str(data.get("description") or ""), color=data.get("color"), by=user_of(request) or "app"))
+    except engine.EngineError as exc:
+        return err(str(exc))
+
+
 async def api_groups_import_legacy(request: Request) -> Response:
     data = await body(request)
     directory = data.get("dir") or request.query_params.get("dir") or "/data/legacy_datasets"
@@ -299,6 +307,7 @@ routes: list[Route] = [
     Route("/api/groups", api_groups_list),
     Route("/api/groups", api_group_create, methods=["POST"]),
     Route("/api/groups/compare", api_groups_compare, methods=["POST"]),
+    Route("/api/groups/combine", api_groups_combine, methods=["POST"]),
     Route("/api/groups/import-legacy", api_groups_import_legacy, methods=["POST"]),
     Route("/api/groups/{id}", api_group_get),
     Route("/api/groups/{id}", api_group_update, methods=["PUT", "PATCH"]),

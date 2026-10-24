@@ -215,7 +215,11 @@ export interface Definition {
   updated_at?: string
 }
 
+export type GroupScope = 'sightings' | 'birds'
+
 export interface GroupStats {
+  scope: GroupScope
+  matching_sightings: number | null
   sightings: number
   birds: number
   places: number
@@ -233,6 +237,7 @@ export interface GroupSummary {
   title: string
   description: string
   describe: string
+  scope: GroupScope
   color: string | null
   tags: string[]
   pinned: boolean
@@ -250,6 +255,7 @@ export interface GroupSummary {
 export interface GroupPreview {
   group_id: string
   name: string
+  scope: GroupScope
   columns: string[]
   rows: Record<string, any>[]
   total: number
@@ -312,6 +318,7 @@ export const api = {
   groupPreview: (id: string, limit = 50, offset = 0, withExcluded = false) => get<GroupPreview>(`/api/groups/${id}/preview${qs({ limit, offset, with_excluded: withExcluded ? 1 : 0 })}`),
   groupExclude: (id: string, ids: string[], excluded: boolean) => post<GroupSummary & { doc: any }>(`/api/groups/${id}/exclude`, { ids, excluded }),
   compareGroups: (group_ids: string[], metric: string, dimension: string, chart_kind: string, save = false, title?: string) => post<any>('/api/groups/compare', { group_ids, metric, dimension, chart_kind, save, title }),
+  combineGroups: (body: { name: string; op: 'union' | 'intersection' | 'difference'; group_ids: string[]; scope?: GroupScope; description?: string; color?: string | null }) => post<GroupSummary & { doc: any }>('/api/groups/combine', body),
   importLegacyGroups: (dir?: string) => post<any>('/api/groups/import-legacy', dir ? { dir } : {}),
   saveNote: (note: { id?: string; text: string; title?: string; project?: string; tags?: string[] }) => (note.id ? put<CatalogItem>(`/api/notes/${note.id}`, note) : post<CatalogItem>('/api/notes', note)),
 }

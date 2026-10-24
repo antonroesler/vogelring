@@ -511,11 +511,15 @@ async def filter_choices(
     column: Annotated[str, Field(description="Column such as species, place, status, melder, year.")] = "place",
     search: Annotated[str, Field(description="Substring to narrow the values (case-insensitive).")] = "",
     limit: Annotated[int, Field(ge=1, le=500)] = 50,
-    filters: Annotated[FilterSpec | None, Field(description="Optional: the other active filters; counts then show how many rows each value would leave (filters on the column itself are ignored).")] = None,
+    filters: Annotated[dict[str, Any] | None, Field(description="Optional: the other active filters (same JSON as filters in create_view); counts then show how many rows each value would leave (filters on the column itself are ignored).")] = None,
 ) -> list[dict[str, Any]]:
     """List the distinct values of a column with counts – e.g. to find the exact place name or species spelling."""
     try:
-        return await choices(source, column, search=search, limit=limit, filters=filters)
+        spec = FilterSpec.model_validate(filters) if filters else None
+    except ValidationError as exc:
+        raise ToolError(f"filters ungültig: {_validation_message(exc)}") from exc
+    try:
+        return await choices(source, column, search=search, limit=limit, filters=spec)
     except SourceError as exc:
         raise ToolError(str(exc)) from exc
 
@@ -658,10 +662,13 @@ def create_group(
     spec: GroupSpec,
     group_id: Annotated[str | None, Field(description="Update an existing group instead of creating one.")] = None,
 ) -> dict[str, Any]:
-    """A group („Gruppe“) is a saved, named selection of sightings the user reuses: filters (species, places, period,
-    status, ringing place/age …) plus an optional explicit ring list and hand-excluded sightings. Use it everywhere via
-    filters.groups=[group_id] (views, workbooks, pipelines); several groups form a union; dimension/color "group"
-    compares them. Returns the group with a German description of the selection."""
+    """A group („Gruppe“) is a saved, named selection the user reuses: filters (species, places, period, status, ringing
+    place/age …) with OR/NOT logic (filters.any_of / none_of), plus an optional ring list and hand-excluded sightings.
+    scope="birds" makes it a bird group: all sightings of the birds that have at least one matching sighting (e.g.
+    „Mausergäste Ostpark“: places=['Ostpark'], any_of=[{months:[5,6]},{months:[4],status:['MG']}], scope=birds → wherever
+    these birds turn up). Use groups everywhere via filters.groups (union), all_groups (intersection), exclude_groups
+    (difference) or birds_of={groups:[…]}; dimension/color "group" compares them. Returns a German description – read it
+    back to the user."""
     try:
         return engine.create_group(spec, group_id=group_id, by="agent")
     except engine.EngineError as exc:

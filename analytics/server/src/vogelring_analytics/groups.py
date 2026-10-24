@@ -13,12 +13,12 @@ import hashlib
 import json
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from . import runtime
-from .sources import FilterSpec, Source, SourceError, _in, compile_filters, describe_filters, get_source
+from .sources import SOURCES, FilterSpec, Source, SourceError, _in, compile_filters, filter_bits, get_source, ring_in_subquery
 
 MAX_DEPTH = 3
 _depth: contextvars.ContextVar[int] = contextvars.ContextVar("group_depth", default=0)
@@ -36,7 +36,11 @@ class GroupSpec(BaseModel):
 
     name: str = Field(..., min_length=1, max_length=120, description="Kurzer Name, z. B. „Graugänse Ostpark als Jungvögel beringt“.")
     description: str = Field("", description="Worum es bei der Gruppe geht (Alltagssprache).")
-    filters: FilterSpec = Field(default_factory=FilterSpec, description="Die gespeicherte Auswahl (wie in einer Ansicht).")
+    scope: Literal["sightings", "birds"] = Field(
+        "sightings",
+        description="sightings: nur die Sichtungen, die die Bedingung erfüllen. birds (Vogelgruppe): alle Sichtungen der Vögel, die mindestens eine passende Sichtung haben – z. B. „Mausergäste Ostpark“ zeigt dann überall, wo diese Vögel sonst noch auftauchen.",
+    )
+    filters: FilterSpec = Field(default_factory=FilterSpec, description="Die gespeicherte Auswahl (wie in einer Ansicht); mit any_of/none_of für Oder- und Ausschluss-Logik.")
     ring_list: list[str] = Field(default_factory=list, description="Zusätzlich: nur diese Ringnummern (für Gruppen, die aus einer Ringliste bestehen).")
     excluded_ids: list[str] = Field(default_factory=list, description="Einzelne Sichtungen (IDs), die von Hand ausgeschlossen wurden.")
     color: str | None = Field(None, description="Hex-Farbe für Vergleiche, z. B. #228096.")
@@ -75,11 +79,14 @@ class GroupSpec(BaseModel):
     def describe(self) -> str:
         """German one-liner of the selection."""
         source = get_source("sightings")
-        sel = describe_filters(self.filters, source)
+        bits = list(filter_bits(self.filters, source))
         if self.ring_list:
             n = len(self.ring_list)
-            tail = f"der Ringe {', '.join(self.ring_list)}" if n <= 5 else f"von {n} aufgelisteten Ringen"
-            sel = f"{sel} {tail}" if sel != "alle Sichtungen" else f"Sichtungen {tail}"
+            bits.append(f"der Ringe {', '.join(self.ring_list)}" if n <= 5 else f"von {n} aufgelisteten Ringen")
+        if self.scope == "birds":
+            sel = "alle Sichtungen der Vögel mit mindestens einer Sichtung " + ", ".join(bits) if bits else "alle Sichtungen aller Vögel"
+        else:
+            sel = "Sichtungen " + ", ".join(bits) if bits else "alle Sichtungen"
         if self.excluded_ids:
             n = len(self.excluded_ids)
             sel += ", ohne einen von Hand ausgeschlossenen Eintrag" if n == 1 else f", ohne {n} von Hand ausgeschlossene Einträge"
@@ -125,8 +132,8 @@ def group_titles(refs: list[str]) -> list[str]:
 # ---------------------------------------------------------------- SQL
 
 
-def group_condition(source: Source, spec: GroupSpec, *, with_exclusions: bool = True) -> tuple[str, list[Any]]:
-    """Boolean SQL for one group over a source (filters AND ring list AND NOT excluded)."""
+def defining_condition(source: Source, spec: GroupSpec) -> tuple[str, list[Any]]:
+    """The group's own rule (filters AND ring list) over a source – for bird groups this is what makes a bird a member."""
     depth = _depth.get()
     if depth >= MAX_DEPTH:
         raise SourceError("Gruppen dürfen höchstens drei Ebenen tief ineinander verweisen.")
@@ -140,9 +147,30 @@ def group_condition(source: Source, spec: GroupSpec, *, with_exclusions: bool = 
         if not source.ring_column or not source.has(source.ring_column):
             raise SourceError(f"Ringliste der Gruppe ist für die Datenquelle „{source.label}“ nicht anwendbar.")
         parts.append(_in(source.ring_column, list(spec.ring_list), params))
+    return ("(" + " AND ".join(parts) + ")" if parts else "TRUE"), params
+
+
+def group_condition(source: Source, spec: GroupSpec, *, with_exclusions: bool = True) -> tuple[str, list[Any]]:
+    """Boolean SQL for one group over a source.
+
+    scope=sightings: rule AND NOT excluded. scope=birds: ring IN (birds with a sighting matching the rule) AND NOT excluded.
+    """
+    if spec.scope == "birds":
+        s = SOURCES["sightings"]
+        inner, params = defining_condition(s, spec)
+        sub = f"(SELECT DISTINCT ring FROM ({s.base_sql}) b WHERE ring IS NOT NULL AND {inner})"
+        cond, params = ring_in_subquery(source, sub, params, what="Vogelgruppe")
+        parts = [cond]
+    else:
+        cond, params = defining_condition(source, spec)
+        parts = [] if cond == "TRUE" else [cond]
     if with_exclusions and spec.excluded_ids and source.has("id"):
         parts.append("NOT (" + _in("id::text", list(spec.excluded_ids), params) + ")")
-    return ("(" + " AND ".join(parts) + ")" if parts else "TRUE"), params
+    if not parts:
+        return "TRUE", params
+    if len(parts) == 1 and parts[0].startswith("("):
+        return parts[0], params
+    return "(" + " AND ".join(parts) + ")", params
 
 
 def group_union_sql(source: Source, refs: list[str]) -> tuple[str, list[Any]]:
@@ -157,6 +185,20 @@ def group_union_sql(source: Source, refs: list[str]) -> tuple[str, list[Any]]:
     if not conds:
         return "TRUE", []
     return ("(" + " OR ".join(conds) + ")") if len(conds) > 1 else conds[0], params
+
+
+def group_intersection_sql(source: Source, refs: list[str]) -> tuple[str, list[Any]]:
+    """AND of the named groups' conditions (used by FilterSpec.all_groups)."""
+    conds: list[str] = []
+    params: list[Any] = []
+    for r in refs:
+        _, spec = resolve_group(r)
+        c, p = group_condition(source, spec)
+        conds.append(c)
+        params.extend(p)
+    if not conds:
+        return "TRUE", []
+    return ("(" + " AND ".join(conds) + ")") if len(conds) > 1 else conds[0], params
 
 
 def group_case_sql(source: Source, refs: list[str]) -> tuple[str, list[Any]]:

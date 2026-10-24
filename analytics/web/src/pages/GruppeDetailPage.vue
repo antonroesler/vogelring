@@ -30,6 +30,16 @@
             </div>
             <v-combobox v-model="form.tags" label="Schlagwörter (Eingabe mit Enter)" multiple chips closable-chips hide-details class="mb-4" />
 
+            <div class="section-label">Art der Gruppe</div>
+            <v-btn-toggle v-model="form.scope" mandatory class="vr-toggle mb-2">
+              <v-btn value="sightings" prepend-icon="mdi-binoculars">Sichtungen</v-btn>
+              <v-btn value="birds" prepend-icon="mdi-bird">Vögel</v-btn>
+            </v-btn-toggle>
+            <div class="muted mb-4" style="font-size: 12.5px">
+              <template v-if="form.scope === 'birds'">Alle Einträge der Vögel, auf die die Bedingung mindestens einmal zutrifft – also auch, wo diese Vögel sonst noch gesehen wurden.</template>
+              <template v-else>Nur die Einträge, die die Bedingung erfüllen.</template>
+            </div>
+
             <div class="section-label">Filter</div>
             <FilterPanel v-model="form.filters" source="sightings" />
 
@@ -60,6 +70,7 @@
                 <div class="kpi"><div class="kpi-v">{{ fmtInt.format(stats.sightings) }}</div><div class="kpi-l">Sichtungen</div></div>
                 <div class="kpi"><div class="kpi-v">{{ fmtInt.format(stats.birds) }}</div><div class="kpi-l">Vögel</div></div>
                 <div class="kpi"><div class="kpi-v">{{ fmtInt.format(stats.places) }}</div><div class="kpi-l">Orte</div></div>
+                <div v-if="stats.scope === 'birds' && stats.matching_sightings != null" class="kpi"><div class="kpi-v">{{ fmtInt.format(stats.matching_sightings) }}</div><div class="kpi-l">Sichtungen, die die Bedingung selbst erfüllen</div></div>
                 <div class="kpi"><div class="kpi-v">{{ stats.first ? `${fmtDate(stats.first)} – ${fmtDate(stats.last)}` : '–' }}</div><div class="kpi-l">Zeitraum</div></div>
               </div>
               <div v-if="stats.years.length" class="years mb-4">
@@ -91,12 +102,14 @@
               <v-switch v-model="withExcluded" label="Ausgeschlossene mit anzeigen" hide-details density="compact" color="warning" @update:model-value="reloadPreview" />
             </div>
             <div class="muted mb-3" style="font-size: 13px">Einzelne Einträge kannst du von Hand ausschließen – etwa Fehlablesungen. Sie bleiben in Vogelring unverändert und werden nur in dieser Gruppe nicht mitgezählt.</div>
+            <div v-if="preview?.scope === 'birds'" class="muted mb-3" style="font-size: 12.5px"><span class="match-dot match-dot--on" /> erfüllt die Bedingung selbst · <span class="match-dot" /> weitere Sichtung desselben Vogels</div>
             <v-table v-if="preview" density="compact" class="preview-table">
               <thead>
-                <tr><th>Datum</th><th>Ring</th><th>Art</th><th>Ort</th><th>Status</th><th>Melder</th><th>Beringungsort</th><th></th></tr>
+                <tr><th v-if="preview.scope === 'birds'" style="width: 28px"></th><th>Datum</th><th>Ring</th><th>Art</th><th>Ort</th><th>Status</th><th>Melder</th><th>Beringungsort</th><th></th></tr>
               </thead>
               <tbody>
                 <tr v-for="r in preview.rows" :key="r.id" :class="{ excluded: r.excluded }">
+                  <td v-if="preview.scope === 'birds'" :title="r.matches ? 'Erfüllt die Bedingung selbst' : 'Weitere Sichtung desselben Vogels'"><span class="match-dot" :class="{ 'match-dot--on': r.matches }" /></td>
                   <td>{{ fmtDate(r.date) }}</td>
                   <td class="font-weight-bold">{{ r.ring }}</td>
                   <td>{{ r.species }}</td>
@@ -134,13 +147,13 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { api, type GroupPreview, type GroupStats, type GroupSummary } from '@/api/client'
+import { api, type GroupPreview, type GroupScope, type GroupStats, type GroupSummary } from '@/api/client'
 import EmptyState from '@/components/EmptyState.vue'
 import FilterPanel from '@/components/FilterPanel.vue'
 import GroupCompareDialog from '@/components/GroupCompareDialog.vue'
 import PageHeader from '@/components/PageHeader.vue'
 import { fmtDate, fmtDateTime, fmtInt, friendlyError } from '@/lib/format'
-import { emptyFilters, type Filters } from '@/stores/builder'
+import { cleanFilters, emptyFilters, toFilterForm, type Filters } from '@/stores/builder'
 import { useLiveStore } from '@/stores/live'
 import { useMetaStore } from '@/stores/meta'
 
@@ -157,7 +170,7 @@ const allGroups = ref<GroupSummary[]>([])
 const error = ref('')
 const saving = ref(false)
 const compareDialog = ref(false)
-const form = reactive<{ name: string; description: string; color: string | null; tags: string[]; filters: Filters; ring_list: string[] }>({ name: '', description: '', color: null, tags: [], filters: emptyFilters(), ring_list: [] })
+const form = reactive<{ name: string; description: string; color: string | null; tags: string[]; scope: GroupScope; filters: Filters; ring_list: string[] }>({ name: '', description: '', color: null, tags: [], scope: 'sightings', filters: emptyFilters(), ring_list: [] })
 let saved = ''
 
 const stats = ref<GroupStats | null>(null)
@@ -173,20 +186,14 @@ const busyId = ref('')
 const maxYear = computed(() => Math.max(1, ...(stats.value?.years.map((y) => y.sightings) || [1])))
 const describe = computed(() => group.value?.describe || '')
 
-function compactFilters(f: Filters): Record<string, any> {
-  const out: Record<string, any> = {}
-  for (const [k, v] of Object.entries(f)) {
-    if (Array.isArray(v) ? v.length : v !== null && v !== false && v !== '' && !(k === 'around_place_km' && !f.around_place)) out[k] = v
-  }
-  return out
-}
 function toSpec() {
   return {
     name: form.name.trim(),
     description: form.description.trim(),
     color: form.color,
     tags: form.tags,
-    filters: compactFilters(form.filters),
+    scope: form.scope,
+    filters: cleanFilters(form.filters),
     ring_list: form.ring_list,
     excluded_ids: group.value?.doc?.excluded_ids || [],
   }
@@ -198,7 +205,8 @@ function fillForm(g: GroupSummary & { doc: any }) {
   form.description = g.doc.description || ''
   form.color = g.doc.color || null
   form.tags = [...(g.doc.tags || [])]
-  form.filters = { ...emptyFilters(), ...(g.doc.filters || {}) }
+  form.scope = g.doc.scope || 'sightings'
+  form.filters = toFilterForm(g.doc.filters)
   form.ring_list = [...(g.doc.ring_list || [])]
   saved = JSON.stringify(toSpec())
 }
@@ -335,5 +343,7 @@ watch(
 .bar { width: 16px; border-radius: 3px 3px 0 0; }
 .yl { font-size: 10.5px; color: #5b6b76; margin-top: 3px; }
 .preview-table tr.excluded td { color: #9aa; text-decoration: line-through; }
+.match-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid rgb(var(--border-heavy)); vertical-align: middle; }
+.match-dot--on { background: rgb(var(--brand)); border-color: rgb(var(--brand)); }
 .preview-table td, .preview-table th { font-size: 13px !important; }
 </style>

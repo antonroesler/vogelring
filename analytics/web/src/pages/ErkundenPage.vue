@@ -103,6 +103,7 @@
           </v-list>
         </v-menu>
         <v-btn variant="tonal" prepend-icon="mdi-view-dashboard-outline" :disabled="!b.viewId" title="Zuerst speichern" @click="addToWorkbook">Zur Mappe</v-btn>
+        <v-btn variant="tonal" prepend-icon="mdi-folder-plus-outline" :disabled="!hasFilters" title="Die aktuellen Filter als Gruppe speichern" @click="askGroup">Als Gruppe speichern</v-btn>
         <v-btn variant="tonal" color="secondary" prepend-icon="mdi-robot-happy-outline" @click="askAgent">Agent fragen</v-btn>
         <v-spacer />
         <v-progress-circular v-if="b.loading" indeterminate size="22" width="3" color="secondary" />
@@ -126,6 +127,25 @@
       </v-card>
     </v-dialog>
 
+    <v-dialog v-model="groupDialog" max-width="560">
+      <v-card class="pa-6">
+        <div class="card-title">Filter als Gruppe speichern</div>
+        <div class="muted mb-4" style="font-size: 13px">{{ b.preview?.describe }}</div>
+        <v-text-field v-model="groupName" label="Name (so, wie du sie nennst)" autofocus @keyup.enter="doSaveGroup" />
+        <v-textarea v-model="groupDesc" label="Worum geht es? (optional)" rows="2" />
+        <div class="section-label">Art der Gruppe</div>
+        <v-btn-toggle v-model="groupScope" mandatory class="vr-toggle mb-2">
+          <v-btn value="sightings" prepend-icon="mdi-binoculars">Sichtungen</v-btn>
+          <v-btn value="birds" prepend-icon="mdi-bird">Vögel</v-btn>
+        </v-btn-toggle>
+        <div class="muted mb-4" style="font-size: 12.5px">
+          <template v-if="groupScope === 'birds'">Alle Einträge der Vögel, auf die die Filter mindestens einmal zutreffen – also auch, wo diese Vögel sonst noch gesehen wurden.</template>
+          <template v-else>Nur die Einträge, die die Filter erfüllen.</template>
+        </div>
+        <div class="d-flex justify-end ga-2"><v-btn variant="text" @click="groupDialog = false">Abbrechen</v-btn><v-btn color="primary" :disabled="!groupName.trim()" :loading="saving" @click="doSaveGroup">Gruppe anlegen</v-btn></div>
+      </v-card>
+    </v-dialog>
+
     <v-dialog v-model="wbDialog" max-width="520">
       <v-card class="pa-6">
         <div class="card-title">Zur Mappe hinzufügen</div>
@@ -141,11 +161,11 @@
 import EmptyState from '@/components/EmptyState.vue'
 import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { api, type CatalogItem } from '@/api/client'
+import { api, type CatalogItem, type GroupScope } from '@/api/client'
 import FilterPanel from '@/components/FilterPanel.vue'
 import VisualStage from '@/components/VisualStage.vue'
 import { CHART_KINDS, fmtInt, friendlyError } from '@/lib/format'
-import { useBuilderStore } from '@/stores/builder'
+import { cleanFilters, useBuilderStore } from '@/stores/builder'
 import { useMetaStore } from '@/stores/meta'
 
 defineOptions({ name: 'ErkundenPage' })
@@ -159,6 +179,11 @@ const saving = ref(false)
 const saveDialog = ref(false)
 const saveTitle = ref('')
 const saveAsCopy = ref(false)
+const groupDialog = ref(false)
+const groupName = ref('')
+const groupDesc = ref('')
+const groupScope = ref<GroupScope>('sightings')
+const hasFilters = computed(() => Object.keys(cleanFilters(f.value.filters)).length > 0)
 const wbDialog = ref(false)
 const wbTarget = ref<string | null>(null)
 const wbNew = ref('')
@@ -265,6 +290,29 @@ async function download(what: 'png' | 'pdf' | 'xlsx' | 'open') {
     }
     if (!vid) throw new Error('Kein Bild vorhanden.')
     window.open(what === 'open' ? `/viz/${vid}` : `/viz/${vid}.${what}`, '_blank')
+  } catch (e) {
+    meta.notify(friendlyError(e), 'error')
+  } finally {
+    saving.value = false
+  }
+}
+function askGroup() {
+  // describe is „Balkendiagramm: Anzahl … je Monat – Sichtungen der Art …“; the selection phrase after the dash is the name
+  const d = b.preview?.describe || ''
+  const sel = d.includes(' – ') ? d.slice(d.lastIndexOf(' – ') + 3) : d
+  groupName.value = sel.replace(/^(Sichtungen|Beringungen|Vögel|Beziehungen)\s+/, '').replace(/^\w/, (c) => c.toUpperCase()).slice(0, 80)
+  groupDesc.value = ''
+  groupScope.value = 'sightings'
+  groupDialog.value = true
+}
+async function doSaveGroup() {
+  if (!groupName.value.trim()) return
+  saving.value = true
+  try {
+    const g = await api.createGroup({ name: groupName.value.trim(), description: groupDesc.value.trim(), scope: groupScope.value, filters: cleanFilters(f.value.filters) })
+    groupDialog.value = false
+    meta.notify('Gruppe gespeichert.')
+    router.push(`/gruppen/${g.id}`)
   } catch (e) {
     meta.notify(friendlyError(e), 'error')
   } finally {

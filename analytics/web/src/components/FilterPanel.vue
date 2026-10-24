@@ -1,6 +1,6 @@
 <template>
   <div class="filters">
-    <v-select v-if="has('groups') && groups.length" v-model="f.groups" :items="groups" item-title="label" item-value="value" label="Gruppe (gespeicherte Auswahl)" multiple chips closable-chips clearable hide-details>
+    <v-select v-if="has('groups') && groups.length" v-model="f.groups" :items="groups" item-title="label" item-value="value" label="Gruppe (in mindestens einer)" multiple chips closable-chips clearable hide-details>
       <template #chip="{ props: cp, item }"><v-chip v-bind="cp" :prepend-icon="undefined"><span class="dot" :style="{ background: item.raw.color || '#8aa' }" />{{ item.raw.name }}</v-chip></template>
       <template #item="{ props: ip, item }"><v-list-item v-bind="ip" :title="item.raw.name" :subtitle="item.raw.describe"><template #prepend><span class="dot mr-3" :style="{ background: item.raw.color || '#8aa' }" /></template></v-list-item></template>
     </v-select>
@@ -15,8 +15,9 @@
     <v-select v-if="has('months')" v-model="f.months" :items="monthItems" item-title="label" item-value="value" label="Monate" multiple chips closable-chips clearable hide-details />
     <v-select v-if="has('seasons')" v-model="f.seasons" :items="seasonItems" item-title="label" item-value="value" label="Jahreszeit" multiple chips closable-chips clearable hide-details />
     <v-select v-if="has('periods') && periods.length" v-model="f.periods" :items="periods" item-title="label" item-value="value" label="Zeitraum (gespeichert)" multiple chips closable-chips clearable hide-details />
-    <v-expansion-panels v-model="more" variant="accordion" class="mt-1">
-      <v-expansion-panel title="Weitere Filter" elevation="0">
+
+    <v-expansion-panels v-model="open" variant="accordion" multiple class="mt-1">
+      <v-expansion-panel value="more" title="Weitere Filter" elevation="0">
         <v-expansion-panel-text>
           <div class="filters">
             <ChoiceSelect v-if="has('rings')" v-model="f.rings" :source="source" :filters="ctx" column="ring" label="Ringnummer" free-text />
@@ -29,6 +30,14 @@
             <ChoiceSelect v-if="has('ringing_places')" v-model="f.ringing_places" :source="source" :filters="ctx" column="ringing_place" label="Beringungsort (Namensteil)" free-text />
             <v-select v-if="has('ringing_age')" v-model="f.ringing_age" :items="opts('ringing_age')" item-title="label" item-value="value" label="Alter bei Beringung" multiple chips closable-chips clearable hide-details />
             <ChoiceSelect v-if="has('exclude_places')" v-model="f.exclude_places" :source="source" :filters="ctx" column="place" label="Orte ausschließen" free-text />
+            <v-select v-if="has('all_groups') && groups.length" v-model="f.all_groups" :items="groups" item-title="label" item-value="value" label="In allen diesen Gruppen" multiple chips closable-chips clearable hide-details>
+              <template #chip="{ props: cp, item }"><v-chip v-bind="cp" :prepend-icon="undefined"><span class="dot" :style="{ background: item.raw.color || '#8aa' }" />{{ item.raw.name }}</v-chip></template>
+              <template #item="{ props: ip, item }"><v-list-item v-bind="ip" :title="item.raw.name" :subtitle="item.raw.describe"><template #prepend><span class="dot mr-3" :style="{ background: item.raw.color || '#8aa' }" /></template></v-list-item></template>
+            </v-select>
+            <v-select v-if="has('exclude_groups') && groups.length" v-model="f.exclude_groups" :items="groups" item-title="label" item-value="value" label="Gruppe ausschließen" multiple chips closable-chips clearable hide-details>
+              <template #chip="{ props: cp, item }"><v-chip v-bind="cp" :prepend-icon="undefined"><span class="dot" :style="{ background: item.raw.color || '#8aa' }" />{{ item.raw.name }}</v-chip></template>
+              <template #item="{ props: ip, item }"><v-list-item v-bind="ip" :title="item.raw.name" :subtitle="item.raw.describe"><template #prepend><span class="dot mr-3" :style="{ background: item.raw.color || '#8aa' }" /></template></v-list-item></template>
+            </v-select>
             <div v-if="has('around_place')" class="d-flex ga-2 align-center">
               <v-text-field v-model="f.around_place" label="Umkreis um Ort" hide-details clearable />
               <v-text-field v-model.number="f.around_place_km" type="number" label="km" hide-details style="max-width: 90px" />
@@ -36,6 +45,74 @@
             <v-checkbox v-if="has('only_with_coords')" v-model="f.only_with_coords" label="Nur Einträge mit Koordinaten" hide-details density="compact" />
             <v-checkbox v-if="has('only_exact_location')" v-model="f.only_exact_location" label="Nur exakte Koordinaten" hide-details density="compact" />
           </div>
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+
+      <v-expansion-panel v-if="withBlocks" value="logic" elevation="0">
+        <v-expansion-panel-title>
+          Oder- und Ausschluss-Bedingungen
+          <v-chip v-if="blockCount" size="x-small" class="ml-2" variant="tonal">{{ blockCount }}</v-chip>
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <div class="muted hint">Die Filter oben gelten immer zusammen (und). Hier kannst du Alternativen festlegen – etwa „Mai oder Juni“ <em>oder</em> „April mit Status Mausergast“ – und Fälle ausschließen.</div>
+
+          <div class="block-intro">Mindestens eine dieser Bedingungen trifft zu:</div>
+          <div v-for="(_, i) in block.any_of" :key="'any' + i" class="block-card">
+            <div class="block-head">
+              <span>Bedingung {{ i + 1 }}</span>
+              <v-spacer />
+              <v-btn size="small" variant="text" @click="block.any_of.splice(i, 1)">Entfernen</v-btn>
+            </div>
+            <FilterPanel v-model="block.any_of[i]" :source="source" level="fields" />
+          </div>
+          <v-btn variant="outlined" size="small" prepend-icon="mdi-plus" class="mb-5" @click="block.any_of.push(emptyFields())">Oder-Bedingung hinzufügen</v-btn>
+
+          <div class="block-intro">Keine dieser Bedingungen trifft zu:</div>
+          <div v-for="(_, i) in block.none_of" :key="'none' + i" class="block-card block-card--excl">
+            <div class="block-head">
+              <span>Ausschluss {{ i + 1 }}</span>
+              <v-spacer />
+              <v-btn size="small" variant="text" @click="block.none_of.splice(i, 1)">Entfernen</v-btn>
+            </div>
+            <FilterPanel v-model="block.none_of[i]" :source="source" level="fields" />
+          </div>
+          <v-btn variant="outlined" size="small" prepend-icon="mdi-plus" @click="block.none_of.push(emptyFields())">Ausschluss hinzufügen</v-btn>
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+
+      <v-expansion-panel v-if="withBirds && (has('birds_of') || has('birds_not_of'))" value="birds" elevation="0">
+        <v-expansion-panel-title>
+          Vögel statt Sichtungen
+          <v-chip v-if="birdCount" size="x-small" class="ml-2" variant="tonal">{{ birdCount }}</v-chip>
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <div class="muted hint">Nimmt alle Einträge der Vögel, auf die die Bedingung mindestens einmal zutrifft – z. B. überall, wo die Mausergäste aus dem Ostpark sonst noch auftauchen.</div>
+
+          <template v-if="has('birds_of')">
+            <div class="block-intro">Vögel, auf die die Bedingung mindestens einmal zutrifft</div>
+            <div v-if="full.birds_of" class="block-card">
+              <div class="block-head">
+                <span>Bedingung (Sichtungen)</span>
+                <v-spacer />
+                <v-btn size="small" variant="text" @click="full.birds_of = null">Entfernen</v-btn>
+              </div>
+              <FilterPanel v-model="full.birds_of" source="sightings" level="block" />
+            </div>
+            <v-btn v-else variant="outlined" size="small" prepend-icon="mdi-bird" class="mb-5" @click="full.birds_of = emptyBlock()">Bedingung festlegen</v-btn>
+          </template>
+
+          <template v-if="has('birds_not_of')">
+            <div class="block-intro" :class="{ 'mt-4': full.birds_of }">Vögel, auf die die Bedingung nie zutrifft</div>
+            <div v-if="full.birds_not_of" class="block-card block-card--excl">
+              <div class="block-head">
+                <span>Bedingung (Sichtungen)</span>
+                <v-spacer />
+                <v-btn size="small" variant="text" @click="full.birds_not_of = null">Entfernen</v-btn>
+              </div>
+              <FilterPanel v-model="full.birds_not_of" source="sightings" level="block" />
+            </div>
+            <v-btn v-else variant="outlined" size="small" prepend-icon="mdi-bird-off" @click="full.birds_not_of = emptyBlock()">Bedingung festlegen</v-btn>
+          </template>
         </v-expansion-panel-text>
       </v-expansion-panel>
     </v-expansion-panels>
@@ -47,11 +124,18 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { api, type GroupSummary } from '@/api/client'
 import { useLiveStore } from '@/stores/live'
 import { useMetaStore } from '@/stores/meta'
-import { cleanFilters, type Filters } from '@/stores/builder'
+import { cleanFilters, emptyBlock, emptyFields, type FilterBlock, type FilterFields, type Filters } from '@/stores/builder'
 import { MONTHS_DE_LONG } from '@/lib/format'
 import ChoiceSelect from './ChoiceSelect.vue'
 
-const props = defineProps<{ modelValue: Filters; source: string }>()
+defineOptions({ name: 'FilterPanel' })
+
+/**
+ * level: 'full' = everything (views, groups, workbooks); 'block' = fields + Oder/Ausschluss (inside „Vögel statt
+ * Sichtungen“); 'fields' = simple fields only (inside an Oder-/Ausschluss-Bedingung). The nesting mirrors the server's
+ * FilterSpec → FilterBlock → FilterFields and is deliberately not recursive.
+ */
+const props = withDefaults(defineProps<{ modelValue: FilterFields | FilterBlock | Filters; source: string; level?: 'full' | 'block' | 'fields' }>(), { level: 'full' })
 const meta = useMetaStore()
 const live = useLiveStore()
 const groupItems = ref<GroupSummary[]>([])
@@ -65,8 +149,13 @@ async function loadGroups() {
 }
 onMounted(loadGroups)
 watch(() => live.version.groups, loadGroups)
-const more = ref<number | null>(null)
-const f = computed(() => props.modelValue)
+
+const open = ref<string[]>([])
+const f = computed(() => props.modelValue as FilterFields)
+const block = computed(() => props.modelValue as FilterBlock)
+const full = computed(() => props.modelValue as Filters)
+const withBlocks = computed(() => props.level !== 'fields')
+const withBirds = computed(() => props.level === 'full')
 const ctx = computed(() => cleanFilters(props.modelValue))
 const supported = computed(() => new Set(meta.sourceByKey(props.source)?.filters || []))
 const has = (name: string) => supported.value.has(name)
@@ -76,6 +165,18 @@ const seasonItems = computed(() => (meta.sources?.seasons || []).map((s) => ({ v
 const placeGroups = computed(() => meta.definitionsOf('place_group').map((d) => ({ value: d.name, label: `${d.name} – ${d.description || d.values.join(', ')}` })))
 const ringGroups = computed(() => meta.definitionsOf('ring_group').map((d) => ({ value: d.name, label: `${d.name} (${d.values.length} Ringe)` })))
 const periods = computed(() => meta.definitionsOf('period').map((d) => ({ value: d.name, label: `${d.name} – ${d.description || d.values.join(', ')}` })))
+const blockCount = computed(() => (withBlocks.value ? (block.value.any_of?.length || 0) + (block.value.none_of?.length || 0) : 0))
+const birdCount = computed(() => (withBirds.value ? (full.value.birds_of ? 1 : 0) + (full.value.birds_not_of ? 1 : 0) : 0))
+
+// a saved spec with blocks should show them right away
+watch(
+  () => [blockCount.value, birdCount.value],
+  ([b, v]) => {
+    if (b && !open.value.includes('logic')) open.value = [...open.value, 'logic']
+    if (v && !open.value.includes('birds')) open.value = [...open.value, 'birds']
+  },
+  { immediate: true },
+)
 </script>
 
 <style scoped>
@@ -83,4 +184,9 @@ const periods = computed(() => meta.definitionsOf('period').map((d) => ({ value:
 .filters :deep(.v-expansion-panel-text__wrapper) { padding: 12px 0 4px 0; }
 .filters :deep(.v-expansion-panel-title) { padding-left: 4px; padding-right: 4px; min-height: 44px; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; flex: none; }
+.hint { font-size: 13px; line-height: 1.45; margin-bottom: 14px; }
+.block-intro { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: rgb(var(--text-tertiary)); margin: 0 0 8px 0; }
+.block-card { border: 1px solid rgb(var(--border-light)); border-radius: 12px; padding: 12px 14px 14px 14px; margin-bottom: 10px; background: rgb(var(--surface-primary-alt)); }
+.block-card--excl { border-style: dashed; }
+.block-head { display: flex; align-items: center; font-size: 13px; font-weight: 600; color: rgb(var(--text-secondary)); margin-bottom: 10px; }
 </style>
