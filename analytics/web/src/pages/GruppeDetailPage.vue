@@ -30,15 +30,7 @@
             </div>
             <v-combobox v-model="form.tags" label="Schlagwörter (Eingabe mit Enter)" multiple chips closable-chips hide-details class="mb-4" />
 
-            <div class="section-label">Art der Gruppe</div>
-            <v-btn-toggle v-model="form.scope" mandatory class="vr-toggle mb-2">
-              <v-btn value="sightings" prepend-icon="mdi-binoculars">Sichtungen</v-btn>
-              <v-btn value="birds" prepend-icon="mdi-bird">Vögel</v-btn>
-            </v-btn-toggle>
-            <div class="muted mb-4" style="font-size: 12.5px">
-              <template v-if="form.scope === 'birds'">Alle Einträge der Vögel, auf die die Bedingung mindestens einmal zutrifft – also auch, wo diese Vögel sonst noch gesehen wurden.</template>
-              <template v-else>Nur die Einträge, die die Bedingung erfüllen.</template>
-            </div>
+            <div class="scope-note mb-4"><v-icon size="18" class="mr-2">mdi-bird</v-icon><div><strong>Vogelgruppe.</strong> Die Bedingung wählt Vögel aus: Jeder Vogel mit mindestens einer passenden Sichtung gehört dazu – mit <strong>allen</strong> seinen Einträgen, auch an anderen Orten und mit anderem Status. Nur die passenden Sichtungen selbst bekommst du über die Filter einer Ansicht.</div></div>
 
             <div class="section-label">Filter</div>
             <FilterPanel v-model="form.filters" source="sightings" />
@@ -47,13 +39,16 @@
             <v-combobox v-model="form.ring_list" label="Nur diese Ringnummern (Eingabe mit Enter oder Komma)" multiple chips closable-chips hide-details clearable @update:model-value="splitRings" />
             <div class="muted mt-1" style="font-size: 12.5px">Für Gruppen, die aus einer festen Liste von Vögeln bestehen. Wird mit den Filtern kombiniert.</div>
 
-            <div class="muted mt-4" style="font-size: 13px"><strong>Bedeutet:</strong> {{ describe }}</div>
-            <v-alert v-if="error" type="warning" variant="tonal" class="mt-3" :text="error" />
-            <div class="d-flex ga-2 mt-4">
-              <v-btn color="primary" prepend-icon="mdi-content-save" :loading="saving" :disabled="!form.name.trim()" @click="save">Speichern</v-btn>
-              <v-btn variant="text" :disabled="!dirty" @click="resetForm">Verwerfen</v-btn>
-              <v-spacer />
-              <v-btn variant="text" color="error" icon="mdi-delete-outline" title="Gruppe löschen" @click="remove" />
+            <div class="save-bar" :class="{ 'save-bar--dirty': dirty }">
+              <div style="font-size: 13px"><strong>Bedeutet:</strong> {{ describe || '…' }}</div>
+              <div v-if="dirty" class="save-bar__note"><v-icon size="16" class="mr-1">mdi-pencil-outline</v-icon>Noch nicht gespeichert – Zahlen und Einträge rechts zeigen schon diese Festlegung.</div>
+              <v-alert v-if="error" type="warning" variant="tonal" class="mt-3" :text="error" />
+              <div class="d-flex ga-2 mt-3">
+                <v-btn color="primary" prepend-icon="mdi-content-save" :loading="saving" :disabled="!form.name.trim() || !dirty" @click="save">Speichern</v-btn>
+                <v-btn variant="text" :disabled="!dirty" @click="resetForm">Verwerfen</v-btn>
+                <v-spacer />
+                <v-btn variant="text" color="error" icon="mdi-delete-outline" title="Gruppe löschen" @click="remove" />
+              </div>
             </div>
           </v-card>
         </v-col>
@@ -62,8 +57,10 @@
           <v-card class="pa-5 mb-6">
             <div class="d-flex align-center mb-3">
               <div class="card-title mb-0">Zahlen</div>
+              <v-chip v-if="dirty" size="small" color="warning" variant="tonal" class="ml-3">Vorschau – nicht gespeichert</v-chip>
+              <v-progress-circular v-else-if="statsLoading" indeterminate size="18" width="2" class="ml-3" />
               <v-spacer />
-              <v-btn size="small" variant="text" prepend-icon="mdi-refresh" :loading="statsLoading" @click="loadStats">Neu berechnen</v-btn>
+              <v-btn size="small" variant="text" prepend-icon="mdi-refresh" :loading="statsLoading" @click="evaluate(true)">Neu berechnen</v-btn>
             </div>
             <template v-if="stats">
               <div class="d-flex flex-wrap ga-6 mb-4">
@@ -89,7 +86,7 @@
                   <div v-for="s in stats.status" :key="s.label" class="d-flex justify-space-between" style="font-size: 13.5px"><span>{{ STATUS[s.label] || s.label }}</span><span class="muted">{{ fmtInt.format(s.sightings) }}</span></div>
                 </div>
               </div>
-              <div class="muted mt-3" style="font-size: 12px">Stand {{ fmtDateTime(stats.computed_at) }} · live aus der Vogelring-Datenbank (nur lesend)</div>
+              <div class="muted mt-3" style="font-size: 12px">Stand {{ fmtDateTime(stats.computed_at) }} · live aus der Vogelring-Datenbank (nur lesend){{ dirty ? ' · für die noch nicht gespeicherte Festlegung' : '' }}</div>
             </template>
             <div v-else-if="statsError" class="muted">{{ statsError }}</div>
             <div v-else class="d-flex justify-center pa-6"><v-progress-circular indeterminate color="secondary" /></div>
@@ -99,7 +96,8 @@
             <div class="d-flex align-center flex-wrap ga-2 mb-3">
               <div class="card-title mb-0">Einträge</div>
               <v-spacer />
-              <v-switch v-model="withExcluded" label="Ausgeschlossene mit anzeigen" hide-details density="compact" color="warning" @update:model-value="reloadPreview" />
+              <v-chip v-if="dirty" size="small" color="warning" variant="tonal">Vorschau – nicht gespeichert</v-chip>
+              <v-switch v-model="withExcluded" label="Ausgeschlossene mit anzeigen" hide-details density="compact" color="warning" @update:model-value="evaluate(true)" />
             </div>
             <div class="muted mb-3" style="font-size: 13px">Einzelne Einträge kannst du von Hand ausschließen – etwa Fehlablesungen. Sie bleiben in Vogelring unverändert und werden nur in dieser Gruppe nicht mitgezählt.</div>
             <div v-if="preview?.scope === 'birds'" class="muted mb-3" style="font-size: 12.5px"><span class="match-dot match-dot--on" /> erfüllt die Bedingung selbst · <span class="match-dot" /> weitere Sichtung desselben Vogels</div>
@@ -170,7 +168,7 @@ const allGroups = ref<GroupSummary[]>([])
 const error = ref('')
 const saving = ref(false)
 const compareDialog = ref(false)
-const form = reactive<{ name: string; description: string; color: string | null; tags: string[]; scope: GroupScope; filters: Filters; ring_list: string[] }>({ name: '', description: '', color: null, tags: [], scope: 'sightings', filters: emptyFilters(), ring_list: [] })
+const form = reactive<{ name: string; description: string; color: string | null; tags: string[]; scope: GroupScope; filters: Filters; ring_list: string[] }>({ name: '', description: '', color: null, tags: [], scope: 'birds', filters: emptyFilters(), ring_list: [] })
 let saved = ''
 
 const stats = ref<GroupStats | null>(null)
@@ -184,7 +182,9 @@ const limit = 50
 const busyId = ref('')
 
 const maxYear = computed(() => Math.max(1, ...(stats.value?.years.map((y) => y.sightings) || [1])))
-const describe = computed(() => group.value?.describe || '')
+// the sentence follows the form (server-computed for the current, possibly unsaved definition)
+const liveDescribe = ref('')
+const describe = computed(() => liveDescribe.value || group.value?.describe || '')
 
 function toSpec() {
   return {
@@ -205,7 +205,7 @@ function fillForm(g: GroupSummary & { doc: any }) {
   form.description = g.doc.description || ''
   form.color = g.doc.color || null
   form.tags = [...(g.doc.tags || [])]
-  form.scope = g.doc.scope || 'sightings'
+  form.scope = 'birds' // groups are always bird groups; an old sightings-level group becomes one when saved
   form.filters = toFilterForm(g.doc.filters)
   form.ring_list = [...(g.doc.ring_list || [])]
   saved = JSON.stringify(toSpec())
@@ -225,40 +225,55 @@ async function load() {
   try {
     group.value = await api.group(id)
     fillForm(group.value)
-    loadStats()
-    reloadPreview()
+    evaluate(true)
     api.groups().then((r) => (allGroups.value = r.items)).catch(() => {})
   } catch (e) {
     group.value = null
     error.value = 'Die Gruppe konnte nicht geladen werden: ' + friendlyError(e)
   }
 }
-async function loadStats() {
-  if (!group.value) return
-  statsLoading.value = true
-  statsError.value = ''
-  try {
-    stats.value = await api.groupSummary(group.value.id)
-  } catch (e) {
-    stats.value = null
-    statsError.value = friendlyError(e)
-  } finally {
-    statsLoading.value = false
+
+// Numbers, sentence and rows always follow the form – saved or not – so Ingo sees what the group *would* contain.
+let evalTimer: any = null
+let evalSeq = 0
+async function evaluate(now = false) {
+  clearTimeout(evalTimer)
+  const run = async () => {
+    if (!group.value) return
+    const seq = ++evalSeq
+    statsLoading.value = true
+    statsError.value = ''
+    previewError.value = ''
+    try {
+      const r = await api.evaluateGroup(toSpec(), { limit, offset: offset.value, with_excluded: withExcluded.value })
+      if (seq !== evalSeq) return
+      liveDescribe.value = r.describe
+      stats.value = r.stats
+      preview.value = r.preview || null
+    } catch (e) {
+      if (seq !== evalSeq) return
+      stats.value = null
+      preview.value = null
+      statsError.value = friendlyError(e)
+      previewError.value = statsError.value
+    } finally {
+      if (seq === evalSeq) statsLoading.value = false
+    }
   }
+  if (now) await run()
+  else evalTimer = setTimeout(run, 400)
 }
-async function reloadPreview() {
-  if (!group.value) return
-  previewError.value = ''
-  try {
-    preview.value = await api.groupPreview(group.value.id, limit, offset.value, withExcluded.value)
-  } catch (e) {
-    preview.value = null
-    previewError.value = friendlyError(e)
+const evalKey = computed(() => (group.value ? JSON.stringify({ f: cleanFilters(form.filters), s: form.scope, r: form.ring_list, x: group.value.doc?.excluded_ids || [] }) : ''))
+watch(evalKey, (v, old) => {
+  if (old && v !== old) {
+    offset.value = 0
+    evaluate()
   }
-}
+})
+
 function page(d: number) {
   offset.value = Math.max(0, offset.value + d * limit)
-  reloadPreview()
+  evaluate(true)
 }
 async function save() {
   if (!group.value) return
@@ -269,8 +284,8 @@ async function save() {
     fillForm(group.value)
     meta.notify('Gruppe gespeichert.')
     offset.value = 0
-    loadStats()
-    reloadPreview()
+    evaluate(true)
+    api.groupSummary(group.value.id).catch(() => {}) // refreshes the cached numbers on the list page
   } catch (e) {
     error.value = friendlyError(e)
   } finally {
@@ -283,9 +298,8 @@ async function exclude(r: any, excluded: boolean) {
   try {
     group.value = await api.groupExclude(group.value.id, [r.id], excluded)
     saved = JSON.stringify({ ...JSON.parse(saved), excluded_ids: group.value.doc.excluded_ids })
-    if (withExcluded.value) r.excluded = excluded
-    else preview.value = await api.groupPreview(group.value.id, limit, offset.value, false)
-    loadStats()
+    await evaluate(true)
+    api.groupSummary(group.value.id).catch(() => {})
   } catch (e) {
     meta.notify(friendlyError(e), 'error')
   } finally {
@@ -322,8 +336,7 @@ watch(
       if (fresh && fresh.updated_at !== group.value.updated_at) {
         group.value = fresh
         fillForm(fresh)
-        loadStats()
-        reloadPreview()
+        evaluate(true)
       }
     }
   },
@@ -332,6 +345,11 @@ watch(
 
 <style scoped>
 .color-dot { display: inline-block; width: 16px; height: 16px; border-radius: 50%; }
+.scope-note { display: flex; align-items: flex-start; font-size: 12.5px; color: rgb(var(--text-secondary)); padding: 10px 12px; border-radius: 8px; background: rgb(var(--surface-secondary)); }
+.scope-note .v-icon { color: rgb(var(--brand)); margin-top: 1px; }
+.save-bar { position: sticky; bottom: 0; z-index: 2; margin: 16px -20px -20px; padding: 12px 20px 16px; background: rgb(var(--surface-primary)); border-top: 1px solid rgb(var(--border-light)); border-radius: 0 0 12px 12px; }
+.save-bar--dirty { border-top-color: rgb(var(--warning)); box-shadow: 0 -8px 16px -12px rgba(0, 0, 0, 0.25); }
+.save-bar__note { display: flex; align-items: center; margin-top: 8px; font-size: 12.5px; font-weight: 500; color: rgb(var(--warning)); }
 .section-label { font-size: 12.5px; font-weight: 600; letter-spacing: 0.02em; color: #5b6b76; margin-bottom: 8px; }
 .swatch { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
 .swatch.active { border-color: #00436C; box-shadow: 0 0 0 2px #fff inset; }

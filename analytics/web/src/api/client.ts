@@ -252,8 +252,15 @@ export interface GroupSummary {
   doc?: any
 }
 
+export interface GroupEvaluation {
+  describe: string
+  scope: GroupScope
+  stats: GroupStats
+  preview?: GroupPreview
+}
+
 export interface GroupPreview {
-  group_id: string
+  group_id?: string
   name: string
   scope: GroupScope
   columns: string[]
@@ -315,6 +322,7 @@ export const api = {
   updateGroup: (id: string, spec: any) => put<GroupSummary & { doc: any }>(`/api/groups/${id}`, { spec }),
   patchGroup: (id: string, patch: any) => put<GroupSummary & { doc: any }>(`/api/groups/${id}`, { patch }),
   groupSummary: (id: string) => get<GroupStats & { group_id: string; name: string; describe: string }>(`/api/groups/${id}/summary`),
+  evaluateGroup: (spec: any, opts: { limit?: number; offset?: number; with_excluded?: boolean; rows?: boolean } = {}) => post<GroupEvaluation>('/api/groups/evaluate', { spec, ...opts }),
   groupPreview: (id: string, limit = 50, offset = 0, withExcluded = false) => get<GroupPreview>(`/api/groups/${id}/preview${qs({ limit, offset, with_excluded: withExcluded ? 1 : 0 })}`),
   groupExclude: (id: string, ids: string[], excluded: boolean) => post<GroupSummary & { doc: any }>(`/api/groups/${id}/exclude`, { ids, excluded }),
   compareGroups: (group_ids: string[], metric: string, dimension: string, chart_kind: string, save = false, title?: string) => post<any>('/api/groups/compare', { group_ids, metric, dimension, chart_kind, save, title }),

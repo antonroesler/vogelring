@@ -37,8 +37,8 @@ class GroupSpec(BaseModel):
     name: str = Field(..., min_length=1, max_length=120, description="Kurzer Name, z. B. „Graugänse Ostpark als Jungvögel beringt“.")
     description: str = Field("", description="Worum es bei der Gruppe geht (Alltagssprache).")
     scope: Literal["sightings", "birds"] = Field(
-        "sightings",
-        description="sightings: nur die Sichtungen, die die Bedingung erfüllen. birds (Vogelgruppe): alle Sichtungen der Vögel, die mindestens eine passende Sichtung haben – z. B. „Mausergäste Ostpark“ zeigt dann überall, wo diese Vögel sonst noch auftauchen.",
+        "birds",
+        description="Immer 'birds': Eine Gruppe ist eine Vogelgruppe – alle Sichtungen der Vögel, die mindestens eine passende Sichtung haben („Mausergäste Ostpark“ zeigt überall, wo diese Vögel sonst noch auftauchen). 'sightings' (nur die passenden Sichtungen) gibt es nur noch für alte Gruppen; für Sichtungsauswahlen nutzt man die Filter einer Ansicht.",
     )
     filters: FilterSpec = Field(default_factory=FilterSpec, description="Die gespeicherte Auswahl (wie in einer Ansicht); mit any_of/none_of für Oder- und Ausschluss-Logik.")
     ring_list: list[str] = Field(default_factory=list, description="Zusätzlich: nur diese Ringnummern (für Gruppen, die aus einer Ringliste bestehen).")

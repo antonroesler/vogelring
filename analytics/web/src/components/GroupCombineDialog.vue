@@ -18,15 +18,7 @@
       <div v-if="op === 'difference' && names.length" class="muted mb-4" style="font-size: 12.5px">Grundlage ist die zuerst gewählte Gruppe „{{ names[0] }}“; davon werden {{ names.slice(1).map((n) => `„${n}“`).join(' und ') || '…' }} abgezogen.</div>
       <div v-else class="mb-4" />
 
-      <div class="section-label">Art der Gruppe</div>
-      <v-btn-toggle v-model="scope" mandatory class="vr-toggle mb-2">
-        <v-btn value="sightings" prepend-icon="mdi-binoculars">Sichtungen</v-btn>
-        <v-btn value="birds" prepend-icon="mdi-bird">Vögel</v-btn>
-      </v-btn-toggle>
-      <div class="muted mb-4" style="font-size: 12.5px">
-        <template v-if="scope === 'birds'">Alle Einträge der Vögel, die in der verknüpften Auswahl vorkommen – also auch, wo diese Vögel sonst noch gesehen wurden.</template>
-        <template v-else>Nur die Einträge, die die Verknüpfung erfüllen.</template>
-      </div>
+      <div class="muted mb-4" style="font-size: 12.5px"><v-icon size="16" class="mr-1">mdi-bird</v-icon>Die neue Gruppe ist wie jede Gruppe eine Vogelgruppe: alle Einträge der Vögel, die in der verknüpften Auswahl vorkommen.</div>
 
       <v-text-field v-model="name" label="Name der neuen Gruppe" hide-details class="mb-3" @keyup.enter="save" />
       <v-textarea v-model="description" label="Worum geht es? (optional)" rows="2" auto-grow hide-details class="mb-4" />
@@ -43,7 +35,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { api, type GroupScope, type GroupSummary } from '@/api/client'
+import { api, type GroupSummary } from '@/api/client'
 import { friendlyError } from '@/lib/format'
 import { useMetaStore } from '@/stores/meta'
 
@@ -56,7 +48,6 @@ const meta = useMetaStore()
 const open = computed({ get: () => props.modelValue, set: (v) => emit('update:modelValue', v) })
 const ids = ref<string[]>([])
 const op = ref<Op>('union')
-const scope = ref<GroupScope>('sightings')
 const name = ref('')
 const description = ref('')
 const saving = ref(false)
@@ -71,7 +62,6 @@ watch(open, (v) => {
   if (v) {
     ids.value = props.preselect?.length ? [...props.preselect] : []
     op.value = 'union'
-    scope.value = 'sightings'
     description.value = ''
     error.value = ''
     nameTouched = false
@@ -90,7 +80,7 @@ async function save() {
   saving.value = true
   error.value = ''
   try {
-    const g = await api.combineGroups({ name: name.value.trim(), op: op.value, group_ids: ids.value, scope: scope.value, description: description.value.trim() })
+    const g = await api.combineGroups({ name: name.value.trim(), op: op.value, group_ids: ids.value, scope: 'birds', description: description.value.trim() })
     meta.notify('Gruppe angelegt.')
     open.value = false
     router.push(`/gruppen/${g.id}`)

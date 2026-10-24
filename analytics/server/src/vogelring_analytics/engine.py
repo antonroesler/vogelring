@@ -315,7 +315,7 @@ def group_summary(item: CatalogItem) -> dict[str, Any]:
     except ValidationError:
         describe = "ungültige Gruppe"
     d.update({
-        "name": item.title, "color": doc.get("color"), "describe": describe, "scope": doc.get("scope") or "sightings", "ring_count": len(doc.get("ring_list") or []),
+        "name": item.title, "color": doc.get("color"), "describe": describe, "scope": doc.get("scope") or "birds", "ring_count": len(doc.get("ring_list") or []),
         "excluded_count": len(doc.get("excluded_ids") or []), "filter_count": sum(1 for k, v in f.items() if v not in (None, [], "", False) and v != _FILTER_DEFAULTS.get(k)),
         "stats": (item.extra or {}).get("stats"),
     })
@@ -364,6 +364,15 @@ async def group_stats(group_id: str) -> dict[str, Any]:
     """Live numbers from the read-only database; cached in the item's extra for the list page."""
     cat = runtime.catalog()
     item, spec = resolve_group(group_id)
+    stats = await compute_group_stats(spec)
+    ex = dict(item.extra)
+    ex["stats"] = stats
+    cat.put("group", item.doc, id=item.id, title=item.title, description=item.description, owner=item.owner, project=item.project, tags=item.tags, extra=ex)
+    return {"group_id": item.id, "name": item.title, "describe": spec.describe(), **stats}
+
+
+async def compute_group_stats(spec: GroupSpec) -> dict[str, Any]:
+    """Live numbers for any group definition – saved or not (the web page evaluates the form while Ingo edits)."""
     source = get_source("sightings")
     try:
         cond, params = group_condition(source, spec)
@@ -397,10 +406,7 @@ async def group_stats(group_id: str) -> dict[str, Any]:
         "years": [{"year": int(_v(k)), "sightings": int(n)} for k, n in yr.rows if k is not None],
         "computed_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
-    ex = dict(item.extra)
-    ex["stats"] = stats
-    cat.put("group", item.doc, id=item.id, title=item.title, description=item.description, owner=item.owner, project=item.project, tags=item.tags, extra=ex)
-    return {"group_id": item.id, "name": item.title, "describe": spec.describe(), **stats}
+    return stats
 
 
 GROUP_PREVIEW_COLUMNS = ["id", "date", "ring", "species", "place", "status", "age", "melder", "ringing_place"]
@@ -409,6 +415,12 @@ GROUP_PREVIEW_COLUMNS = ["id", "date", "ring", "species", "place", "status", "ag
 async def group_preview(group_id: str, *, limit: int = 50, offset: int = 0, with_excluded: bool = False) -> dict[str, Any]:
     """Rows of the group (paged). with_excluded=True also returns hand-excluded rows, flagged, so they can be re-included."""
     item, spec = resolve_group(group_id)
+    rows = await compute_group_preview(spec, limit=limit, offset=offset, with_excluded=with_excluded)
+    return {"group_id": item.id, "name": item.title, **rows}
+
+
+async def compute_group_preview(spec: GroupSpec, *, limit: int = 50, offset: int = 0, with_excluded: bool = False) -> dict[str, Any]:
+    """Rows for any group definition – saved or not."""
     source = get_source("sightings")
     try:
         cond, params = group_condition(source, spec, with_exclusions=not with_excluded)
@@ -437,13 +449,21 @@ async def group_preview(group_id: str, *, limit: int = 50, offset: int = 0, with
             d[k] = v.isoformat()[:10] if hasattr(v, "isoformat") else (str(v) if k == "id" else v)
         d["excluded"] = d["id"] in excluded
         rows.append(d)
-    return {"group_id": item.id, "name": item.title, "scope": spec.scope, "columns": GROUP_PREVIEW_COLUMNS, "rows": rows, "total": int(cnt.rows[0][0]) if cnt.rows else 0, "offset": offset, "limit": limit, "with_excluded": with_excluded}
+    return {"scope": spec.scope, "columns": GROUP_PREVIEW_COLUMNS, "rows": rows, "total": int(cnt.rows[0][0]) if cnt.rows else 0, "offset": offset, "limit": limit, "with_excluded": with_excluded}
+
+
+async def evaluate_group(spec: GroupSpec, *, limit: int = 50, offset: int = 0, with_excluded: bool = False, with_rows: bool = True) -> dict[str, Any]:
+    """Describe + numbers (+ rows) for an unsaved definition, so the page shows what a group *would* contain before saving."""
+    out: dict[str, Any] = {"describe": spec.describe(), "scope": spec.scope, "stats": await compute_group_stats(spec)}
+    if with_rows:
+        out["preview"] = {"name": spec.name, **(await compute_group_preview(spec, limit=limit, offset=offset, with_excluded=with_excluded))}
+    return out
 
 
 COMBINE_OPS = {"union": "Vereinigung", "intersection": "Schnittmenge", "difference": "Differenz"}
 
 
-def combine_groups(name: str, op: str, group_ids: list[str], *, scope: str = "sightings", description: str = "", color: str | None = None, by: str = "") -> dict[str, Any]:
+def combine_groups(name: str, op: str, group_ids: list[str], *, scope: str = "birds", description: str = "", color: str | None = None, by: str = "") -> dict[str, Any]:
     """A new group built from existing ones: union (in at least one), intersection (in all), difference (first minus the rest).
 
     The new group references the others, so it follows their later changes."""

@@ -135,15 +135,7 @@
         <div class="muted mb-4" style="font-size: 13px">{{ b.preview?.describe }}</div>
         <v-text-field v-model="groupName" label="Name (so, wie du sie nennst)" autofocus @keyup.enter="doSaveGroup" />
         <v-textarea v-model="groupDesc" label="Worum geht es? (optional)" rows="2" />
-        <div class="section-label">Art der Gruppe</div>
-        <v-btn-toggle v-model="groupScope" mandatory class="vr-toggle mb-2">
-          <v-btn value="sightings" prepend-icon="mdi-binoculars">Sichtungen</v-btn>
-          <v-btn value="birds" prepend-icon="mdi-bird">Vögel</v-btn>
-        </v-btn-toggle>
-        <div class="muted mb-4" style="font-size: 12.5px">
-          <template v-if="groupScope === 'birds'">Alle Einträge der Vögel, auf die die Filter mindestens einmal zutreffen – also auch, wo diese Vögel sonst noch gesehen wurden.</template>
-          <template v-else>Nur die Einträge, die die Filter erfüllen.</template>
-        </div>
+        <div class="muted mb-4" style="font-size: 12.5px"><v-icon size="16" class="mr-1">mdi-bird</v-icon>Eine Gruppe ist eine Vogelgruppe: Die Filter wählen Vögel aus, die Gruppe enthält alle Einträge dieser Vögel – auch, wo sie sonst noch gesehen wurden.</div>
         <div class="d-flex justify-end ga-2"><v-btn variant="text" @click="groupDialog = false">Abbrechen</v-btn><v-btn color="primary" :disabled="!groupName.trim()" :loading="saving" @click="doSaveGroup">Gruppe anlegen</v-btn></div>
       </v-card>
     </v-dialog>
@@ -163,7 +155,7 @@
 import EmptyState from '@/components/EmptyState.vue'
 import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { api, type CatalogItem, type GroupScope } from '@/api/client'
+import { api, type CatalogItem } from '@/api/client'
 import BinControl from '@/components/BinControl.vue'
 import FilterPanel from '@/components/FilterPanel.vue'
 import VisualStage from '@/components/VisualStage.vue'
@@ -185,7 +177,6 @@ const saveAsCopy = ref(false)
 const groupDialog = ref(false)
 const groupName = ref('')
 const groupDesc = ref('')
-const groupScope = ref<GroupScope>('sightings')
 const hasFilters = computed(() => Object.keys(cleanFilters(f.value.filters)).length > 0)
 const wbDialog = ref(false)
 const wbTarget = ref<string | null>(null)
@@ -314,14 +305,13 @@ function askGroup() {
   const sel = d.includes(' – ') ? d.slice(d.lastIndexOf(' – ') + 3) : d
   groupName.value = sel.replace(/^(Sichtungen|Beringungen|Vögel|Beziehungen)\s+/, '').replace(/^\w/, (c) => c.toUpperCase()).slice(0, 80)
   groupDesc.value = ''
-  groupScope.value = 'sightings'
   groupDialog.value = true
 }
 async function doSaveGroup() {
   if (!groupName.value.trim()) return
   saving.value = true
   try {
-    const g = await api.createGroup({ name: groupName.value.trim(), description: groupDesc.value.trim(), scope: groupScope.value, filters: cleanFilters(f.value.filters) })
+    const g = await api.createGroup({ name: groupName.value.trim(), description: groupDesc.value.trim(), scope: 'birds', filters: cleanFilters(f.value.filters) })
     groupDialog.value = false
     meta.notify('Gruppe gespeichert.')
     router.push(`/gruppen/${g.id}`)

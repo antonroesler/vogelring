@@ -668,9 +668,10 @@ def create_group(
 ) -> dict[str, Any]:
     """A group („Gruppe“) is a saved, named selection the user reuses: filters (species, places, period, status, ringing
     place/age …) with OR/NOT logic (filters.any_of / none_of), plus an optional ring list and hand-excluded sightings.
-    scope="birds" makes it a bird group: all sightings of the birds that have at least one matching sighting (e.g.
-    „Mausergäste Ostpark“: places=['Ostpark'], any_of=[{months:[5,6]},{months:[4],status:['MG']}], scope=birds → wherever
-    these birds turn up). Use groups everywhere via filters.groups (union), all_groups (intersection), exclude_groups
+    A group is always a bird group (scope="birds"): the rule picks birds, the group holds ALL sightings of the birds
+    that have at least one matching sighting (e.g. „Mausergäste Ostpark“: places=['Ostpark'],
+    any_of=[{months:[5,6]},{months:[4],status:['MG']}] → wherever these birds turn up). For a sighting-level selection
+    use the filters of a view instead. Use groups everywhere via filters.groups (union), all_groups (intersection), exclude_groups
     (difference) or birds_of={groups:[…]}; dimension/color "group" compares them. Returns a German description – read it
     back to the user."""
     try:

@@ -1,6 +1,6 @@
 <template>
   <div class="filters">
-    <v-select v-if="has('groups') && groups.length" v-model="f.groups" :items="groups" item-title="label" item-value="value" label="Gruppe (in mindestens einer)" multiple chips closable-chips clearable hide-details>
+    <v-select v-if="has('groups') && groups.length" v-model="f.groups" :items="groups" item-title="label" item-value="value" label="Gruppe (in mindestens einer – oder)" multiple chips closable-chips clearable hide-details>
       <template #chip="{ props: cp, item }"><v-chip v-bind="cp" :prepend-icon="undefined"><span class="dot" :style="{ background: item.raw.color || '#8aa' }" />{{ item.raw.name }}</v-chip></template>
       <template #item="{ props: ip, item }"><v-list-item v-bind="ip" :title="item.raw.name" :subtitle="item.raw.describe"><template #prepend><span class="dot mr-3" :style="{ background: item.raw.color || '#8aa' }" /></template></v-list-item></template>
     </v-select>
@@ -30,14 +30,6 @@
             <ChoiceSelect v-if="has('ringing_places')" v-model="f.ringing_places" :source="source" :filters="ctx" column="ringing_place" label="Beringungsort (Namensteil)" free-text />
             <v-select v-if="has('ringing_age')" v-model="f.ringing_age" :items="opts('ringing_age')" item-title="label" item-value="value" label="Alter bei Beringung" multiple chips closable-chips clearable hide-details />
             <ChoiceSelect v-if="has('exclude_places')" v-model="f.exclude_places" :source="source" :filters="ctx" column="place" label="Orte ausschließen" free-text />
-            <v-select v-if="has('all_groups') && groups.length" v-model="f.all_groups" :items="groups" item-title="label" item-value="value" label="In allen diesen Gruppen" multiple chips closable-chips clearable hide-details>
-              <template #chip="{ props: cp, item }"><v-chip v-bind="cp" :prepend-icon="undefined"><span class="dot" :style="{ background: item.raw.color || '#8aa' }" />{{ item.raw.name }}</v-chip></template>
-              <template #item="{ props: ip, item }"><v-list-item v-bind="ip" :title="item.raw.name" :subtitle="item.raw.describe"><template #prepend><span class="dot mr-3" :style="{ background: item.raw.color || '#8aa' }" /></template></v-list-item></template>
-            </v-select>
-            <v-select v-if="has('exclude_groups') && groups.length" v-model="f.exclude_groups" :items="groups" item-title="label" item-value="value" label="Gruppe ausschließen" multiple chips closable-chips clearable hide-details>
-              <template #chip="{ props: cp, item }"><v-chip v-bind="cp" :prepend-icon="undefined"><span class="dot" :style="{ background: item.raw.color || '#8aa' }" />{{ item.raw.name }}</v-chip></template>
-              <template #item="{ props: ip, item }"><v-list-item v-bind="ip" :title="item.raw.name" :subtitle="item.raw.describe"><template #prepend><span class="dot mr-3" :style="{ background: item.raw.color || '#8aa' }" /></template></v-list-item></template>
-            </v-select>
             <div v-if="has('around_place')" class="d-flex ga-2 align-center">
               <v-text-field v-model="f.around_place" label="Umkreis um Ort" hide-details clearable />
               <v-text-field v-model.number="f.around_place_km" type="number" label="km" hide-details style="max-width: 90px" />
@@ -48,15 +40,35 @@
         </v-expansion-panel-text>
       </v-expansion-panel>
 
+      <v-expansion-panel v-if="withGroups" value="groups" elevation="0">
+        <v-expansion-panel-title>
+          Gruppen verknüpfen (und / nicht)
+          <v-chip v-if="groupCount" size="x-small" class="ml-2" variant="tonal">{{ groupCount }}</v-chip>
+        </v-expansion-panel-title>
+        <v-expansion-panel-text>
+          <div class="muted hint">Mit gespeicherten Gruppen rechnen: „in mindestens einer“ (oder) wählst du oben. Hier kommt dazu: nur, was zugleich in allen genannten Gruppen liegt (und), und was in keiner der genannten liegen darf (nicht). So entsteht z. B. „in A oder B, aber nicht in C“.</div>
+          <div class="filters">
+            <v-select v-if="has('all_groups')" v-model="f.all_groups" :items="groups" item-title="label" item-value="value" label="In allen diesen Gruppen (und)" multiple chips closable-chips clearable hide-details>
+              <template #chip="{ props: cp, item }"><v-chip v-bind="cp" :prepend-icon="undefined"><span class="dot" :style="{ background: item.raw.color || '#8aa' }" />{{ item.raw.name }}</v-chip></template>
+              <template #item="{ props: ip, item }"><v-list-item v-bind="ip" :title="item.raw.name" :subtitle="item.raw.describe"><template #prepend><span class="dot mr-3" :style="{ background: item.raw.color || '#8aa' }" /></template></v-list-item></template>
+            </v-select>
+            <v-select v-if="has('exclude_groups')" v-model="f.exclude_groups" :items="groups" item-title="label" item-value="value" label="Nicht in diesen Gruppen (ausschließen)" multiple chips closable-chips clearable hide-details>
+              <template #chip="{ props: cp, item }"><v-chip v-bind="cp" :prepend-icon="undefined"><span class="dot" :style="{ background: item.raw.color || '#8aa' }" />{{ item.raw.name }}</v-chip></template>
+              <template #item="{ props: ip, item }"><v-list-item v-bind="ip" :title="item.raw.name" :subtitle="item.raw.describe"><template #prepend><span class="dot mr-3" :style="{ background: item.raw.color || '#8aa' }" /></template></v-list-item></template>
+            </v-select>
+          </div>
+        </v-expansion-panel-text>
+      </v-expansion-panel>
+
       <v-expansion-panel v-if="withBlocks" value="logic" elevation="0">
         <v-expansion-panel-title>
-          Oder- und Ausschluss-Bedingungen
+          Und / Oder / Nicht – Bedingungen kombinieren
           <v-chip v-if="blockCount" size="x-small" class="ml-2" variant="tonal">{{ blockCount }}</v-chip>
         </v-expansion-panel-title>
         <v-expansion-panel-text>
-          <div class="muted hint">Die Filter oben gelten immer zusammen (und). Hier kannst du Alternativen festlegen – etwa „Mai oder Juni“ <em>oder</em> „April mit Status Mausergast“ – und Fälle ausschließen.</div>
+          <div class="muted hint">Die Filter oben gelten immer zusammen (und). Hier legst du Alternativen fest (oder) – etwa „Mai oder Juni“ <em>oder</em> „April mit Status Mausergast“ – und schließt Fälle aus (nicht).</div>
 
-          <div class="block-intro">Mindestens eine dieser Bedingungen trifft zu:</div>
+          <div class="block-intro">Oder: mindestens eine dieser Bedingungen trifft zu</div>
           <div v-for="(_, i) in block.any_of" :key="'any' + i" class="block-card">
             <div class="block-head">
               <span>Bedingung {{ i + 1 }}</span>
@@ -67,7 +79,7 @@
           </div>
           <v-btn variant="outlined" size="small" prepend-icon="mdi-plus" class="mb-5" @click="block.any_of.push(emptyFields())">Oder-Bedingung hinzufügen</v-btn>
 
-          <div class="block-intro">Keine dieser Bedingungen trifft zu:</div>
+          <div class="block-intro">Nicht: keine dieser Bedingungen trifft zu</div>
           <div v-for="(_, i) in block.none_of" :key="'none' + i" class="block-card block-card--excl">
             <div class="block-head">
               <span>Ausschluss {{ i + 1 }}</span>
@@ -156,6 +168,8 @@ const block = computed(() => props.modelValue as FilterBlock)
 const full = computed(() => props.modelValue as Filters)
 const withBlocks = computed(() => props.level !== 'fields')
 const withBirds = computed(() => props.level === 'full')
+const withGroups = computed(() => groups.value.length > 0 && (has('all_groups') || has('exclude_groups')))
+const groupCount = computed(() => (withGroups.value ? (f.value.all_groups?.length || 0) + (f.value.exclude_groups?.length || 0) : 0))
 const ctx = computed(() => cleanFilters(props.modelValue))
 const supported = computed(() => new Set(meta.sourceByKey(props.source)?.filters || []))
 const has = (name: string) => supported.value.has(name)
@@ -170,10 +184,11 @@ const birdCount = computed(() => (withBirds.value ? (full.value.birds_of ? 1 : 0
 
 // a saved spec with blocks should show them right away
 watch(
-  () => [blockCount.value, birdCount.value],
-  ([b, v]) => {
+  () => [blockCount.value, birdCount.value, groupCount.value],
+  ([b, v, g]) => {
     if (b && !open.value.includes('logic')) open.value = [...open.value, 'logic']
     if (v && !open.value.includes('birds')) open.value = [...open.value, 'birds']
+    if (g && !open.value.includes('groups')) open.value = [...open.value, 'groups']
   },
   { immediate: true },
 )

@@ -236,6 +236,16 @@ async def api_group_preview(request: Request) -> Response:
     return await _handle(engine.group_preview(request.path_params["id"], limit=int(q.get("limit", "50")), offset=int(q.get("offset", "0")), with_excluded=q.get("with_excluded") == "1"))
 
 
+async def api_groups_evaluate(request: Request) -> Response:
+    """Numbers, sentence and rows for a group definition that is not (yet) saved – the page calls this while editing."""
+    data = await body(request)
+    try:
+        spec = engine.parse_group(data.get("spec") or {})
+    except engine.EngineError as exc:
+        return err(str(exc))
+    return await _handle(engine.evaluate_group(spec, limit=int(data.get("limit", 50)), offset=int(data.get("offset", 0)), with_excluded=bool(data.get("with_excluded")), with_rows=data.get("rows", True) is not False))
+
+
 async def api_groups_compare(request: Request) -> Response:
     data = await body(request)
     ids = [str(x) for x in (data.get("group_ids") or data.get("ids") or [])]
@@ -245,7 +255,7 @@ async def api_groups_compare(request: Request) -> Response:
 async def api_groups_combine(request: Request) -> Response:
     data = await body(request)
     try:
-        return ok(engine.combine_groups(str(data.get("name") or ""), str(data.get("op") or "union"), [str(x) for x in (data.get("group_ids") or [])], scope=str(data.get("scope") or "sightings"), description=str(data.get("description") or ""), color=data.get("color"), by=user_of(request) or "app"))
+        return ok(engine.combine_groups(str(data.get("name") or ""), str(data.get("op") or "union"), [str(x) for x in (data.get("group_ids") or [])], scope=str(data.get("scope") or "birds"), description=str(data.get("description") or ""), color=data.get("color"), by=user_of(request) or "app"))
     except engine.EngineError as exc:
         return err(str(exc))
 
@@ -306,6 +316,7 @@ routes: list[Route] = [
     Route("/api/runs", api_runs_list),
     Route("/api/groups", api_groups_list),
     Route("/api/groups", api_group_create, methods=["POST"]),
+    Route("/api/groups/evaluate", api_groups_evaluate, methods=["POST"]),
     Route("/api/groups/compare", api_groups_compare, methods=["POST"]),
     Route("/api/groups/combine", api_groups_combine, methods=["POST"]),
     Route("/api/groups/import-legacy", api_groups_import_legacy, methods=["POST"]),

@@ -68,8 +68,8 @@ def test_group_condition_and_union(cat):
 
 
 def test_group_dimension_case(cat):
-    a = engine.create_group(GroupSpec(name="A", filters={"species": ["Graugans"]}, color="#111111"))
-    b = engine.create_group(GroupSpec(name="B", filters={"species": ["Kanadagans"]}))
+    a = engine.create_group(GroupSpec(name="A", scope="sightings", filters={"species": ["Graugans"]}, color="#111111"))
+    b = engine.create_group(GroupSpec(name="B", scope="sightings", filters={"species": ["Kanadagans"]}))
     sql, params = build_aggregate_sql(get_source("sightings"), FilterSpec(groups=[a["id"], b["id"]]), "sightings", None, ["year", "group"])
     assert "CASE WHEN (species IN (%s)) THEN %s WHEN (species IN (%s)) THEN %s ELSE 'andere' END AS group" in sql
     assert params[:4] == ["Graugans", "A", "Kanadagans", "B"]  # CASE params precede the WHERE params
@@ -123,7 +123,7 @@ def test_engine_crud_and_events(cat, events):
     ex = engine.set_group_exclusions(out["id"], ["s1"], False)
     assert ex["doc"]["excluded_ids"] == ["s2"]
     assert [g["name"] for g in engine.list_groups(search="Neckar")] == ["Nilgänse Neckar"]
-    assert engine.get_group(out["id"])["describe"].startswith("Sichtungen der Art Nilgans")
+    assert engine.get_group(out["id"])["describe"].startswith("alle Sichtungen der Vögel mit mindestens einer Sichtung der Art Nilgans")
     item, spec = resolve_group("nilgänse neckar")
     assert item.id == out["id"] and spec.color == "#228096"
     with pytest.raises(engine.EngineError, match="ungültig"):
@@ -181,6 +181,15 @@ async def test_group_stats_and_preview(cat, monkeypatch):
     pv = await engine.group_preview(g["id"], limit=10, with_excluded=True)
     assert pv["total"] == 2 and pv["rows"][0]["date"] == "2025-07-09" and pv["rows"][0]["excluded"] is False and pv["rows"][1]["excluded"] is True
     assert "NOT (id::text" not in db.sql[-1][0] and "LIMIT 10 OFFSET 0" in db.sql[-1][0]
+
+    # an unsaved definition evaluates the same way, without touching the catalog
+    before = len(engine.list_groups())
+    ev = await engine.evaluate_group(GroupSpec(name="Entwurf", scope="birds", filters={"species": ["Graugans"], "places": ["Palmengarten"]}), limit=5)
+    assert ev["describe"].startswith("alle Sichtungen der Vögel mit mindestens einer Sichtung") and ev["scope"] == "birds"
+    assert ev["stats"]["sightings"] == 12 and ev["preview"]["total"] == 2 and ev["preview"]["name"] == "Entwurf"
+    assert "Palmengarten" in str(db.sql[-1][1]) and len(engine.list_groups()) == before
+    ev = await engine.evaluate_group(GroupSpec(name="Entwurf"), with_rows=False)
+    assert "preview" not in ev and ev["describe"] == "alle Sichtungen aller Vögel"
 
 
 # ---------------------------------------------------------------- legacy port

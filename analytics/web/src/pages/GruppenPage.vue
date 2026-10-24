@@ -32,7 +32,6 @@
             <span v-else class="muted">Zahlen werden geladen …</span>
           </div>
           <div class="d-flex flex-wrap ga-1 mt-3">
-            <v-chip v-if="g.scope === 'birds'" size="x-small" variant="tonal" color="primary" prepend-icon="mdi-bird">Vogelgruppe</v-chip>
             <v-chip v-for="t in g.tags" :key="t" size="x-small" variant="tonal">{{ t }}</v-chip>
             <v-chip v-if="g.ring_count" size="x-small" variant="tonal" color="secondary">{{ g.ring_count }} Ringe</v-chip>
             <v-chip v-if="g.excluded_count" size="x-small" variant="tonal" color="warning">{{ g.excluded_count }} ausgeschlossen</v-chip>
@@ -54,7 +53,7 @@
         <div class="card-title">Neue Gruppe</div>
         <v-text-field v-model="newName" label="Name (so, wie du sie nennst)" autofocus @keyup.enter="create" />
         <v-textarea v-model="newDesc" label="Worum geht es? (optional)" rows="2" />
-        <div class="muted mb-3" style="font-size: 13px">Die Filter legst du im nächsten Schritt fest.</div>
+        <div class="muted mb-3" style="font-size: 13px"><v-icon size="16" class="mr-1">mdi-bird</v-icon>Eine Gruppe ist eine Vogelgruppe: Die Bedingung (Art, Ort, Status, Zeitraum …) wählt Vögel aus, und die Gruppe enthält alle Einträge dieser Vögel – auch, wo sie sonst noch gesehen wurden. Die Bedingung legst du im nächsten Schritt fest.</div>
         <div class="d-flex justify-end ga-2"><v-btn variant="text" @click="newDialog = false">Abbrechen</v-btn><v-btn color="primary" :disabled="!newName.trim()" :loading="busy" @click="create">Anlegen</v-btn></div>
       </v-card>
     </v-dialog>
@@ -114,7 +113,7 @@ async function create() {
   if (!newName.value.trim()) return
   busy.value = true
   try {
-    const g = await api.createGroup({ name: newName.value.trim(), description: newDesc.value.trim() })
+    const g = await api.createGroup({ name: newName.value.trim(), description: newDesc.value.trim(), scope: 'birds' })
     newDialog.value = false
     router.push(`/gruppen/${g.id}`)
   } catch (e) {
@@ -145,6 +144,7 @@ watch(() => live.version.groups, load)
 </script>
 
 <style scoped>
+
 .group-card { min-height: 100%; }
 .clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .counts { font-size: 13.5px; }

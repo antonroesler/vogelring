@@ -74,9 +74,11 @@ def test_bird_group_scope(cat):
 
 
 def test_group_set_operations(cat):
-    a = engine.create_group(GroupSpec(name="A", filters={"species": ["Graugans"]}))
-    b = engine.create_group(GroupSpec(name="B", filters={"places": ["Ostpark"]}))
-    c = engine.create_group(GroupSpec(name="C", filters={"years": [2025]}))
+    # legacy sightings-level groups keep their plain conditions; new groups are bird groups by default
+    a = engine.create_group(GroupSpec(name="A", scope="sightings", filters={"species": ["Graugans"]}))
+    b = engine.create_group(GroupSpec(name="B", scope="sightings", filters={"places": ["Ostpark"]}))
+    c = engine.create_group(GroupSpec(name="C", scope="sightings", filters={"years": [2025]}))
+    assert engine.create_group(GroupSpec(name="D", filters={"years": [2024]}))["scope"] == "birds"
     sql, params = compile_filters(S, FilterSpec(all_groups=[a["id"], "B"]))
     assert sql == "((species IN (%s)) AND ((place ILIKE %s)))" and params == ["Graugans", "%Ostpark%"]
     sql, params = compile_filters(S, FilterSpec(groups=[a["id"]], exclude_groups=[b["id"], c["id"]]))
@@ -90,7 +92,7 @@ def test_group_set_operations(cat):
     assert i["doc"]["filters"] == {"all_groups": [a["id"], b["id"]]} and i["scope"] == "birds"
     d = engine.combine_groups("A ohne B und C", "difference", [a["id"], b["id"], c["id"]])
     assert d["doc"]["filters"] == {"groups": [a["id"]], "exclude_groups": [b["id"], c["id"]]}
-    assert d["describe"] == "Sichtungen aus der Gruppe ‚A‘, nicht aus den Gruppen ‚B‘ oder ‚C‘"
+    assert d["describe"] == "alle Sichtungen der Vögel mit mindestens einer Sichtung aus der Gruppe ‚A‘, nicht aus den Gruppen ‚B‘ oder ‚C‘"
     sql, _ = compile_filters(S, FilterSpec(groups=[d["id"]]))
     assert "NOT (((place ILIKE %s)) OR (EXTRACT(YEAR FROM date) IN (2025)))" in sql
     with pytest.raises(engine.EngineError, match="mindestens zwei"):
@@ -153,7 +155,7 @@ async def test_bird_group_stats_and_preview_flags(cat, monkeypatch):
     assert pv["scope"] == "birds" and pv["rows"][0]["matches"] is True and pv["rows"][1]["matches"] is False
     sql, params = db.sql[-1]
     assert ", (((place ILIKE %s) AND EXTRACT(MONTH FROM date) IN (5, 6))) AS matches FROM" in sql and params == ["%Ostpark%", "%Ostpark%"]
-    # sightings-scope groups report no matching count
-    g2 = engine.create_group(GroupSpec(name="Plain", filters={"places": ["Ostpark"]}))
+    # legacy sightings-scope groups report no matching count
+    g2 = engine.create_group(GroupSpec(name="Plain", scope="sightings", filters={"places": ["Ostpark"]}))
     st2 = await engine.group_stats(g2["id"])
     assert st2["scope"] == "sightings" and st2["matching_sightings"] is None

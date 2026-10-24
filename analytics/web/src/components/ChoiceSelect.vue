@@ -10,7 +10,6 @@
     multiple
     chips
     closable-chips
-    clearable
     hide-details
     density="comfortable"
     :menu-props="{ maxHeight: 360 }"
@@ -19,6 +18,7 @@
   <v-combobox
     v-else
     v-model="model"
+    v-model:menu="menu"
     :items="items"
     item-title="label"
     item-value="value"
@@ -28,11 +28,11 @@
     multiple
     chips
     closable-chips
-    clearable
     hide-details
     density="comfortable"
     :menu-props="{ maxHeight: 360 }"
     @update:search="onSearch"
+    @update:model-value="menu = false"
   />
 </template>
 
@@ -43,6 +43,8 @@ import { api, type Choice } from '@/api/client'
 const props = withDefaults(defineProps<{ modelValue: any[]; source: string; column: string; label: string; freeText?: boolean; staticItems?: { value: any; label: string }[]; filters?: Record<string, any> }>(), { freeText: false, staticItems: undefined, filters: undefined })
 const emit = defineEmits<{ (e: 'update:modelValue', v: any[]): void }>()
 const model = ref<any[]>(props.modelValue || [])
+// free text: after a pick the list would reopen in full over the form – close it, the chip is enough
+const menu = ref(false)
 const items = ref<(Choice | { value: any; label: string })[]>([])
 const loading = ref(false)
 let timer: any = null
