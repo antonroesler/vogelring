@@ -49,18 +49,24 @@ export interface ChartModel {
   annotations?: { kind: 'band' | 'line'; from: any; to?: any; label?: string | null; color: string }[]
   categories?: string[] | null
   rows?: string[]
-  series: { name: string; data: any[]; color: string; stack?: string | null }[]
+  series: { name: string; data: any[]; color: string; stack?: string | null; pattern?: string[] | null }[]
   stack?: boolean
   totals?: number[]
-  pie?: { name: string; value: number; color: string }[]
+  pie?: { name: string; value: number; color: string; pattern?: string[] | null }[]
   heat?: { values: [number, number, number][]; min: number; max: number }
   timeline?: { points: { row: number; t: string; end?: string; cls: string; color: string; tip: string }[]; classes: { name: string; color: string }[]; min: string; max: string }
   calendar?: { years: number[]; values: [string, number][]; max: number; value_label: string }
   sankey?: { nodes: { name: string; label: string; color: string }[]; links: { source: string; target: string; value: number }[]; keep_order?: boolean }
   box?: { data: number[][]; outliers: [number, number][]; color: string; name: string }
   graph?: { nodes: { name: string; value: number; category: number; symbolSize: number }[]; links: { source: string; target: string; value: number; label?: string | null; color?: string | null }[]; categories: { name: string; color: string }[]; edge_types: { name: string; color: string }[]; directed: boolean }
-  facets?: { name: string; categories: string[]; series: { name: string; data: any[]; color: string }[] }[]
+  facets?: { name: string; categories: string[]; series: { name: string; data: any[]; color: string; pattern?: string[] | null }[] }[]
   facet_columns?: number
+}
+
+/** Diagonal stripes in the second colour over the first – for categories that belong to two groups. */
+function stripes(pattern?: string[] | null) {
+  if (!pattern || pattern.length < 2) return undefined
+  return { symbol: 'rect', color: pattern[1], dashArrayX: [1, 0], dashArrayY: [4, 5], symbolSize: 1, rotation: Math.PI / 4 }
 }
 
 function fmtVal(v: any, axis?: AxisModel | null): string {
@@ -148,7 +154,8 @@ export function buildChartOption(M: ChartModel, interactive = true): any {
     if (legendBottom) opt.grid.bottom = 44
     else opt.grid.right = 24 + Math.min(260, 8 * longestLabel(legendNames) + 40)
   }
-  if (M.legend_title && showLegend) {
+  // a bottom legend sits where the axis title is – the series names carry the meaning there, so no extra title
+  if (M.legend_title && showLegend && !legendBottom) {
     opt.title = [{ text: M.legend_title, right: legendBottom ? undefined : 8, top: legendBottom ? undefined : 4, bottom: legendBottom ? 24 : undefined, left: legendBottom ? 'center' : undefined, textStyle: { fontSize: 12, color: MUTED, fontWeight: 600 } }]
   }
 
@@ -168,7 +175,7 @@ export function buildChartOption(M: ChartModel, interactive = true): any {
         avoidLabelOverlap: true,
         itemStyle: { borderColor: PAPER, borderWidth: 2, borderRadius: 4 },
         label: { formatter: (p: any) => `${p.name}\n${fmtVal(p.value)} (${fmt.format(p.percent)} %)`, fontSize: 12, color: TEXT },
-        data: (M.pie || []).map((d) => ({ name: d.name, value: d.value, itemStyle: { color: d.color } })),
+        data: (M.pie || []).map((d) => ({ name: d.name, value: d.value, itemStyle: { color: d.color, decal: stripes(d.pattern) } })),
       },
     ]
     opt.legend.data = (M.pie || []).map((d) => d.name)
@@ -218,7 +225,7 @@ export function buildChartOption(M: ChartModel, interactive = true): any {
   const nSeries = M.series.length
 
   opt.series = M.series.map((s, i) => {
-    const base: any = { name: s.name, data: s.data, itemStyle: { color: s.color }, emphasis: { focus: 'series' } }
+    const base: any = { name: s.name, data: s.data, itemStyle: { color: s.color, decal: stripes(s.pattern) }, emphasis: { focus: 'series' } }
     if (isBar) {
       base.type = 'bar'
       base.barMaxWidth = 48
@@ -482,7 +489,7 @@ function buildFacets(M: ChartModel, opt: any) {
     opt.xAxis.push(ax)
     opt.yAxis.push(ay)
     f.series.forEach((s) => {
-      const base: any = { name: s.name, data: s.data, xAxisIndex: i, yAxisIndex: i, itemStyle: { color: s.color }, emphasis: { focus: 'series' } }
+      const base: any = { name: s.name, data: s.data, xAxisIndex: i, yAxisIndex: i, itemStyle: { color: s.color, decal: stripes(s.pattern) }, emphasis: { focus: 'series' } }
       if (isBar) {
         base.type = 'bar'
         base.barMaxWidth = 32

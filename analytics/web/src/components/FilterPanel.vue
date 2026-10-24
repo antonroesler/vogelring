@@ -1,9 +1,9 @@
 <template>
   <div class="filters">
-    <v-select v-if="has('groups') && groups.length" v-model="f.groups" :items="groups" item-title="label" item-value="value" label="Gruppe (in mindestens einer – oder)" multiple chips closable-chips clearable hide-details>
+    <v-autocomplete v-if="has('groups') && groups.length" v-model="f.groups" :items="groups" item-title="label" item-value="value" label="Gruppe (in mindestens einer – oder)" multiple chips closable-chips clearable hide-details>
       <template #chip="{ props: cp, item }"><v-chip v-bind="cp" :prepend-icon="undefined"><span class="dot" :style="{ background: item.raw.color || '#8aa' }" />{{ item.raw.name }}</v-chip></template>
       <template #item="{ props: ip, item }"><v-list-item v-bind="ip" :title="item.raw.name" :subtitle="item.raw.describe"><template #prepend><span class="dot mr-3" :style="{ background: item.raw.color || '#8aa' }" /></template></v-list-item></template>
-    </v-select>
+    </v-autocomplete>
     <ChoiceSelect v-if="has('species')" v-model="f.species" :source="source" :filters="ctx" column="species" label="Art" />
     <ChoiceSelect v-if="has('places')" v-model="f.places" :source="source" :filters="ctx" column="place" label="Ort (Namensteil genügt)" free-text />
     <v-select v-if="has('place_groups') && placeGroups.length" v-model="f.place_groups" :items="placeGroups" item-title="label" item-value="value" label="Ortsgruppe" multiple chips closable-chips clearable hide-details />
@@ -48,14 +48,14 @@
         <v-expansion-panel-text>
           <div class="muted hint">Mit gespeicherten Gruppen rechnen: „in mindestens einer“ (oder) wählst du oben. Hier kommt dazu: nur, was zugleich in allen genannten Gruppen liegt (und), und was in keiner der genannten liegen darf (nicht). So entsteht z. B. „in A oder B, aber nicht in C“.</div>
           <div class="filters">
-            <v-select v-if="has('all_groups')" v-model="f.all_groups" :items="groups" item-title="label" item-value="value" label="In allen diesen Gruppen (und)" multiple chips closable-chips clearable hide-details>
+            <v-autocomplete v-if="has('all_groups')" v-model="f.all_groups" :items="groups" item-title="label" item-value="value" label="In allen diesen Gruppen (und)" multiple chips closable-chips clearable hide-details>
               <template #chip="{ props: cp, item }"><v-chip v-bind="cp" :prepend-icon="undefined"><span class="dot" :style="{ background: item.raw.color || '#8aa' }" />{{ item.raw.name }}</v-chip></template>
               <template #item="{ props: ip, item }"><v-list-item v-bind="ip" :title="item.raw.name" :subtitle="item.raw.describe"><template #prepend><span class="dot mr-3" :style="{ background: item.raw.color || '#8aa' }" /></template></v-list-item></template>
-            </v-select>
-            <v-select v-if="has('exclude_groups')" v-model="f.exclude_groups" :items="groups" item-title="label" item-value="value" label="Nicht in diesen Gruppen (ausschließen)" multiple chips closable-chips clearable hide-details>
+            </v-autocomplete>
+            <v-autocomplete v-if="has('exclude_groups')" v-model="f.exclude_groups" :items="groups" item-title="label" item-value="value" label="Nicht in diesen Gruppen (ausschließen)" multiple chips closable-chips clearable hide-details>
               <template #chip="{ props: cp, item }"><v-chip v-bind="cp" :prepend-icon="undefined"><span class="dot" :style="{ background: item.raw.color || '#8aa' }" />{{ item.raw.name }}</v-chip></template>
               <template #item="{ props: ip, item }"><v-list-item v-bind="ip" :title="item.raw.name" :subtitle="item.raw.describe"><template #prepend><span class="dot mr-3" :style="{ background: item.raw.color || '#8aa' }" /></template></v-list-item></template>
-            </v-select>
+            </v-autocomplete>
           </div>
         </v-expansion-panel-text>
       </v-expansion-panel>

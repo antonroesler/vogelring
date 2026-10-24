@@ -3,9 +3,9 @@
     <v-card class="pa-6">
       <div class="card-title">Gruppen vergleichen</div>
       <div class="d-flex flex-wrap ga-3 align-end mb-4">
-        <v-select v-model="ids" :items="options" item-title="name" item-value="id" label="Gruppen" multiple chips closable-chips hide-details style="min-width: 320px; flex: 2">
+        <v-autocomplete v-model="ids" :items="options" item-title="name" item-value="id" label="Gruppen" multiple chips closable-chips hide-details style="min-width: 320px; flex: 2">
           <template #chip="{ props: cp, item }"><v-chip v-bind="cp"><span class="dot" :style="{ background: item.raw.color || '#8aa' }" />{{ item.raw.name }}</v-chip></template>
-        </v-select>
+        </v-autocomplete>
         <v-select v-model="metric" :items="METRICS" item-title="label" item-value="value" label="Was zählen?" hide-details style="flex: 1; min-width: 170px" />
         <v-select v-model="dimension" :items="DIMENSIONS" item-title="label" item-value="value" label="Aufteilen nach" hide-details style="flex: 1; min-width: 190px" />
         <v-select v-model="chartKind" :items="kinds" item-title="label" item-value="value" label="Diagramm" hide-details style="flex: 1; min-width: 160px" />

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import contextvars
 import hashlib
+import itertools
 import json
 import re
 from pathlib import Path
@@ -201,17 +202,43 @@ def group_intersection_sql(source: Source, refs: list[str]) -> tuple[str, list[A
     return ("(" + " AND ".join(conds) + ")") if len(conds) > 1 else conds[0], params
 
 
+COMBO_SEP = " + "
+OTHER_LABEL = "andere"
+
+
 def group_case_sql(source: Source, refs: list[str]) -> tuple[str, list[Any]]:
-    """CASE expression labelling each row with the first matching group's name (dimension „Gruppe“)."""
-    whens: list[str] = []
+    """Expression labelling each row with the group(s) it belongs to (dimension „Gruppe“).
+
+    A row in several groups gets the combined label „A + B“ (one category of its own, so nothing is counted twice and
+    nothing is silently attributed to the first group); rows in none get „andere“."""
+    parts: list[str] = []
     params: list[Any] = []
     for r in refs:
         item, spec = resolve_group(r)
         c, p = group_condition(source, spec)
-        whens.append(f"WHEN {c} THEN %s")
+        parts.append(f"CASE WHEN {c} THEN %s END")
         params.extend(p)
         params.append(item.title)
-    return "CASE " + " ".join(whens) + " ELSE 'andere' END", params
+    return f"COALESCE(NULLIF(concat_ws('{COMBO_SEP}', {', '.join(parts)}), ''), '{OTHER_LABEL}')", params
+
+
+def _combos(titles: list[str]) -> list[tuple[str, ...]]:
+    return [c for k in range(2, len(titles) + 1) for c in itertools.combinations(titles, k)]
+
+
+def group_categories(refs: list[str]) -> list[str]:
+    """Category order for the „Gruppe“ dimension: the groups, then their combinations, then „andere“."""
+    titles = group_titles(refs)
+    return titles + [COMBO_SEP.join(c) for c in _combos(titles)] + [OTHER_LABEL]
+
+
+def group_patterns(refs: list[str]) -> dict[str, list[str]]:
+    """Combined categories → the two member colours (drawn as diagonal stripes)."""
+    colors = group_colors(refs)
+    out: dict[str, list[str]] = {}
+    for c in _combos(group_titles(refs)):
+        out[COMBO_SEP.join(c)] = [colors.get(t, "#9AA5AD") for t in c[:2]]
+    return out
 
 
 def group_colors(refs: list[str]) -> dict[str, str]:

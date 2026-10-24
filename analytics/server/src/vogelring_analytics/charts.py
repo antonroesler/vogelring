@@ -101,6 +101,24 @@ def _aggregate(df: pd.DataFrame, spec: ChartSpec) -> pd.DataFrame:
 
 
 def build_chart_model(spec: ChartSpec, df: pd.DataFrame) -> tuple[dict[str, Any], dict[str, Any]]:
+    model, summary = _build_chart_model(spec, df)
+    if spec.patterns:
+        _apply_patterns(spec.patterns, model)
+    return model, summary
+
+
+def _apply_patterns(patterns: dict[str, list[str]], model: dict[str, Any]) -> None:
+    """Mark series/slices whose category belongs to two groups; the renderers draw the second colour as stripes."""
+    targets = list(model.get("series") or []) + list(model.get("pie") or [])
+    for f in model.get("facets") or []:
+        targets.extend(f.get("series") or [])
+    for s in targets:
+        pat = patterns.get(str(s.get("name")))
+        if pat:
+            s["pattern"] = list(pat)
+
+
+def _build_chart_model(spec: ChartSpec, df: pd.DataFrame) -> tuple[dict[str, Any], dict[str, Any]]:
     _require(df, spec.x, "x")
     _require(df, spec.series_column, "series_column")
     notes: list[str] = []

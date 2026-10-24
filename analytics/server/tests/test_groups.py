@@ -71,7 +71,7 @@ def test_group_dimension_case(cat):
     a = engine.create_group(GroupSpec(name="A", scope="sightings", filters={"species": ["Graugans"]}, color="#111111"))
     b = engine.create_group(GroupSpec(name="B", scope="sightings", filters={"species": ["Kanadagans"]}))
     sql, params = build_aggregate_sql(get_source("sightings"), FilterSpec(groups=[a["id"], b["id"]]), "sightings", None, ["year", "group"])
-    assert "CASE WHEN (species IN (%s)) THEN %s WHEN (species IN (%s)) THEN %s ELSE 'andere' END AS group" in sql
+    assert "COALESCE(NULLIF(concat_ws(' + ', CASE WHEN (species IN (%s)) THEN %s END, CASE WHEN (species IN (%s)) THEN %s END), ''), 'andere') AS group" in sql
     assert params[:4] == ["Graugans", "A", "Kanadagans", "B"]  # CASE params precede the WHERE params
     assert params[4:] == ["Graugans", "Kanadagans"]
     with pytest.raises(SourceError, match="Gruppe"):
@@ -80,6 +80,13 @@ def test_group_dimension_case(cat):
 
     colors = group_colors([a["id"], b["id"]])
     assert colors["A"] == "#111111" and colors["B"].startswith("#")
+    from vogelring_analytics.groups import group_categories, group_patterns
+
+    # rows in both groups form a category of their own, drawn in both colours
+    assert group_categories([a["id"], b["id"]]) == ["A", "B", "A + B", "andere"]
+    assert group_patterns([a["id"], b["id"]]) == {"A + B": ["#111111", colors["B"]]}
+    c = engine.create_group(GroupSpec(name="C", scope="sightings", filters={"years": [2025]}))
+    assert group_categories([a["id"], b["id"], c["id"]]) == ["A", "B", "C", "A + B", "A + C", "B + C", "A + B + C", "andere"]
 
 
 def test_new_filter_fields(cat):

@@ -6,6 +6,11 @@
   var FONT = getComputedStyle(document.documentElement).getPropertyValue('--font');
   var TEXT = '#1f2d36', MUTED = '#5F6B73', PRIMARY = '#00436C', GRID = 'rgba(0,0,0,0.08)';
 
+  // diagonal stripes in the second colour over the first – categories that belong to two groups
+  function stripes(pattern) {
+    if (!pattern || pattern.length < 2) return undefined;
+    return { symbol: 'rect', color: pattern[1], dashArrayX: [1, 0], dashArrayY: [4, 5], symbolSize: 1, rotation: Math.PI / 4 };
+  }
   function fmtVal(v, axis) {
     if (v === null || v === undefined) return '';
     if (axis && axis.format === 'percent') return fmtPct.format(v / 100);
@@ -54,7 +59,7 @@
       series: [],
     };
     if (showLegend) { if (legendBottom) opt.grid.bottom = 44; else opt.grid.right = 24 + Math.min(260, 8 * longestLabel(legendNames) + 40); }
-    if (M.legend_title && showLegend) { opt.legend.formatter = undefined; opt.title = [{ text: M.legend_title, right: legendBottom ? undefined : 8, top: legendBottom ? undefined : 4, bottom: legendBottom ? 24 : undefined, left: legendBottom ? 'center' : undefined, textStyle: { fontSize: 12, color: MUTED, fontWeight: 600 } }]; }
+    if (M.legend_title && showLegend && !legendBottom) { opt.legend.formatter = undefined; opt.title = [{ text: M.legend_title, right: legendBottom ? undefined : 8, top: legendBottom ? undefined : 4, bottom: legendBottom ? 24 : undefined, left: legendBottom ? 'center' : undefined, textStyle: { fontSize: 12, color: MUTED, fontWeight: 600 } }]; }
 
     if (kind === 'timeline') return buildTimeline(opt);
     if (kind === 'calendar') return buildCalendar(opt);
@@ -67,7 +72,7 @@
       opt.series = [{ type: 'pie', radius: ['38%', '68%'], center: ['50%', '50%'], avoidLabelOverlap: true,
         itemStyle: { borderColor: '#fff', borderWidth: 2, borderRadius: 4 },
         label: { formatter: function (p) { return p.name + '\n' + fmtVal(p.value) + ' (' + fmt.format(p.percent) + ' %)'; }, fontSize: 12, color: TEXT },
-        data: M.pie.map(function (d) { return { name: d.name, value: d.value, itemStyle: { color: d.color } }; }) }];
+        data: M.pie.map(function (d) { return { name: d.name, value: d.value, itemStyle: { color: d.color, decal: stripes(d.pattern) } }; }) }];
       opt.legend.data = M.pie.map(function (d) { return d.name; });
       opt.tooltip.formatter = function (p) { return p.name + ': ' + fmtVal(p.value) + ' (' + fmt.format(p.percent) + ' %)'; };
       return opt;
@@ -104,7 +109,7 @@
     var nSeries = M.series.length;
 
     opt.series = M.series.map(function (s, i) {
-      var base = { name: s.name, data: s.data, itemStyle: { color: s.color }, emphasis: { focus: 'series' } };
+      var base = { name: s.name, data: s.data, itemStyle: { color: s.color, decal: stripes(s.pattern) }, emphasis: { focus: 'series' } };
       if (isBar) {
         base.type = 'bar'; base.barMaxWidth = 48; base.barGap = '15%'; base.barCategoryGap = '35%';
         if (stacked) base.stack = 'total';
@@ -262,7 +267,7 @@
       var ay = axisBase(M.y_axis, false); ay.gridIndex = i; ay.name = c === 0 ? (M.y_axis.title || '') : ''; ay.axisLabel.fontSize = 10.5;
       opt.xAxis.push(ax); opt.yAxis.push(ay);
       f.series.forEach(function (s) {
-        var base = { name: s.name, data: s.data, xAxisIndex: i, yAxisIndex: i, itemStyle: { color: s.color }, emphasis: { focus: 'series' } };
+        var base = { name: s.name, data: s.data, xAxisIndex: i, yAxisIndex: i, itemStyle: { color: s.color, decal: stripes(s.pattern) }, emphasis: { focus: 'series' } };
         if (isBar) { base.type = 'bar'; base.barMaxWidth = 32; if (stacked) base.stack = 'total'; }
         else { base.type = 'line'; base.smooth = 0.25; base.symbol = 'circle'; base.symbolSize = 5; base.lineStyle = { width: 2, color: s.color }; if (M.kind === 'area') { base.areaStyle = { opacity: 0.18 }; if (stacked) base.stack = 'total'; } }
         opt.series.push(base);

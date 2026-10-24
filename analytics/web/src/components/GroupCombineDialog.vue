@@ -4,10 +4,10 @@
       <div class="card-title">Gruppen verknüpfen</div>
       <div class="muted mb-4" style="font-size: 13px">Aus bestehenden Gruppen entsteht eine neue Gruppe. Sie verweist auf die anderen – ändert sich dort etwas, folgt sie mit.</div>
 
-      <v-select v-model="ids" :items="props.groups" item-title="name" item-value="id" label="Gruppen (mindestens zwei)" multiple chips closable-chips hide-details class="mb-4">
+      <v-autocomplete v-model="ids" :items="props.groups" item-title="name" item-value="id" label="Gruppen (mindestens zwei)" multiple chips closable-chips hide-details class="mb-4">
         <template #chip="{ props: cp, item }"><v-chip v-bind="cp"><span class="dot" :style="{ background: item.raw.color || '#8aa' }" />{{ item.raw.name }}</v-chip></template>
         <template #item="{ props: ip, item }"><v-list-item v-bind="ip" :title="item.raw.name" :subtitle="item.raw.describe"><template #prepend><span class="dot mr-3" :style="{ background: item.raw.color || '#8aa' }" /></template></v-list-item></template>
-      </v-select>
+      </v-autocomplete>
 
       <div class="section-label">Verknüpfung</div>
       <v-radio-group v-model="op" hide-details class="mb-2">

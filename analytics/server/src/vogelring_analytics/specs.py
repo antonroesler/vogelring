@@ -187,6 +187,7 @@ class ChartSpec(_Spec):
     stack: bool | None = Field(None, description="Stack series (default true for stacked_bar/area).")
     stack_order: list[str] | None = Field(None, description="Series order bottom→top (stacked) or left→right.")
     colors: dict[str, HexColor] | None = Field(None, description="Series/category → colour.")
+    patterns: dict[str, list[HexColor]] | None = Field(None, description="Category → two colours drawn as diagonal stripes (e.g. rows that belong to two groups).")
     color_by: Literal["theme", "species", "season"] = Field("theme", description="Default palette when `colors` is not given.")
     sort: Literal["none", "asc", "desc", "x"] = Field("none", description="Sort categories by total value or by x.")
     limit: int | None = Field(None, ge=1, le=500, description="Keep only the first N categories after sorting (Top N).")

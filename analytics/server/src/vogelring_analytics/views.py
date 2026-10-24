@@ -403,15 +403,22 @@ async def _build_chart(spec: ViewSpec, source: Source, max_rows: int | None) -> 
     colors = spec.colors
     if spec.color == "season" and not colors:
         colors = {s["label"]: s["color"] for s in palette.SEASONS}
-    if "group" in (spec.dimension, spec.color) and not colors and spec.filters.groups:
-        from .groups import group_colors  # lazy
+    patterns = None
+    if "group" in (spec.dimension, spec.color) and spec.filters.groups:
+        from .groups import group_categories, group_colors, group_patterns  # lazy
 
-        colors = group_colors(spec.filters.groups) or None
+        patterns = group_patterns(spec.filters.groups) or None
+        if not colors:
+            colors = group_colors(spec.filters.groups) or None
+        if patterns:
+            # a combined category („A + B“) takes the first member's colour; the renderer stripes the second over it
+            colors = {**{k: v[0] for k, v in patterns.items()}, **(colors or {})}
+        order["group"] = group_categories(spec.filters.groups)
     kind = spec.chart_kind
     cs_kwargs: dict[str, Any] = dict(
         kind=kind, dataset_id=meta.id, title=_chart_title(spec, source), subtitle=subtitle, x=spec.dimension, y="value",
         series_column=spec.color, facet_column=spec.facet, aggregate="none", month_axis=dim.is_month, sort=spec.sort, limit=spec.limit,
-        show_values=spec.show_values, show_totals=spec.show_totals, stack=spec.stack, colors=colors, color_by=_color_by(spec),
+        show_values=spec.show_values, show_totals=spec.show_totals, stack=spec.stack, colors=colors, patterns=patterns, color_by=_color_by(spec),
         annotations=annotations, legend_title=dims[1].label if spec.color else None, category_order=order or None, **size,
     )
     cs_kwargs["y_axis"] = {"title": metric_label, "format": "integer" if spec.metric.kind in ("sightings", "birds", "observation_days", "places", "rows", "count_distinct") else "number"}

@@ -672,7 +672,8 @@ def create_group(
     that have at least one matching sighting (e.g. „Mausergäste Ostpark“: places=['Ostpark'],
     any_of=[{months:[5,6]},{months:[4],status:['MG']}] → wherever these birds turn up). For a sighting-level selection
     use the filters of a view instead. Use groups everywhere via filters.groups (union), all_groups (intersection), exclude_groups
-    (difference) or birds_of={groups:[…]}; dimension/color "group" compares them. Returns a German description – read it
+    (difference) or birds_of={groups:[…]}; dimension/color "group" compares them (a bird in several groups forms its own
+    category „A + B“, drawn striped in both colours). Returns a German description – read it
     back to the user."""
     try:
         return engine.create_group(spec, group_id=group_id, by="agent")
