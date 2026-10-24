@@ -148,7 +148,7 @@ export const defaultForm = (): BuilderForm => ({
   kind: 'chart', source: 'sightings', filters: emptyFilters(), title: '', subtitle: '', chart_kind: 'bar', metric_kind: 'birds', metric_column: null,
   dimension: 'month', color: null, facet: null, sort: 'none', limit: null, show_values: false, show_totals: false, annotate_moult: false,
   x_column: 'date', series_column: 'ring', y_column: null, color_column: null, source_column: 'ringing_place', target_column: 'place',
-  map: { color_mode: 'season', color_column: null, show_ringing_sites: true, tracks: false, bubbles_by_place: false, labels: true, basemap: 'light' },
+  map: { color_mode: 'season', color_column: null, show_ringing_sites: true, tracks: false, bubbles_by_place: false, labels: false, basemap: 'light' },
   columns: [], group_by: [], sort_by: null, sort_desc: true, totals_row: false, bins: {},
 })
 

@@ -73,7 +73,7 @@ class MapOptions(_Spec):
     show_ringing_sites: bool = Field(True, description="Beringungsorte als Dreiecke einzeichnen (Quellen mit Beringungskoordinaten).")
     tracks: bool = Field(False, description="Bewegungslinien je Vogel (chronologisch).")
     bubbles_by_place: bool = Field(False, description="Ein Kreis je Ort, Größe = Anzahl verschiedener Vögel.")
-    labels: bool = Field(True, description="Ortsnamen beschriften.")
+    labels: bool = Field(False, description="Ortsnamen beschriften (Standard aus – bei vielen Orten unleserlich; nur auf Wunsch).")
     cluster: bool | None = None
     basemap: Literal["light", "dark", "osm", "voyager"] = "light"
     zoom: int | None = Field(None, ge=5, le=18)

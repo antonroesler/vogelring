@@ -98,7 +98,9 @@ async def test_map_view(env):
 async def test_map_bubbles_and_errors(env):
     r = await build_view(ViewSpec(kind="map", map={"bubbles_by_place": True, "color_mode": "fixed"}))
     p = r.visual_spec.points[0]
-    assert p.dedupe == "column" and p.dedupe_column == "place" and p.label.column == "place"
+    assert p.dedupe == "column" and p.dedupe_column == "place" and p.label is None  # place names only on request
+    r = await build_view(ViewSpec(kind="map", map={"bubbles_by_place": True, "color_mode": "fixed", "labels": True}))
+    assert r.visual_spec.points[0].label.column == "place"
     with pytest.raises(ViewError, match="keine Koordinaten"):
         await build_view(ViewSpec(kind="map", source="relationships"))
     with pytest.raises(ViewError, match="color_column"):
