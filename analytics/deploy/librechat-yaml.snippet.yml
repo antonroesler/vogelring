@@ -58,3 +58,29 @@ endpoints:
     recursionLimit: 75
     maxRecursionLimit: 120
     maxSubagents: 6
+
+# Single-purpose chat: the picker shows only the Vogelring agent; no endpoint/model menus, no agent builder.
+# The ChatGPT custom endpoint (LiteLLM, Codex OAuth) stays configured as the agent's backend, with
+# gpt-6.1-sol for the agent and gpt-6-luna for titles/memory. DeepSeek and Claude endpoints were removed (2026-10-24).
+interface:
+  endpointsMenu: false
+  modelSelect: false
+  parameters: false
+  presets: false
+
+modelSpecs:
+  enforce: true
+  prioritize: true
+  list:
+    - name: "vogelring"
+      label: "Vogelring"
+      default: true
+      description: "Auswertungen, Karten, Berichte und Präsentationen aus der Vogelring-Datenbank"
+      showIconInHeader: true
+      preset:
+        endpoint: "agents"
+        agent_id: "agent_jhKSvfDXizwVf0IHVWwjY"
+
+endpoints:
+  agents:
+    disableBuilder: true
