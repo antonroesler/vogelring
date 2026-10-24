@@ -43,6 +43,25 @@ def _cat_label(v: Any, month_axis: bool) -> str:
     return str(v)
 
 
+def _order_key(spec: ChartSpec, column: str | None):
+    """Sort key honouring spec.category_order[column] (binned classes first in their order, the rest alphabetically)."""
+    order = (spec.category_order or {}).get(column or "") if column else None
+    if not order:
+        return None
+    pos = {lab: i for i, lab in enumerate(order)}
+
+    def key(v: Any):
+        lab = _cat_label(v, False)
+        return (0, pos[lab], "") if lab in pos else (1, 0, lab)
+
+    return key
+
+
+def _sorted_by_order(values: list, spec: ChartSpec, column: str | None) -> list:
+    key = _order_key(spec, column)
+    return sorted(values, key=key) if key else list(values)
+
+
 def _aggregate(df: pd.DataFrame, spec: ChartSpec) -> pd.DataFrame:
     """Return a wide frame: index = x categories, columns = series names."""
     x = spec.x
@@ -115,6 +134,11 @@ def build_chart_model(spec: ChartSpec, df: pd.DataFrame) -> tuple[dict[str, Any]
         wide = df.pivot_table(index=spec.series_column, columns=spec.x, values=spec.heat_value, aggfunc="sum" if spec.aggregate in ("none", "sum") else spec.aggregate, dropna=False).fillna(0)
         if spec.month_axis:
             wide = wide.reindex(columns=range(1, 13), fill_value=0)
+        if spec.category_order:
+            if _order_key(spec, spec.x):
+                wide = wide[_sorted_by_order(list(wide.columns), spec, spec.x)]
+            if _order_key(spec, spec.series_column):
+                wide = wide.loc[_sorted_by_order(list(wide.index), spec, spec.series_column)]
         cols = [_cat_label(c, spec.month_axis) for c in wide.columns]
         rows = [str(r) for r in wide.index]
         values = [[ci, ri, _fmt_num(wide.iat[ri, ci])] for ri in range(len(rows)) for ci in range(len(cols))]
@@ -133,6 +157,12 @@ def build_chart_model(spec: ChartSpec, df: pd.DataFrame) -> tuple[dict[str, Any]
         idx = pd.to_numeric(pd.Series(wide.index), errors="coerce")
         wide.index = idx.values
         wide = wide.reindex(range(1, 13), fill_value=0)
+
+    if spec.category_order:
+        if _order_key(spec, spec.x):
+            wide = wide.loc[_sorted_by_order(list(wide.index), spec, spec.x)]
+        if spec.series_column and _order_key(spec, spec.series_column):
+            wide = wide[_sorted_by_order(list(wide.columns), spec, spec.series_column)]
 
     # Sorting / limiting by total
     totals = wide.sum(axis=1, numeric_only=True)
@@ -335,6 +365,9 @@ def _edges(spec: ChartSpec, df: pd.DataFrame) -> pd.DataFrame:
     e = e[e["w"] > 0]
     if e.empty:
         raise ChartBuildError("No edges (source/target pairs) in the dataset.")
+    ks, kt = _order_key(spec, spec.source_column), _order_key(spec, spec.target_column)
+    if ks or kt:
+        e = e.assign(__s=e["source"].map(ks) if ks else e["source"], __t=e["target"].map(kt) if kt else e["target"]).sort_values(["__s", "__t"]).drop(columns=["__s", "__t"])
     return e
 
 
@@ -371,13 +404,22 @@ def _sankey(spec: ChartSpec, df: pd.DataFrame, model: dict, notes: list[str]) ->
     if bipartite:
         e = e.assign(target=e["target"] + "\u200b")
         notes.append("Quelle und Ziel werden als getrennte Spalten gezeigt (es gibt Hin- und Rückbewegungen).")
-    nodes = list(dict.fromkeys(e["source"].tolist() + e["target"].tolist()))
+    ks, kt = _order_key(spec, spec.source_column), _order_key(spec, spec.target_column)
+    sources = list(dict.fromkeys(e["source"].tolist()))
+    targets = [t for t in dict.fromkeys(e["target"].tolist()) if t not in sources]
+    if ks:
+        sources.sort(key=ks)
+    if kt:
+        targets.sort(key=lambda t: kt(t.rstrip("\u200b")))
+    nodes = sources + targets
     cmap = _series_colors(spec, [n.rstrip("\u200b") for n in nodes])
+    keep_order = bool(ks or kt)
     model.update({
         "kind": "sankey",
         "sankey": {
             "nodes": [{"name": n, "label": n.rstrip("\u200b"), "color": cmap[n.rstrip("\u200b")]} for n in nodes],
             "links": [{"source": r.source, "target": r.target, "value": _fmt_num(r.w)} for r in e.itertuples()],
+            "keep_order": keep_order,
         },
         "series": [],
     })
@@ -447,7 +489,7 @@ def _boxplot(spec: ChartSpec, df: pd.DataFrame, model: dict, notes: list[str]) -
     if d.empty:
         raise ChartBuildError("No numeric values for the boxplot.")
     d["__cat"] = d[spec.x].map(lambda v: _cat_label(v, spec.month_axis))
-    cats = list(d.groupby("__cat")[y_col].median().sort_values(ascending=spec.sort != "desc").index) if spec.sort in ("asc", "desc") else list(dict.fromkeys(d["__cat"]))
+    cats = list(d.groupby("__cat")[y_col].median().sort_values(ascending=spec.sort != "desc").index) if spec.sort in ("asc", "desc") else _sorted_by_order(list(dict.fromkeys(d["__cat"])), spec, spec.x)
     if spec.month_axis:
         cats = [m for m in palette.MONTHS_DE if m in set(cats)]
     if spec.limit:
@@ -472,6 +514,8 @@ def _facets(spec: ChartSpec, df: pd.DataFrame, model: dict, notes: list[str]) ->
     groups = df.groupby(spec.facet_column, dropna=False)
     sizes = groups.size().sort_values(ascending=False)
     names = [k for k in sizes.index if not (isinstance(k, float) and np.isnan(k))]
+    if _order_key(spec, spec.facet_column):
+        names = _sorted_by_order(names, spec, spec.facet_column)
     if len(names) > 12:
         notes.append(f"Nur die 12 größten von {len(names)} Facetten gezeigt.")
         names = names[:12]

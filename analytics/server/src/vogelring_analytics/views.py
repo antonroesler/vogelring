@@ -16,13 +16,16 @@ from . import palette, runtime
 from .analysis import render_sql
 from .charts import build_chart_model
 from .maps import build_map_model
+from .binning import BinSpec, bin_dimension, bin_key_labels, bin_options, bin_values, binnable, code_labels, describe_bins, is_bin_dimension, resolve_dimension, with_width
 from .sources import (
     DIMENSIONS,
+    Dimension,
     FilterSpec,
     Source,
     SourceError,
     build_aggregate_sql,
     build_rows_sql,
+    compile_filters,
     describe_filters,
     get_dimension,
     get_metric,
@@ -101,6 +104,7 @@ class ViewSpec(_Spec):
     colors: dict[str, str] | None = None
     annotations: list[AnnotationSpec] = Field(default_factory=list)
     annotate_moult: bool = Field(False, description="Mauserzeit Mai–Juli als Band markieren (bei Aufteilung nach Monat).")
+    bins: list[BinSpec] = Field(default_factory=list, description="Klassen für Zahlen-/Datumsspalten, die als Aufteilung, Farbe, Kachel, group_by, Fluss-/Netzknoten, Boxplot-Kategorie oder Zeitstrahl-Zeile dienen (Spaltenname als Schlüssel, z. B. dimension='km_from_ringing' + bins=[{column:'km_from_ringing', width:10}]). Ohne Eintrag: automatisch etwa 8 runde Klassen bzw. Jahr.")
     # raw-row chart kinds (timeline, calendar, scatter, boxplot, sankey, graph, histogram)
     x_column: str | None = Field(None, description="Datums-/Wertspalte für Zeitstrahl, Kalender, Streu-, Boxplot, Histogramm.")
     series_column: str | None = Field(None, description="Zeilen des Zeitstrahls (z. B. ring) bzw. Gruppen.")
@@ -125,6 +129,9 @@ class ViewSpec(_Spec):
 
     @model_validator(mode="after")
     def _check(self) -> "ViewSpec":
+        cols = [b.column for b in self.bins]
+        if len(set(cols)) != len(cols):
+            raise ValueError("bins: jede Spalte nur einmal angeben.")
         if self.kind == "chart" and self.chart_kind in RAW_ROW_KINDS:
             k = self.chart_kind
             if k in ("timeline", "calendar", "histogram", "scatter", "boxplot") and not self.x_column:
@@ -138,6 +145,13 @@ class ViewSpec(_Spec):
         return self
 
     # ---------------------------------------------------------------- wording
+    def bin_map(self) -> dict[str, BinSpec]:
+        return {b.column: b for b in self.bins}
+
+    def dim(self, key: str, source: Source | None = None) -> Dimension:
+        """Predefined dimension or a binned column of the source (label only needs no DB round trip)."""
+        return resolve_dimension(source or get_source(self.source), key, self.bin_map())
+
     def metric_label(self, source: Source | None = None) -> str:
         source = source or get_source(self.source)
         return get_metric(self.metric.kind).label_for(self.metric.column, source)
@@ -155,16 +169,16 @@ class ViewSpec(_Spec):
             return f"{what}: {sel}"
         if self.kind == "table":
             if self.group_by:
-                return f"Tabelle: {self.metric_label(source)} je {' und '.join(get_dimension(g).label for g in self.group_by)} – {sel}"
+                return f"Tabelle: {self.metric_label(source)} je {' und '.join(self.dim(g, source).label for g in self.group_by)} – {sel}"
             return f"Tabelle: {sel}"
         label = CHART_KIND_LABELS.get(self.chart_kind, "Diagramm")
         if self.chart_kind in RAW_ROW_KINDS:
             return f"{label}: {sel}"
-        parts = f"{label}: {self.metric_label(source)} je {get_dimension(self.dimension).label}"
+        parts = f"{label}: {self.metric_label(source)} je {self.dim(self.dimension, source).label}"
         if self.color:
-            parts += f", Farbe nach {get_dimension(self.color).label}"
+            parts += f", Farbe nach {self.dim(self.color, source).label}"
         if self.facet:
-            parts += f", Kacheln je {get_dimension(self.facet).label}"
+            parts += f", Kacheln je {self.dim(self.facet, source).label}"
         return f"{parts} – {sel}"
 
 
@@ -231,10 +245,95 @@ def _chart_title(spec: ViewSpec, source: Source) -> str:
         return spec.title
     if spec.chart_kind in RAW_ROW_KINDS:
         return f"{CHART_KIND_LABELS[spec.chart_kind]}: {_cap(describe_filters(spec.filters, source))}"
-    t = f"{spec.metric_label(source)} je {get_dimension(spec.dimension).label}"
+    t = f"{spec.metric_label(source)} je {spec.dim(spec.dimension, source).label}"
     if spec.color:
-        t += f" und {get_dimension(spec.color).label}"
+        t += f" und {spec.dim(spec.color, source).label}"
     return t
+
+
+# ---------------------------------------------------------------- binning glue
+
+_RAW_CATEGORY_ROLES: dict[str, tuple[str, ...]] = {
+    "sankey": ("source_column", "target_column"),
+    "graph": ("source_column", "target_column", "edge_label_column"),
+    "boxplot": ("x_column",),
+    "timeline": ("series_column", "color_column"),
+    "scatter": ("color_column",),
+    "histogram": ("x_column",),  # only with an explicit BinSpec – np.histogram bins otherwise
+}
+
+
+async def _resolve_dims(spec: ViewSpec, source: Source, keys: list[str]) -> tuple[list[Dimension], dict[str, BinSpec]]:
+    """Dimension objects for the keys; binned numeric columns without width get one from the observed MIN/MAX."""
+    bins = spec.bin_map()
+    dims: list[Dimension] = []
+    for k in keys:
+        if is_bin_dimension(source, k):
+            col = source.column(k)
+            assert col is not None
+            b = bins.get(k) or BinSpec(column=k)
+            if b.is_auto and col.type != "date":
+                where, params = compile_filters(source, spec.filters)
+                res = await _query(f"SELECT MIN({k}) AS lo, MAX({k}) AS hi, percentile_disc(0.95) WITHIN GROUP (ORDER BY {k}) AS p95 FROM ({source.base_sql}) s WHERE {where}", params)
+                lo, hi, p95 = (res.rows[0][0], res.rows[0][1], res.rows[0][2]) if res.rows else (None, None, None)
+                b = with_width(b, None if lo is None else float(lo), None if hi is None else float(hi), col, None if p95 is None else float(p95))
+            bins[k] = b
+            dims.append(bin_dimension(source, col, b))
+        else:
+            dims.append(get_dimension(k))
+    return dims, bins
+
+
+def _label_bins(df, dims: list[Dimension], bins: dict[str, BinSpec], source: Source) -> dict[str, list[str]]:
+    """Replace SQL bin keys by labels in place; returns the label order per column for the chart builder."""
+    order: dict[str, list[str]] = {}
+    for d in dims:
+        if d.key in df.columns and is_bin_dimension(source, d.key):
+            col = source.column(d.key)
+            assert col is not None
+            labels, label_order = bin_key_labels(df[d.key], bins[d.key], col)
+            df[d.key] = labels
+            if label_order:
+                order[d.key] = label_order
+    return order
+
+
+def _bin_raw_columns(spec: ViewSpec, source: Source, df) -> tuple[dict[str, str], dict[str, list[str]], list[str]]:
+    """Add ``<col>_klasse`` / ``<col>_label`` columns for numeric, date and coded columns used as categories.
+
+    Returns (role → column to use, label order per new column, notes)."""
+    bins = spec.bin_map()
+    roles = {r: getattr(spec, r) for r in ("x_column", "series_column", "y_column", "color_column", "source_column", "target_column", "edge_label_column")}
+    order: dict[str, list[str]] = {}
+    notes: list[str] = []
+    done: dict[str, str] = {}
+    for role in _RAW_CATEGORY_ROLES.get(spec.chart_kind, ()):
+        c = roles.get(role)
+        if not c or c not in df.columns:
+            continue
+        if c in done:
+            roles[role] = done[c]
+            continue
+        col = source.column(c)
+        if col is None:
+            continue
+        if binnable(col) and (spec.chart_kind != "histogram" or c in bins):
+            labels, label_order, used = bin_values(df[c], bins.get(c) or BinSpec(column=c), col)
+            new = f"{c}_klasse"
+            df[new] = labels
+            order[new] = label_order
+            if c not in bins:
+                notes.append(f"„{col.label}“ automatisch eingeteilt: {describe_bins(used, col)} (über bins anpassbar).")
+            done[c] = new
+            roles[role] = new
+        else:
+            labels = code_labels(df[c], col, source)
+            if labels is not None:
+                new = f"{c}_label"
+                df[new] = labels
+                done[c] = new
+                roles[role] = new
+    return roles, order, notes
 
 
 # ---------------------------------------------------------------- chart
@@ -253,15 +352,22 @@ async def _build_chart(spec: ViewSpec, source: Source, max_rows: int | None) -> 
             raise ViewError(str(exc)) from exc
         res = await _query(sql, params, max_rows=max_rows)
         df = res.to_frame()
+        roles, order, bin_notes = _bin_raw_columns(spec, source, df)
         description = f"{_cap(describe_filters(spec.filters, source))}; jede Zeile ist eine {source.label[:-2] if source.label.endswith('en') else source.label}."
         meta, readable = _save(df, name=_chart_title(spec, source), sql=sql, params=params, description=description, truncated=res.truncated)
+        kind = spec.chart_kind
+        aggregate = "count" if kind == "calendar" and spec.metric.kind == "sightings" else ("count_distinct" if kind == "calendar" else "none")
+        extra_kwargs: dict[str, Any] = {}
+        if kind == "histogram" and roles["x_column"] != spec.x_column:  # explicit classes → counted bar chart
+            kind, aggregate = "bar", "count"
+            col = source.column(spec.x_column or "")
+            extra_kwargs = {"x_axis": {"title": col.label if col else spec.x_column}, "y_axis": {"title": "Anzahl", "format": "integer"}}
         cs = ChartSpec(
-            kind=spec.chart_kind, dataset_id=meta.id, title=_chart_title(spec, source), subtitle=subtitle,
-            x=spec.x_column, y=spec.y_column, series_column=spec.series_column, color_column=spec.color_column,
-            source_column=spec.source_column, target_column=spec.target_column, edge_label_column=spec.edge_label_column,
-            color_by=_raw_color_by(spec), colors=spec.colors, sort=spec.sort, limit=spec.limit,
-            aggregate="count" if spec.chart_kind == "calendar" and spec.metric.kind == "sightings" else ("count_distinct" if spec.chart_kind == "calendar" else "none"),
-            annotations=spec.annotations, **size,
+            kind=kind, dataset_id=meta.id, title=_chart_title(spec, source), subtitle=subtitle,
+            x=roles["x_column"], y=roles["y_column"], series_column=roles["series_column"], color_column=roles["color_column"],
+            source_column=roles["source_column"], target_column=roles["target_column"], edge_label_column=roles["edge_label_column"],
+            color_by=_raw_color_by(spec), colors=spec.colors, sort=spec.sort, limit=spec.limit, aggregate=aggregate,
+            annotations=spec.annotations, category_order=order or None, **extra_kwargs, **size,
         )
         if spec.chart_kind == "calendar" and spec.metric.kind == "birds":
             cs.y = "ring"
@@ -271,24 +377,26 @@ async def _build_chart(spec: ViewSpec, source: Source, max_rows: int | None) -> 
             model, summary = build_chart_model(cs, df)
         except ValueError as exc:
             raise ViewError(str(exc)) from exc
-        return ViewResult(meta.id, "chart", cs, model, summary, readable, description, int(len(df)), list(summary.get("notes") or []))
+        return ViewResult(meta.id, "chart", cs, model, summary, readable, description, int(len(df)), bin_notes + list(summary.get("notes") or []))
 
-    dims = [spec.dimension] + ([spec.color] if spec.color else []) + ([spec.facet] if spec.facet else [])
+    keys = [spec.dimension] + ([spec.color] if spec.color else []) + ([spec.facet] if spec.facet else [])
     if spec.chart_kind == "heatmap" and not spec.color:
         raise ViewError("Heatmap braucht eine Aufteilung (dimension) und eine zweite für die Zeilen (color).")
     if spec.chart_kind == "pie" and spec.color:
         raise ViewError("Kreisdiagramm: nur eine Aufteilung (dimension), keine Farbe nach.")
     try:
-        sql, params = build_aggregate_sql(source, spec.filters, spec.metric.kind, spec.metric.column, dims)
+        dims, bins = await _resolve_dims(spec, source, keys)
+        sql, params = build_aggregate_sql(source, spec.filters, spec.metric.kind, spec.metric.column, list(dims))
     except SourceError as exc:
         raise ViewError(str(exc)) from exc
     res = await _query(sql, params, max_rows=max_rows)
     df = res.to_frame()
+    order = _label_bins(df, dims, bins, source)
     metric_label = spec.metric_label(source)
-    description = f"{metric_label} je {' und '.join(get_dimension(d).label for d in dims)}; {describe_filters(spec.filters, source)}."
+    description = f"{metric_label} je {' und '.join(d.label for d in dims)}; {describe_filters(spec.filters, source)}."
     meta, readable = _save(df, name=_chart_title(spec, source), sql=sql, params=params, description=description, truncated=res.truncated)
 
-    dim = get_dimension(spec.dimension)
+    dim = dims[0]
     annotations = list(spec.annotations)
     if spec.annotate_moult and dim.is_month:
         annotations.append(AnnotationSpec(kind="band", **{"from": 5}, to=7, label="Mauserzeit", color="#228096"))
@@ -304,7 +412,7 @@ async def _build_chart(spec: ViewSpec, source: Source, max_rows: int | None) -> 
         kind=kind, dataset_id=meta.id, title=_chart_title(spec, source), subtitle=subtitle, x=spec.dimension, y="value",
         series_column=spec.color, facet_column=spec.facet, aggregate="none", month_axis=dim.is_month, sort=spec.sort, limit=spec.limit,
         show_values=spec.show_values, show_totals=spec.show_totals, stack=spec.stack, colors=colors, color_by=_color_by(spec),
-        annotations=annotations, legend_title=get_dimension(spec.color).label if spec.color else None, **size,
+        annotations=annotations, legend_title=dims[1].label if spec.color else None, category_order=order or None, **size,
     )
     cs_kwargs["y_axis"] = {"title": metric_label, "format": "integer" if spec.metric.kind in ("sightings", "birds", "observation_days", "places", "rows", "count_distinct") else "number"}
     cs_kwargs["x_axis"] = {"title": None if dim.is_month else dim.label}
@@ -413,17 +521,20 @@ async def _build_table(spec: ViewSpec, source: Source, max_rows: int | None) -> 
     size: dict[str, Any] = {"width": spec.width} if spec.width else {}
     if spec.group_by:
         try:
-            sql, params = build_aggregate_sql(source, spec.filters, spec.metric.kind, spec.metric.column, spec.group_by)
+            dims, bins = await _resolve_dims(spec, source, spec.group_by)
+            sql, params = build_aggregate_sql(source, spec.filters, spec.metric.kind, spec.metric.column, list(dims))
         except SourceError as exc:
             raise ViewError(str(exc)) from exc
         res = await _query(sql, params, max_rows=max_rows)
         df = res.to_frame()
+        _label_bins(df, dims, bins, source)
         metric_label = spec.metric_label(source)
         df = df.rename(columns={"value": metric_label})
-        for g in spec.group_by:
-            df = df.rename(columns={g: get_dimension(g).label})
-        description = f"{metric_label} je {' und '.join(get_dimension(g).label for g in spec.group_by)}; {sel}."
-        title = spec.title or f"{metric_label} je {' und '.join(get_dimension(g).label for g in spec.group_by)}"
+        for d in dims:
+            df = df.rename(columns={d.key: d.label})
+        joined = " und ".join(d.label for d in dims)
+        description = f"{metric_label} je {joined}; {sel}."
+        title = spec.title or f"{metric_label} je {joined}"
         meta, readable = _save(df, name=title, sql=sql, params=params, description=description, truncated=res.truncated)
         columns = [ColumnSpec(name=str(c), label=str(c)) for c in df.columns]
         sort_by = spec.sort_by or (metric_label if spec.sort != "none" else None)
@@ -472,6 +583,8 @@ async def preview_view(spec: ViewSpec, max_rows: int = 5000) -> ViewResult:
     return await build_view(spec, max_rows=max_rows)
 
 
-def dimension_options(source_key: str) -> list[dict[str, str]]:
+def dimension_options(source_key: str) -> list[dict[str, Any]]:
+    """Predefined dimensions plus the source's numeric/date columns (kind=bin → the UI shows the class controls)."""
     source = get_source(source_key)
-    return [{"key": d.key, "label": d.label} for d in DIMENSIONS.values() if source.key in d.sources]
+    items: list[dict[str, Any]] = [{"key": d.key, "label": d.label, "kind": "dimension"} for d in DIMENSIONS.values() if source.key in d.sources]
+    return items + bin_options(source)

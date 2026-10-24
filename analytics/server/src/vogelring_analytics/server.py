@@ -532,7 +532,11 @@ async def create_view(
 ) -> CallToolResult:
     """The no-SQL way to analyse: pick a source, filters (species, places/place_groups, period, rings …), what to count
     (metric), how to split (dimension), colour (series) and facet; or a map / table. Runs the query, renders the visual,
-    saves the view in the app (it appears there instantly) and returns image + links + view_id. Use update_view to change it."""
+    saves the view in the app (it appears there instantly) and returns image + links + view_id. Use update_view to change it.
+    Numeric and date columns (km_from_ringing, max_km, sightings, days_known, first_sighting …) can be used wherever a
+    dimension key is expected and as sankey/graph nodes, boxplot categories or timeline rows: they are divided into classes
+    (about 8 round classes, dates by year) – set meaningful ones with `bins`, e.g. [{column:'km_from_ringing', edges:[1,5,20,100]}]
+    (< 1, 1–5, 5–20, 20–100, ≥ 100 km), [{column:'sightings', width:5}] or [{column:'first_sighting', date_part:'season'}]."""
     try:
         out = await engine.create_view(spec, title=title, project=project, by="agent")
     except engine.EngineError as exc:

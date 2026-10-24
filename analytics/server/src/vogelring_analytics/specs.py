@@ -216,6 +216,7 @@ class ChartSpec(_Spec):
     target_column: str | None = Field(None, description="sankey/graph: column with the end node (e.g. Wiederfundort).")
     edge_label_column: str | None = Field(None, description="graph: column shown on the edge (e.g. relationship type).")
     max_nodes: int = Field(60, ge=5, le=300, description="sankey/graph: keep the strongest N nodes.")
+    category_order: dict[str, list[str]] | None = Field(None, description="Fixed order of category labels per column (binned classes); categories not listed follow alphabetically.")
 
     @model_validator(mode="after")
     def _check(self) -> "ChartSpec":

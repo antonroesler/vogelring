@@ -76,7 +76,7 @@ export interface FilterField {
 }
 
 export interface SourcesInfo {
-  sources: { key: string; label: string; description: string; date_column: string | null; columns: { name: string; label: string; type: string; role: string; filterable: boolean }[]; filters: string[]; dimensions: string[]; metrics: string[] }[]
+  sources: { key: string; label: string; description: string; date_column: string | null; columns: { name: string; label: string; type: string; role: string; filterable: boolean }[]; filters: string[]; dimensions: string[]; bin_columns?: string[]; metrics: string[] }[]
   metrics: { key: string; label: string; needs_column: boolean }[]
   dimensions: { key: string; label: string; sources: string[]; is_month: boolean; is_time: boolean }[]
   filters: FilterField[]
@@ -279,7 +279,7 @@ export const api = {
   activity: (limit = 50) => get<{ items: ActivityItem[] }>(`/api/activity${qs({ limit })}`),
   navigate: (target: string, id?: string) => post('/api/navigate', { target, id }),
   sources: () => get<SourcesInfo>('/api/sources'),
-  dimensions: (source: string) => get<{ items: { key: string; label: string }[] }>(`/api/sources/${source}/dimensions`),
+  dimensions: (source: string) => get<{ items: { key: string; label: string; kind?: 'dimension' | 'bin'; type?: string; unit?: string | null }[] }>(`/api/sources/${source}/dimensions`),
   choices: (source: string, column: string, q = '', limit = 50, filters?: Record<string, any>) =>
     filters && Object.keys(filters).length
       ? post<{ items: Choice[] }>(`/api/sources/${source}/choices/${column}`, { q, limit, filters })

@@ -49,6 +49,7 @@
           </template>
           <v-select v-if="f.chart_kind === 'calendar'" v-model="f.metric_kind" :items="metrics.filter((m) => ['sightings', 'birds'].includes(m.key))" item-title="label" item-value="key" label="Was zählen?" hide-details class="mb-3" />
         </template>
+        <BinControl v-for="c in binCols" :key="c.name" v-model="f.bins[c.name]" :column="c" />
         <div class="d-flex ga-2">
           <v-select v-model="f.sort" :items="SORTS" item-title="label" item-value="value" label="Sortierung" hide-details class="mb-3" />
           <v-text-field v-model.number="f.limit" type="number" label="Nur die ersten …" hide-details clearable class="mb-3" style="max-width: 150px" />
@@ -74,6 +75,7 @@
         <v-select v-model="f.columns" :items="columns" item-title="label" item-value="name" label="Spalten (leer = Standard)" multiple chips closable-chips hide-details class="mb-3" />
         <v-select v-model="f.group_by" :items="dims" item-title="label" item-value="key" label="Zusammenfassen nach (optional)" multiple chips closable-chips hide-details class="mb-3" />
         <v-select v-if="f.group_by.length" v-model="f.metric_kind" :items="metrics" item-title="label" item-value="key" label="Was zählen?" hide-details class="mb-3" />
+        <BinControl v-for="c in binCols" :key="c.name" v-model="f.bins[c.name]" :column="c" />
         <div class="d-flex ga-2">
           <v-select v-model="f.sort_by" :items="tableSortItems" item-title="label" item-value="name" label="Sortieren nach" hide-details clearable class="mb-3" />
           <v-checkbox v-model="f.sort_desc" label="absteigend" hide-details />
@@ -162,10 +164,11 @@ import EmptyState from '@/components/EmptyState.vue'
 import { computed, onActivated, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api, type CatalogItem, type GroupScope } from '@/api/client'
+import BinControl from '@/components/BinControl.vue'
 import FilterPanel from '@/components/FilterPanel.vue'
 import VisualStage from '@/components/VisualStage.vue'
 import { CHART_KINDS, fmtInt, friendlyError } from '@/lib/format'
-import { cleanFilters, useBuilderStore } from '@/stores/builder'
+import { binnable, categoryColumns, cleanFilters, emptyBin, useBuilderStore } from '@/stores/builder'
 import { useMetaStore } from '@/stores/meta'
 
 defineOptions({ name: 'ErkundenPage' })
@@ -216,11 +219,20 @@ const sources = computed(() => meta.sources?.sources || [])
 const src = computed(() => meta.sourceByKey(f.value.source))
 const columns = computed(() => (src.value?.columns || []).filter((c) => c.role !== 'meta'))
 const numericColumns = computed(() => columns.value.filter((c) => c.type === 'int' || c.type === 'number'))
-const dims = computed(() => (meta.sources?.dimensions || []).filter((d) => src.value?.dimensions.includes(d.key)).map((d) => ({ key: d.key, label: d.label })))
+const binColumns = computed(() => columns.value.filter((c) => binnable(c) && c.role !== 'coord'))
+const dims = computed(() => {
+  const base = (meta.sources?.dimensions || []).filter((d) => src.value?.dimensions.includes(d.key)).map((d) => ({ key: d.key, label: d.label }))
+  if (!binColumns.value.length) return base
+  // numeric/date columns become dimensions by being put into classes (server: ViewSpec.bins)
+  return [...base, { type: 'subheader', key: '__bins', label: 'Zahlen & Datum (in Klassen)' }, ...binColumns.value.map((c) => ({ key: c.name, label: `${c.label} (in Klassen)` }))]
+})
+/** Columns currently used as categories that are numeric/date → show the class controls. */
+const binCols = computed(() => categoryColumns(f.value).map((name) => binColumns.value.find((c) => c.name === name)).filter((c): c is (typeof columns.value)[number] => !!c))
+watch(binCols, (cols) => cols.forEach((c) => { if (!f.value.bins[c.name]) f.value.bins[c.name] = emptyBin(c.name, c.type) }), { immediate: true })
 const metrics = computed(() => (meta.sources?.metrics || []).filter((m) => src.value?.metrics.includes(m.key)))
 const metricNeedsColumn = computed(() => metrics.value.find((m) => m.key === f.value.metric_kind)?.needs_column)
 const isRaw = computed(() => !!CHART_KINDS.find((k) => k.value === f.value.chart_kind)?.raw)
-const tableSortItems = computed(() => (f.value.group_by.length ? [{ name: 'value', label: 'Wert' }, ...dims.value.map((d) => ({ name: d.key, label: d.label }))] : columns.value))
+const tableSortItems = computed(() => (f.value.group_by.length ? [{ name: 'value', label: 'Wert' }, ...dims.value.filter((d: any) => d.type !== 'subheader').map((d) => ({ name: d.key, label: d.label }))] : columns.value))
 const stageHeight = computed(() => Math.max(420, Math.min(760, window.innerHeight - 220)))
 
 function changed() {

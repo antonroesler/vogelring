@@ -56,7 +56,7 @@ export interface ChartModel {
   heat?: { values: [number, number, number][]; min: number; max: number }
   timeline?: { points: { row: number; t: string; end?: string; cls: string; color: string; tip: string }[]; classes: { name: string; color: string }[]; min: string; max: string }
   calendar?: { years: number[]; values: [string, number][]; max: number; value_label: string }
-  sankey?: { nodes: { name: string; label: string; color: string }[]; links: { source: string; target: string; value: number }[] }
+  sankey?: { nodes: { name: string; label: string; color: string }[]; links: { source: string; target: string; value: number }[]; keep_order?: boolean }
   box?: { data: number[][]; outliers: [number, number][]; color: string; name: string }
   graph?: { nodes: { name: string; value: number; category: number; symbolSize: number }[]; links: { source: string; target: string; value: number; label?: string | null; color?: string | null }[]; categories: { name: string; color: string }[]; edge_types: { name: string; color: string }[]; directed: boolean }
   facets?: { name: string; categories: string[]; series: { name: string; data: any[]; color: string }[] }[]
@@ -361,7 +361,7 @@ function buildSankey(M: ChartModel, opt: any) {
       nodeWidth: 16,
       nodeGap: 10,
       nodeAlign: 'justify',
-      layoutIterations: 64,
+      layoutIterations: S.keep_order ? 0 : 64, // classes (0–50 km, 50–100 km …) must keep their order
       emphasis: { focus: 'adjacency' },
       data: S.nodes.map((n) => ({ name: n.name, itemStyle: { color: n.color, borderColor: n.color } })),
       links: S.links.map((l) => ({ source: l.source, target: l.target, value: l.value })),

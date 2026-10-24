@@ -842,17 +842,21 @@ def metric_sql(source: Source, metric: Metric, column: str | None) -> str:
 # ---------------------------------------------------------------- SQL builders
 
 
-def build_aggregate_sql(source: Source, filters: FilterSpec, metric: str, metric_column: str | None, dimensions: list[str]) -> tuple[str, list[Any]]:
-    """SELECT dim1 AS key1, …, <metric> AS value FROM (<base>) s WHERE <filters> GROUP BY … ORDER BY …"""
+def build_aggregate_sql(source: Source, filters: FilterSpec, metric: str, metric_column: str | None, dimensions: list[str | Dimension]) -> tuple[str, list[Any]]:
+    """SELECT dim1 AS key1, …, <metric> AS value FROM (<base>) s WHERE <filters> GROUP BY … ORDER BY …
+
+    ``dimensions`` are predefined keys or ready-made Dimension objects (binned columns, see binning.resolve_dimension)."""
     m = get_metric(metric)
     where, params = compile_filters(source, filters)
-    dims = [get_dimension(k) for k in dimensions]
+    dims = [k if isinstance(k, Dimension) else get_dimension(k) for k in dimensions]
     if len({d.key for d in dims}) != len(dims):
         raise SourceError("Jede Aufteilung darf nur einmal vorkommen.")
     select: list[str] = []
     pre_params: list[Any] = []
     for d in dims:
         expr = d.expr(source)
+        if expr == "__NEEDS_BOUNDS__":
+            raise SourceError(f"Aufteilung „{d.label}“ braucht eine Klassenbreite (bins: width oder edges).")
         if d.key == "group":
             from .groups import group_case_sql  # lazy
 
@@ -969,6 +973,7 @@ def describe_sources() -> dict[str, Any]:
                 "columns": [{"name": c.name, "label": c.label, "type": c.type, "role": c.role, "filterable": c.filterable} for c in s.columns],
                 "filters": [f["name"] for f in FILTER_FIELDS if _filter_supported(s, f["name"]) or (s.key == "relationships" and f["name"] == "rings")],
                 "dimensions": [d.key for d in DIMENSIONS.values() if s.key in d.sources],
+                "bin_columns": [c.name for c in s.columns if c.role != "coord" and (c.type in ("date", "number") or (c.type == "int" and c.role == "measure"))],
                 "metrics": [m.key for m in METRICS.values() if all(s.has(r) for r in m.requires)],
             }
             for s in SOURCES.values()
@@ -976,6 +981,7 @@ def describe_sources() -> dict[str, Any]:
         "metrics": [{"key": m.key, "label": m.label, "needs_column": m.needs_column} for m in METRICS.values()],
         "dimensions": [{"key": d.key, "label": d.label, "sources": list(d.sources), "is_month": d.is_month, "is_time": d.is_time} for d in DIMENSIONS.values()],
         "filters": FILTER_FIELDS,
+        "bins": "Zahlen- und Datumsspalten (bin_columns) können überall als Aufteilung stehen, wo ein dimension-Schlüssel erwartet wird; sie werden in Klassen eingeteilt (ViewSpec.bins: width | edges | count, date_part für Datumsspalten). Ohne Angabe: etwa 8 runde Klassen bzw. Jahr.",
         "seasons": [{"key": k, "label": v, "months": list(SEASON_MONTHS[k])} for k, v in SEASON_LABELS.items()],
     }
 

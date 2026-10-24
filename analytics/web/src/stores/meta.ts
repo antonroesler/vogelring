@@ -14,7 +14,12 @@ export const useMetaStore = defineStore('meta', {
   getters: {
     chatBase: (s) => (s.meta ? `${s.meta.chat_url}/c/new?agent_id=${encodeURIComponent(s.meta.chat_agent_id)}` : ''),
     sourceByKey: (s) => (key: string) => s.sources?.sources.find((x) => x.key === key),
-    dimensionLabel: (s) => (key: string | null | undefined) => s.sources?.dimensions.find((d) => d.key === key)?.label || key || '',
+    dimensionLabel: (s) => (key: string | null | undefined) => {
+      const d = s.sources?.dimensions.find((x) => x.key === key)
+      if (d) return d.label
+      const col = s.sources?.sources.flatMap((x) => x.columns).find((c) => c.name === key)
+      return col ? `${col.label} (in Klassen)` : key || ''
+    },
     metricLabel: (s) => (key: string) => s.sources?.metrics.find((m) => m.key === key)?.label || key,
     definitionsOf: (s) => (kind: string) => s.definitions.filter((d) => d.kind === kind),
   },

@@ -64,6 +64,54 @@ export function toFilterForm(spec: any): Filters {
   return f
 }
 
+/** Classes for a numeric/date column used as a category (server: BinSpec). */
+export interface BinForm {
+  mode: 'auto' | 'width' | 'edges' | 'date'
+  width: number | null
+  edges: string
+  date_part: 'year' | 'month' | 'year_month' | 'season'
+  unit: string
+}
+
+export const DEFAULT_UNITS: Record<string, string> = { km_from_ringing: 'km', max_km: 'km', days_known: 'Tage' }
+
+export const emptyBin = (column = '', type = 'number'): BinForm => ({ mode: type === 'date' ? 'date' : 'auto', width: null, edges: '', date_part: 'year', unit: DEFAULT_UNITS[column] || '' })
+
+/** A column can be put into classes when it holds free numbers, numeric measures or dates (coded ints like age have labels). */
+export function binnable(c: { type: string; role: string } | undefined | null): boolean {
+  return !!c && (c.type === 'date' || c.type === 'number' || (c.type === 'int' && c.role === 'measure'))
+}
+
+/** Columns that act as categories in the current chart/table and therefore may need classes. */
+export function categoryColumns(f: BuilderForm): string[] {
+  let cols: (string | null)[] = []
+  if (f.kind === 'chart') {
+    if (RAW.has(f.chart_kind)) {
+      if (['sankey', 'graph'].includes(f.chart_kind)) cols = [f.source_column, f.target_column]
+      else if (f.chart_kind === 'boxplot' || f.chart_kind === 'histogram') cols = [f.x_column]
+      else if (f.chart_kind === 'timeline') cols = [f.series_column, f.color_column]
+      else if (f.chart_kind === 'scatter') cols = [f.color_column]
+    } else cols = [f.dimension, f.color, f.facet]
+  } else if (f.kind === 'table') cols = f.group_by
+  return [...new Set(cols.filter((c): c is string => !!c))]
+}
+
+function binToSpec(column: string, b: BinForm | undefined): any | null {
+  if (!b || b.mode === 'auto') return null
+  if (b.mode === 'date') return { column, date_part: b.date_part }
+  const out: any = { column }
+  if (b.mode === 'width') {
+    if (!b.width || b.width <= 0) return null
+    out.width = b.width
+  } else {
+    const edges = b.edges.split(/[,;\s]+/).map((x) => x.replace(',', '.')).filter(Boolean).map(Number).filter((x) => Number.isFinite(x))
+    if (!edges.length || edges.some((x, i) => i && x <= edges[i - 1])) return null
+    out.edges = edges
+  }
+  if (b.unit.trim()) out.unit = b.unit.trim()
+  return out
+}
+
 export interface BuilderForm {
   kind: 'chart' | 'map' | 'table'
   source: string
@@ -93,6 +141,7 @@ export interface BuilderForm {
   sort_by: string | null
   sort_desc: boolean
   totals_row: boolean
+  bins: Record<string, BinForm>
 }
 
 export const defaultForm = (): BuilderForm => ({
@@ -100,7 +149,7 @@ export const defaultForm = (): BuilderForm => ({
   dimension: 'month', color: null, facet: null, sort: 'none', limit: null, show_values: false, show_totals: false, annotate_moult: false,
   x_column: 'date', series_column: 'ring', y_column: null, color_column: null, source_column: 'ringing_place', target_column: 'place',
   map: { color_mode: 'season', color_column: null, show_ringing_sites: true, tracks: false, bubbles_by_place: false, labels: true, basemap: 'light' },
-  columns: [], group_by: [], sort_by: null, sort_desc: true, totals_row: false,
+  columns: [], group_by: [], sort_by: null, sort_desc: true, totals_row: false, bins: {},
 })
 
 const RAW = new Set(['timeline', 'calendar', 'scatter', 'boxplot', 'sankey', 'graph', 'histogram'])
@@ -168,6 +217,8 @@ export function toSpec(f: BuilderForm): any {
     spec.sort_desc = f.sort_desc
     if (f.totals_row) spec.totals_row = true
   }
+  const bins = categoryColumns(f).map((c) => binToSpec(c, f.bins[c])).filter(Boolean)
+  if (bins.length) spec.bins = bins
   return spec
 }
 
@@ -199,6 +250,14 @@ export function fromSpec(spec: any): BuilderForm {
   f.sort_by = spec.sort_by || null
   f.sort_desc = spec.sort_desc !== false
   f.totals_row = !!spec.totals_row
+  for (const b of spec.bins || []) {
+    const form = emptyBin(b.column, b.date_part ? 'date' : 'number')
+    if (b.width) Object.assign(form, { mode: 'width', width: b.width })
+    else if (b.edges?.length) Object.assign(form, { mode: 'edges', edges: b.edges.join(', ') })
+    else if (b.date_part) Object.assign(form, { mode: 'date', date_part: b.date_part })
+    if (b.unit !== undefined) form.unit = b.unit || ''
+    f.bins[b.column] = form
+  }
   return f
 }
 

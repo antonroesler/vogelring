@@ -199,7 +199,7 @@
     var S = M.sankey;
     opt.tooltip = { trigger: 'item', confine: true, formatter: function (p) { return p.dataType === 'edge' ? p.data.source.replace(/​/g, '') + ' → ' + p.data.target.replace(/​/g, '') + ': ' + fmtVal(p.value) : p.name.replace(/​/g, '') + ': ' + fmtVal(p.value); } };
     var rightPad = Math.min(360, 7.2 * longestLabel(S.nodes.filter(function (n) { return !S.links.some(function (l) { return l.source === n.name; }); }).map(function (n) { return n.label + '  000'; })) + 24);
-    opt.series = [{ type: 'sankey', left: 24, right: rightPad, top: 16, bottom: 16, nodeWidth: 16, nodeGap: 10, nodeAlign: 'justify', layoutIterations: 64, emphasis: { focus: 'adjacency' },
+    opt.series = [{ type: 'sankey', left: 24, right: rightPad, top: 16, bottom: 16, nodeWidth: 16, nodeGap: 10, nodeAlign: 'justify', layoutIterations: S.keep_order ? 0 : 64, emphasis: { focus: 'adjacency' },
       data: S.nodes.map(function (n) { return { name: n.name, itemStyle: { color: n.color, borderColor: n.color } }; }),
       links: S.links.map(function (l) { return { source: l.source, target: l.target, value: l.value }; }),
       lineStyle: { color: 'gradient', opacity: 0.35, curveness: 0.5 },
