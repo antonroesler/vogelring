@@ -294,6 +294,15 @@
           :show-default-marker="false"
           @marker-placed="handleMarkerPlaced"
         ></leaflet-map>
+
+        <!-- Map-first place suggestions + non-blocking place/position hint -->
+        <nearby-place-suggestions
+          v-if="showPlaceSuggestions"
+          :latitude="latitude"
+          :longitude="longitude"
+          :place="localSighting.place"
+          @select="applyPlaceSuggestion"
+        ></nearby-place-suggestions>
         
         <!-- Add location accuracy toggle when coordinates are set -->
         <v-row v-if="hasCoordinates" class="mt-2" dense>
@@ -376,7 +385,7 @@
 <script setup lang="ts">
 import { resolveSpeciesName } from '@/utils/species';
 import { ref, watch, computed, onMounted } from 'vue';
-import type { Sighting, SuggestionBird, SuggestionLists } from '@/types';
+import type { NearbyPlace, Sighting, SuggestionBird, SuggestionLists } from '@/types';
 import { BirdStatus, PairType } from '@/types';
 import { getSightingAgeOptions, getSightingSexOptions, invertSightingSex } from '@/utils/sightingCoding';
 import LeafletMap from '@/components/map/LeafletMap.vue';
@@ -386,6 +395,7 @@ import ColorRingInput, { type ColorRingFormValue } from '@/components/rings/Colo
 import { useColorRingsStore } from '@/stores/colorRings';
 import MissingSpeciesDialog from '@/components/dialogs/MissingSpeciesDialog.vue';
 import ChildrenForm from '@/components/sightings/ChildrenForm.vue';
+import NearbyPlaceSuggestions from '@/components/sightings/NearbyPlaceSuggestions.vue';
 import FamilyConfirmationDialog, { type FamilySelections } from '@/components/dialogs/FamilyConfirmationDialog.vue';
 import { api, createSighting } from '@/api';
 import { cleanSightingData, toNumberOrNull } from '@/utils/formValidation';
@@ -876,6 +886,24 @@ const hasCoordinates = computed(() => {
 const handleMarkerPlaced = () => {
   if (!localSighting.value.is_exact_location) {
     localSighting.value.is_exact_location = true;
+  }
+};
+
+/**
+ * Fill place (and area) from a nearby-place suggestion. The marker stays where
+ * the user put it. Area is only overwritten when the suggestion carries one or
+ * when the current area itself came from a previous suggestion.
+ */
+let areaFromSuggestion = false;
+const applyPlaceSuggestion = (suggestion: NearbyPlace) => {
+  localSighting.value.place = suggestion.place;
+  if (suggestion.area) {
+    localSighting.value.area = suggestion.area;
+    areaFromSuggestion = true;
+    showAdditionalFields.value = true;
+  } else if (areaFromSuggestion) {
+    localSighting.value.area = undefined;
+    areaFromSuggestion = false;
   }
 };
 

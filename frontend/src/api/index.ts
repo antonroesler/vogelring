@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Sighting, BirdMeta, FriendResponse, Dashboard, Ringing, ShareableReport, SuggestionBird, ColorRing } from '../types';
+import type { Sighting, BirdMeta, FriendResponse, Dashboard, Ringing, ShareableReport, SuggestionBird, ColorRing, NearbyPlace, PlaceCheck } from '../types';
 
 // API configuration - uses relative /api path (works with nginx and vite proxy)
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
@@ -211,6 +211,34 @@ export const getSightingsInRadius = async (lat: number, lon: number, radius: num
     }
   });
   console.log('Received sightings in radius:', response.data);
+  return response.data;
+};
+
+/**
+ * Known places/areas closest to a map position, nearest first.
+ * Used on the new-entry page so the marker can be placed before the place name is chosen.
+ */
+export const getNearbyPlaces = async (
+  lat: number,
+  lon: number,
+  options: { limit?: number; radiusKm?: number } = {}
+): Promise<NearbyPlace[]> => {
+  const response = await api.get<NearbyPlace[]>('/places/nearby', {
+    params: {
+      lat,
+      lon,
+      limit: options.limit ?? 6,
+      radius_km: options.radiusKm ?? 5
+    }
+  });
+  return response.data;
+};
+
+/** Check whether a marker position is plausible for a place name (non-blocking hint). */
+export const checkPlacePosition = async (place: string, lat: number, lon: number): Promise<PlaceCheck> => {
+  const response = await api.get<PlaceCheck>('/places/check', {
+    params: { place, lat, lon }
+  });
   return response.data;
 };
 

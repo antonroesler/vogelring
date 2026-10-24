@@ -144,6 +144,31 @@ export interface SuggestionLists {
   field_fruits: string[];
 }
 
+/** A known place/area combination near a map position (GET /places/nearby). */
+export interface NearbyPlace {
+  place: string;
+  area: string | null;
+  /** Distance from the queried position to the nearest previous record of this place/area. */
+  distance_m: number;
+  /** Number of sightings/ringings recorded under this place/area with coordinates. */
+  count: number;
+  last_date: string | null;
+  center_lat: number;
+  center_lon: number;
+}
+
+/** Plausibility check of a place name against a map position (GET /places/check). */
+export interface PlaceCheck {
+  known: boolean;
+  count: number;
+  nearest_m: number | null;
+  typical_radius_m: number | null;
+  /** True when the position lies clearly outside where the place was recorded before. Never blocks saving. */
+  warning: boolean;
+  /** German hint text, only set when warning is true. */
+  message: string | null;
+}
+
 /**
  * EURING age codes for sightings — the same integer scheme Ringings use.
  * (Legacy shorthand ad/dj/vj/juv was migrated: Adult→6, Diesjährig→3,
