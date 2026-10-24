@@ -1,0 +1,60 @@
+# Merge into /mnt/ssd/apps/librechat/librechat.yaml (LibreChat v0.8.8+).
+# Internal MCP destinations must be allowlisted since v0.8.8.
+mcpSettings:
+  allowedAddresses:
+    - "analytics-mcp:8000"
+
+mcpServers:
+  vogelring-analytics:
+    type: streamable-http
+    url: http://analytics-mcp:8000/mcp
+    timeout: 300000
+    serverInstructions: true
+
+# Memory: the chat remembers user preferences and explanations across conversations.
+# The memory agent runs on the ChatGPT subscription endpoint.
+memory:
+  disabled: false
+  personalize: true
+  tokenLimit: 4000
+  messageWindowSize: 6
+  validKeys:
+    - begriffe          # what the user means by a term (Nordufer, Kerngruppe, …)
+    - vorlieben         # colours, chart styles, report length, language
+    - projekte          # ongoing analyses, questions the user cares about
+    - orte              # places the user observes regularly
+    - person            # name, role, how they want to be addressed
+  agent:
+    provider: "ChatGPT"
+    model: "gpt-6-luna"
+    instructions: >
+      Du verwaltest das Langzeitgedächtnis für Vogelring-Nutzer (Vogelkundler). Speichere nur dauerhaft Nützliches:
+      begriffe (was der Nutzer mit einem Begriff meint), vorlieben (Darstellung, Berichtsform, Farben),
+      projekte (laufende Fragestellungen), orte (regelmäßig beobachtete Orte), person (Name, Rolle, Anrede).
+      Fasse knapp auf Deutsch zusammen, überschreibe veraltete Einträge, speichere keine einzelnen Zahlen oder Zwischenergebnisse.
+
+interface:
+  schedules:
+    use: true
+    create: true
+    maxPerUser: 20
+    minIntervalMinutes: 60
+    autoDisableAfterFailures: 5
+  artifactUndocking: true
+
+endpoints:
+  agents:
+    capabilities:
+      - "tools"
+      - "actions"
+      - "artifacts"
+      - "ask_user_question"
+      - "memory"
+      - "skills"
+      - "subagents"
+      - "deferred_tools"
+      - "context"
+      - "file_search"
+    recursionLimit: 75
+    maxRecursionLimit: 120
+    maxSubagents: 6

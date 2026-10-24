@@ -1,0 +1,31 @@
+{
+  "name": "Graugans BV als juv beringt",
+  "description": "Alle Graugänse mit BV Status die als Nichtflügge beringt wurden.",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status"
+  ],
+  "filters": [
+    {
+      "type": "equals",
+      "column": "species",
+      "value": "Graugans"
+    },
+    {
+      "type": "equals",
+      "column": "ringing_age",
+      "value": 1.0
+    },
+    {
+      "type": "equals",
+      "column": "status",
+      "value": "BV"
+    }
+  ],
+  "excluded_ids": [],
+  "id_field": "id"
+}

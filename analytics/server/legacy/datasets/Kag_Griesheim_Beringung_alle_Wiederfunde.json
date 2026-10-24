@@ -1,0 +1,29 @@
+{
+  "name": "Kag, Griesheim, Beringung alle Wiederfunde",
+  "description": "Alle Wiederfunde von in Griesheim beringten Kanadagänsen",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status"
+  ],
+  "filters": [
+    {
+      "type": "multi",
+      "column": "ringing_place",
+      "values": [
+        "Frankfurt, Griesheim-Staustufe*[DEED, 5917]",
+        "Frankfurt, Griesheim, Klärwerk*(DEED 5917)"
+      ]
+    },
+    {
+      "type": "equals",
+      "column": "species",
+      "value": "Kanadagans"
+    }
+  ],
+  "excluded_ids": [],
+  "id_field": "id"
+}

@@ -1,0 +1,32 @@
+{
+  "name": "Kag_Höchst Satdtpark_BV_MG",
+  "description": "Alle Wiederfunde Kag Höchst Stadtpark mit Status BV/MG",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status"
+  ],
+  "filters": [
+    {
+      "type": "equals",
+      "column": "species",
+      "value": "Kanadagans"
+    },
+    {
+      "type": "multi",
+      "column": "ring",
+      "values": [
+        "2000558",
+        "280741",
+        "283114",
+        "283121",
+        "294057"
+      ]
+    }
+  ],
+  "excluded_ids": [],
+  "id_field": "id"
+}

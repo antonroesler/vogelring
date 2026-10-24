@@ -1,0 +1,11 @@
+# build + dependency output
+web/node_modules/
+web/dist/
+server/.venv/
+server/.pytest_cache/
+server/golden/out/
+server/data/
+**/__pycache__/
+.DS_Store
+# local secrets
+.env*

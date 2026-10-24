@@ -1,0 +1,82 @@
+{
+  "name": "Test_Kag, Klein-Krotzenburg_alle Ablesungen II BV; Einfach",
+  "description": "Alle Ablesungen in Klein-Krotzenburg Ringeingabe",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status"
+  ],
+  "filters": [
+    {
+      "type": "equals",
+      "column": "species",
+      "value": "Kanadagans"
+    },
+    {
+      "type": "multi",
+      "column": "ring",
+      "values": [
+        "274837",
+        "278939",
+        "278940",
+        "278903",
+        "278906",
+        "278921",
+        "278926",
+        "278931",
+        "278935",
+        "278937",
+        "278941",
+        "278963",
+        "278971",
+        "278972",
+        "278978",
+        "278989",
+        "278991",
+        "278996",
+        "280741",
+        "281902",
+        "281907",
+        "281909",
+        "281916",
+        "281932",
+        "281933",
+        "282358",
+        "282368",
+        "282393",
+        "283118",
+        "283123",
+        "283125",
+        "283129",
+        "283130",
+        "283148",
+        "283150",
+        "283158",
+        "283174",
+        "283176",
+        "283181",
+        "2000149",
+        "2000510",
+        "2000522"
+      ]
+    },
+    {
+      "type": "equals",
+      "column": "status",
+      "value": "BV"
+    }
+  ],
+  "excluded_ids": [
+    "b4c668ce-2d40-4a1e-bf13-db8183fbfc60",
+    "1b247a7f-3b2d-4101-874a-21e1505daada",
+    "0bf21a62-2163-456e-874c-002eee751d83",
+    "6a39b96e-ebad-4fdd-ad92-088854b51d03",
+    "2dc74e69-1bf6-4040-a993-30a7d0dc7b6e",
+    "834f1edc-f6c5-450a-bc74-0bb403e74789",
+    "3681caed-d1e8-4276-bdd9-381a13212f71"
+  ],
+  "id_field": "id"
+}

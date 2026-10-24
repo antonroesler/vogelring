@@ -1,0 +1,39 @@
+# Merge into /mnt/ssd/apps/librechat/docker-compose.yml
+services:
+  librechat:
+    volumes:
+      - ./skills:/app/skill:ro          # deployment skills (SKILL.md per folder), synced by deploy/pi-deploy.sh
+    environment:
+      - SCHEDULES_SINGLE_PROCESS=true   # scheduled chats without Redis (single API process)
+      - DEPLOYMENT_SKILLS_DIR=/app/skill
+
+  analytics-mcp:
+    build:
+      context: ./analytics       # synced by analytics/deploy/pi-deploy.sh (Dockerfile at analytics/Dockerfile)
+    image: vogelring-analytics-mcp
+    container_name: librechat-analytics-mcp
+    restart: unless-stopped
+    # One container serves the MCP endpoint, the viz/files routes and the analytics web app.
+    # analytics.vogelring.com: cloudflared -> localhost:8501 (formerly the Streamlit container
+    #   vogelring-analytics, now retired; deploy/pi-deploy.sh removes it).
+    # charts.vogelring.com: cloudflared -> localhost:8001, kept as an alias (PUBLIC_BASE_URL, existing links).
+    ports:
+      - "127.0.0.1:8001:8000"   # charts.vogelring.com
+      - "127.0.0.1:8501:8000"     # analytics.vogelring.com
+    env_file:
+      - .env.analytics           # DATABASE_URL, CARTO_BASEMAP_KEY
+    environment:
+      - PUBLIC_BASE_URL=https://charts.vogelring.com
+      - DATA_DIR=/data
+      - MCP_ALLOWED_HOSTS=analytics-mcp,analytics-mcp:*,localhost,localhost:*,127.0.0.1,127.0.0.1:*,charts.vogelring.com,analytics.vogelring.com
+      - TILE_REFERER=https://vogelring.com/
+      - RETENTION_DAYS=180
+    volumes:
+      - analytics_data:/data
+    shm_size: 512m
+    networks:
+      - librechat
+      - vogelring-network
+
+volumes:
+  analytics_data:

@@ -1,0 +1,26 @@
+{
+  "name": "Graugänse",
+  "description": "Alle Graugänse, basierend auf Artbestimmung bei der Sichtung. ",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status",
+    "sex"
+  ],
+  "filters": [
+    {
+      "type": "equals",
+      "column": "species",
+      "value": "Graugans"
+    }
+  ],
+  "excluded_ids": [
+    "36e5f8f6-400a-4d7f-9df8-0f3f726f9703",
+    "fb07ac6e-79d7-48fa-a07c-12a141166058",
+    "fa65ce5c-692a-4338-92d3-1ee9904ef3c8"
+  ],
+  "id_field": "id"
+}

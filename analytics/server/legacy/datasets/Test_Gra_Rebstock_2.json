@@ -1,0 +1,32 @@
+{
+  "description": "",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status"
+  ],
+  "filters": [
+    {
+      "type": "equals",
+      "column": "species",
+      "value": "Graugans"
+    },
+    {
+      "type": "equals",
+      "column": "ringing_place",
+      "value": "Frankfurt, Rebstockweiher*(DEED 5817)"
+    },
+    {
+      "type": "date_range",
+      "column": "date",
+      "start": "2018-01-01",
+      "end": "2025-09-30"
+    }
+  ],
+  "excluded_ids": [],
+  "id_field": "id",
+  "name": "Test_Gra_Rebstock_2"
+}

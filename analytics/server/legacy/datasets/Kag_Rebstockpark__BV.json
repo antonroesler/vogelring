@@ -1,0 +1,29 @@
+{
+  "name": "Kag, Rebstockpark,  BV",
+  "description": "",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status"
+  ],
+  "filters": [
+    {
+      "type": "equals",
+      "column": "species",
+      "value": "Kanadagans"
+    },
+    {
+      "type": "multi",
+      "column": "ring",
+      "values": [
+        "278971",
+        "278997"
+      ]
+    }
+  ],
+  "excluded_ids": [],
+  "id_field": "id"
+}

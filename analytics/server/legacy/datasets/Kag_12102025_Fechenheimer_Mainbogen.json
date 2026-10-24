@@ -1,0 +1,27 @@
+{
+  "name": "Kag_12/10/2025_Fechenheimer Mainbogen",
+  "description": "",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status"
+  ],
+  "filters": [
+    {
+      "type": "date_range",
+      "column": "date",
+      "start": "2025-10-12",
+      "end": "2025-10-12"
+    },
+    {
+      "type": "equals",
+      "column": "species",
+      "value": "Kanadagans"
+    }
+  ],
+  "excluded_ids": [],
+  "id_field": "id"
+}

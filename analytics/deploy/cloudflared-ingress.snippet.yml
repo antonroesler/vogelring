@@ -1,0 +1,9 @@
+# /etc/cloudflared/config.yml ingress list (before the catch-all), then: sudo systemctl restart cloudflared
+# Both hostnames now reach the same container (analytics-mcp service, see librechat-compose.snippet.yml).
+# analytics.vogelring.com already exists (it used to serve the Streamlit app on :8501); no change needed.
+  - hostname: analytics.vogelring.com
+    service: http://localhost:8501
+  - hostname: charts.vogelring.com
+    service: http://localhost:8001
+    originRequest:
+      connectTimeout: 30s

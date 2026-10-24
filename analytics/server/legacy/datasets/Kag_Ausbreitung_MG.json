@@ -1,0 +1,31 @@
+{
+  "name": "Kag_Ausbreitung_MG",
+  "description": "Alle Kag Wiederfunde von als nf beringte mit Wiederfundstatus MG",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status"
+  ],
+  "filters": [
+    {
+      "type": "equals",
+      "column": "ringing_age",
+      "value": 1.0
+    },
+    {
+      "type": "equals",
+      "column": "species",
+      "value": "Kanadagans"
+    },
+    {
+      "type": "equals",
+      "column": "status",
+      "value": "MG"
+    }
+  ],
+  "excluded_ids": [],
+  "id_field": "id"
+}

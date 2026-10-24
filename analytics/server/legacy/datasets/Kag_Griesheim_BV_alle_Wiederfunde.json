@@ -1,0 +1,40 @@
+{
+  "name": "Kag, Griesheim, BV alle Wiederfunde",
+  "description": "Alle wiederfunde Von Kag die irgendwann in Grieheim Brutvögel (status BV) waren",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status"
+  ],
+  "filters": [
+    {
+      "type": "equals",
+      "column": "species",
+      "value": "Kanadagans"
+    },
+    {
+      "type": "multi",
+      "column": "ring",
+      "values": [
+        "2000136",
+        "283104",
+        "2000101",
+        "2000102",
+        "2000108",
+        "2000519",
+        "2000520",
+        "2000589",
+        "2000596",
+        "2000597",
+        "2000599",
+        "281038",
+        "283198"
+      ]
+    }
+  ],
+  "excluded_ids": [],
+  "id_field": "id"
+}

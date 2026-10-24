@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ model.title }}</title>
+<link rel="stylesheet" href="/static/styles.css">
+<link rel="stylesheet" href="/static/report.css">
+<script>window.__READY__ = false; window.__ERROR__ = null;</script>
+</head>
+<body class="report{{ ' print' if print else '' }}">
+<div id="toolbar"><span>Bericht · {{ report_id }}</span><a href="/reports/{{ report_id }}.pdf" download>PDF</a><a href="/reports/{{ report_id }}.docx" download>Word (DOCX)</a></div>
+<article id="report">
+  <header class="rp-head">
+    <div class="rp-brand">Vogelring · Auswertung</div>
+    <h1>{{ model.title }}</h1>
+    {% if model.subtitle %}<p class="rp-sub">{{ model.subtitle }}</p>{% endif %}
+    <p class="rp-meta">{{ model.author }} · {{ model.date }}</p>
+    {% if model.question %}<p class="rp-question"><strong>Fragestellung:</strong> {{ model.question }}</p>{% endif %}
+  </header>
+  {% if model.key_findings %}
+  <section class="rp-key">
+    <h2>Das Wichtigste in Kürze</h2>
+    <ul>{% for k in model.key_findings %}<li>{{ k | md_inline | safe }}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+  {% for sec in model.sections %}
+  <section class="rp-section">
+    <h2>{{ sec.heading }}</h2>
+    <div class="rp-text">{{ sec.html | safe }}</div>
+    {% for it in sec.blocks %}
+      {% if it.type == 'figure' %}
+      <figure class="rp-fig">
+        {% if it.png %}<img src="{{ it.png }}" alt="{{ it.caption }}" style="aspect-ratio: {{ it.width }} / {{ it.height }}">{% else %}<div class="rp-missing">Abbildung nicht gerendert</div>{% endif %}
+        <figcaption><strong>Abbildung {{ it.no }}:</strong> {{ it.caption }} <span class="rp-link">Interaktiv: <a href="{{ it.interactive }}">{{ it.interactive }}</a></span></figcaption>
+      </figure>
+      {% else %}
+      <figure class="rp-tab">
+        {% set tm = it.model %}
+        <table class="vr-table"><thead><tr>{% for c in tm.columns %}<th class="{{ c.align }}">{{ c.label }}</th>{% endfor %}</tr></thead>
+        <tbody>{% for row in tm.rows %}<tr>{% for cell in row %}<td class="{{ tm.columns[loop.index0].align }}{{ ' hl' if cell.hl }}">{% if cell.href %}<a href="{{ cell.href }}">{{ cell.text }}</a>{% else %}{{ cell.text }}{% endif %}</td>{% endfor %}</tr>{% endfor %}</tbody>
+        {% if tm.totals %}<tfoot><tr>{% for t in tm.totals %}<td class="{{ tm.columns[loop.index0].align }}">{{ t }}</td>{% endfor %}</tr></tfoot>{% endif %}</table>
+        <figcaption><strong>Tabelle {{ it.no }}:</strong> {{ it.caption }}{% if tm.total_rows > tm.shown_rows %} <span class="rp-link">({{ tm.shown_rows }} von {{ tm.total_rows }} Zeilen)</span>{% endif %}</figcaption>
+      </figure>
+      {% endif %}
+    {% endfor %}
+  </section>
+  {% endfor %}
+  {% if model.recommendations %}
+  <section class="rp-section"><h2>Empfehlungen</h2><ul>{% for k in model.recommendations %}<li>{{ k | md_inline | safe }}</li>{% endfor %}</ul></section>
+  {% endif %}
+  {% if model.include_methods %}
+  <section class="rp-section rp-methods">
+    <h2>So wurde gezählt</h2>
+    <p>Grundlage sind die Sichtungen und Beringungen in der Vogelring-Datenbank (Stand {{ model.date }}). Jede Sichtung ist eine Ablesung eines beringten Vogels an einem Ort an einem Tag. Nicht gesehen heißt nicht abwesend: die Daten zeigen vor allem, wo und wann beobachtet wurde.</p>
+    {% if model.methods_note_html %}<div class="rp-text">{{ model.methods_note_html | safe }}</div>{% endif %}
+    <ol class="rp-datasets">
+    {% for d in model.datasets %}
+      <li><strong>{{ d.name }}</strong>{% if d.description %} – {{ d.description }}{% endif %}
+        <span class="rp-facts">{{ d.rows }} Zeilen{% if d.period %} · Zeitraum {{ d.period }}{% endif %}{% if d.birds is not none %} · {{ d.birds }} verschiedene Vögel{% endif %}{% if d.places is not none %} · {{ d.places }} Orte{% endif %}{% if d.species %} · Arten: {{ d.species }}{% endif %}</span></li>
+    {% endfor %}
+    </ol>
+  </section>
+  {% endif %}
+  {% if model.include_sql_appendix %}
+  <section class="rp-section rp-appendix">
+    <h2>Anhang: technische Details</h2>
+    <p>Für alle, die nachrechnen möchten: die Datenbankabfragen hinter den Zahlen.</p>
+    {% for d in model.datasets %}<details open><summary>{{ d.name }}</summary><pre>{{ d.sql | trim }}</pre></details>{% endfor %}
+  </section>
+  {% endif %}
+  <footer class="rp-foot">Erstellt mit Vogelring-Analyse · {{ model.base_url }}/reports/{{ report_id }}</footer>
+</article>
+<script>
+  var imgs = Array.prototype.slice.call(document.images); var left = imgs.length;
+  function done() { if (--left <= 0) window.__READY__ = true; }
+  if (!left) window.__READY__ = true;
+  imgs.forEach(function (im) { if (im.complete) done(); else { im.addEventListener('load', done); im.addEventListener('error', done); } });
+  setTimeout(function () { window.__READY__ = true; }, 15000);
+</script>
+</body>
+</html>

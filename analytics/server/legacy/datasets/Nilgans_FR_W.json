@@ -1,0 +1,21 @@
+{
+  "name": "Nilgans_FR_W",
+  "description": "",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status"
+  ],
+  "filters": [
+    {
+      "type": "contains",
+      "column": "ring",
+      "value": "W"
+    }
+  ],
+  "excluded_ids": [],
+  "id_field": "id"
+}

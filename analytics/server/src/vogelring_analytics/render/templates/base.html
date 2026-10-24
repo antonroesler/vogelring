@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ page_title }}</title>
+{% block head %}{% endblock %}
+<link rel="stylesheet" href="/static/styles.css">
+<script>
+  window.__MODEL__ = {{ model_json | safe }};
+  window.__RENDER__ = {{ 'true' if render else 'false' }};
+  window.__EMBED__ = {{ 'true' if embed else 'false' }};
+  window.__READY__ = false;
+  window.__ERROR__ = null;
+  window.addEventListener('error', function (e) { window.__ERROR__ = String(e.message || e); var el = document.getElementById('error'); if (el) { el.style.display = 'flex'; el.textContent = window.__ERROR__; } });
+</script>
+</head>
+<body class="{{ 'render' if render else '' }}{{ ' embed' if embed else '' }}">
+<div id="toolbar">
+  <span>{{ kind_label }} · {{ visual_id }}</span>
+  <a href="/viz/{{ visual_id }}.png" download>PNG (2×)</a>
+  <a href="/viz/{{ visual_id }}.pdf" download>PDF</a>
+  <a href="/viz/{{ visual_id }}.xlsx" download>Daten (XLSX)</a>
+  <a href="/viz/{{ visual_id }}?embed=1" target="_blank">Vollbild</a>
+  {% block toolbar %}{% endblock %}
+</div>
+<div id="stage" style="width: {{ model.width }}px; height: {{ model.height }}px;">
+  <div id="header" class="{{ '' if (model.title or model.subtitle) else 'empty' }}">
+    <h1 id="title">{{ model.title or '' }}</h1>
+    <p id="subtitle">{{ model.subtitle or '' }}</p>
+  </div>
+  <div id="body">
+    {% block body %}{% endblock %}
+    <div id="error"></div>
+  </div>
+  <div id="footer" class="{{ '' if (model.footnote or footer_right) else 'empty' }}">
+    <div id="footnote">{{ model.footnote or '' }}</div>
+    <div id="footer-right">{{ footer_right or '' }}</div>
+  </div>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

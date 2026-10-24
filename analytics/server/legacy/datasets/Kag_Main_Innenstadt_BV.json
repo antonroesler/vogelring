@@ -1,0 +1,37 @@
+{
+  "name": "Kag, Main Innenstadt, BV",
+  "description": "Alle Kag Wiederfunde die als BV am innerstädtischen Main festgestellt wurden",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status"
+  ],
+  "filters": [
+    {
+      "type": "equals",
+      "column": "species",
+      "value": "Kanadagans"
+    },
+    {
+      "type": "multi",
+      "column": "ring",
+      "values": [
+        "2000103",
+        "2000540",
+        "274834",
+        "274835",
+        "274838",
+        "278968",
+        "280724",
+        "281036",
+        "281445",
+        "281940"
+      ]
+    }
+  ],
+  "excluded_ids": [],
+  "id_field": "id"
+}

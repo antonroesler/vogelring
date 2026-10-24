@@ -1,0 +1,26 @@
+{
+  "name": "Nig FR",
+  "description": "",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status"
+  ],
+  "filters": [
+    {
+      "type": "contains",
+      "column": "ring",
+      "value": "W"
+    },
+    {
+      "type": "equals",
+      "column": "species",
+      "value": "Nilgans"
+    }
+  ],
+  "excluded_ids": [],
+  "id_field": "id"
+}

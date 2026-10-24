@@ -1,0 +1,31 @@
+{
+  "name": "Kanadagans Ausbreitung BV",
+  "description": "Alle Kag die als nf beringt wurden und mit Status BV gemeldet wurden",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status"
+  ],
+  "filters": [
+    {
+      "type": "equals",
+      "column": "ringing_age",
+      "value": 1.0
+    },
+    {
+      "type": "equals",
+      "column": "species",
+      "value": "Kanadagans"
+    },
+    {
+      "type": "equals",
+      "column": "status",
+      "value": "BV"
+    }
+  ],
+  "excluded_ids": [],
+  "id_field": "id"
+}

@@ -1,0 +1,26 @@
+{
+  "name": "Kag, Ostpark gesamt",
+  "description": "",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status"
+  ],
+  "filters": [
+    {
+      "type": "equals",
+      "column": "species",
+      "value": "Kanadagans"
+    },
+    {
+      "type": "equals",
+      "column": "place",
+      "value": "F, Ostpark"
+    }
+  ],
+  "excluded_ids": [],
+  "id_field": "id"
+}

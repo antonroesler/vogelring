@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block body %}
+<div id="table-wrap" style="font-size: {{ model.font_size }}px">
+<table id="table" class="vr-table">
+  <thead><tr>
+    {% if model.row_number %}<th class="num rn">#</th>{% endif %}
+    {% for c in model.columns %}<th class="{{ c.align }}" data-col="{{ loop.index0 }}" data-numeric="{{ 'true' if c.numeric else 'false' }}" {% if c.width %}style="width:{{ c.width }}px"{% endif %}>{{ c.label }}</th>{% endfor %}
+  </tr></thead>
+  <tbody>
+  {% for row in model.rows %}<tr>
+    {% if model.row_number %}<td class="num rn">{{ loop.index }}</td>{% endif %}
+    {% for cell in row %}{% set col = model.columns[loop.index0] %}<td class="{{ col.align }}{{ ' hl' if cell.hl }}" {% if cell.value is defined %}data-value="{{ cell.value }}"{% endif %}>
+      {% if cell.bar is defined %}<span class="bar" style="width: {{ (cell.bar * 100) | round(1) }}%"></span>{% endif %}
+      {% if cell.href %}<a href="{{ cell.href }}" target="_blank" rel="noopener">{{ cell.text }}</a>{% else %}<span class="t">{{ cell.text }}</span>{% endif %}
+    </td>{% endfor %}
+  </tr>{% endfor %}
+  </tbody>
+  {% if model.totals %}<tfoot><tr>{% if model.row_number %}<td class="rn"></td>{% endif %}{% for t in model.totals %}<td class="{{ model.columns[loop.index0].align }}">{{ t }}</td>{% endfor %}</tr></tfoot>{% endif %}
+</table>
+{% if model.total_rows > model.shown_rows %}<div class="more">{{ model.shown_rows }} von {{ model.total_rows }} Zeilen – vollständig im XLSX-Export.</div>{% endif %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/table.js"></script>{% endblock %}

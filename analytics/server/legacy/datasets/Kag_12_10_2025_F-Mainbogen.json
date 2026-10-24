@@ -1,0 +1,30 @@
+{
+  "name": "Kag_12_10_2025_F-Mainbogen",
+  "description": "",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status"
+  ],
+  "filters": [
+    {
+      "type": "multi",
+      "column": "ring",
+      "values": [
+        "294127",
+        "294112",
+        "281946",
+        "278908",
+        "2000528",
+        "282321",
+        "274843",
+        "283181"
+      ]
+    }
+  ],
+  "excluded_ids": [],
+  "id_field": "id"
+}

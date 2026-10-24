@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Änderungsvorschlag {{ doc.changeset_id }}</title>
+<link rel="stylesheet" href="/static/styles.css">
+<style>
+  body.changes { background: #e9ecef; }
+  #chg { background: #fff; max-width: 1100px; margin: 12px auto 40px auto; padding: 32px 40px; box-shadow: 0 2px 14px rgba(0,0,0,.1); font-size: 14px; line-height: 1.5; color: var(--text); }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-weight: 700; font-size: 12.5px; color: #fff; background: #8a949c; }
+  .badge.proposed { background: #EAD054; color: #1f2d36; } .badge.applied { background: #37906D; } .badge.rolled_back { background: #D07B4D; }
+  h1 { color: var(--primary); font-size: 22px; margin: 6px 0 2px 0; }
+  .meta { color: var(--muted); font-size: 12.5px; }
+  .box { border-left: 4px solid var(--secondary); background: #f3f7f9; padding: 8px 12px; margin: 14px 0; }
+  .warn { border-left-color: #D07B4D; background: #fff4ee; }
+  ol.summary li { margin: 4px 0; }
+  table.diff { border-collapse: collapse; width: 100%; margin-top: 10px; font-size: 13px; }
+  table.diff th { text-align: left; background: var(--primary); color: #fff; padding: 6px 8px; position: sticky; top: 0; }
+  table.diff td { padding: 5px 8px; border-bottom: 1px solid #e6eaee; vertical-align: top; }
+  table.diff tr:nth-child(even) td { background: #f6f8fa; }
+  .before { color: #8a949c; text-decoration: line-through; } .after { color: #0b5a2a; font-weight: 600; }
+  .chg { white-space: nowrap; } .n { color: var(--muted); }
+  a { color: var(--primary); }
+  @media print { body.changes { background: #fff; } #chg { box-shadow: none; margin: 0; padding: 0; max-width: none; } }
+</style>
+</head>
+<body class="changes">
+<article id="chg">
+  <span class="badge {{ doc.status }}">{{ status_label }}</span>
+  <h1>Änderungsvorschlag: {{ doc.title }}</h1>
+  <div class="meta">Nr. {{ doc.changeset_id }} · erstellt {{ doc.created_at[:16] | replace('T', ' ') }} von {{ doc.by }}{% if doc.applied_at %} · übernommen {{ doc.applied_at[:16] | replace('T', ' ') }}{% endif %}{% if doc.rolled_back_at %} · zurückgenommen {{ doc.rolled_back_at[:16] | replace('T', ' ') }}{% endif %}</div>
+  <div class="box"><strong>Grund:</strong> {{ doc.reason }}</div>
+  <h2 style="font-size:16px;color:var(--primary)">Was sich ändert</h2>
+  <ol class="summary">{% for line in doc.summary.lines %}<li>{{ line[3:] if line[:3].strip().rstrip('.').isdigit() else line }}</li>{% endfor %}</ol>
+  <p><strong>{{ doc.row_count }}</strong> Datensätze insgesamt{% if doc.summary.outside_org %} · {{ doc.summary.outside_org }} passende Datensätze anderer Organisationen bleiben unberührt{% endif %}.</p>
+  {% if doc.warnings %}<div class="box warn"><strong>Hinweise:</strong><ul>{% for w in doc.warnings %}<li>{{ w }}</li>{% endfor %}</ul></div>{% endif %}
+  {% if doc.last_error %}<div class="box warn"><strong>Letzter Fehler:</strong> {{ doc.last_error }}</div>{% endif %}
+  {% if doc.manual_steps %}<div class="box warn"><strong>Manuell zu erledigen:</strong><ul>{% for m in doc.manual_steps %}<li>{{ m.note }} ({{ m.row }})</li>{% endfor %}</ul></div>{% endif %}
+  <h2 style="font-size:16px;color:var(--primary)">Jeder einzelne Datensatz</h2>
+  <table class="diff">
+    <thead><tr><th>#</th><th>Tabelle</th><th>Datensatz</th><th>Aktion</th><th>Feld</th><th>Vorher</th><th>Nachher</th></tr></thead>
+    <tbody>
+    {% for r in rows %}{% set outer = loop %}{% for c in r.changes %}<tr>
+      {% if loop.first %}<td class="n" rowspan="{{ r.changes | length }}">{{ outer.index }}</td><td rowspan="{{ r.changes | length }}">{{ r.table }}</td><td rowspan="{{ r.changes | length }}">{% if r.link %}<a href="{{ r.link }}" target="_blank" rel="noopener">{{ r.key }}</a>{% else %}{{ r.key }}{% endif %}</td><td rowspan="{{ r.changes | length }}">{{ r.action }}</td>{% endif %}
+      <td class="chg">{{ c.field }}</td><td class="before">{{ c.before }}</td><td class="after">{{ c.after }}</td>
+    </tr>{% endfor %}{% endfor %}
+    </tbody>
+  </table>
+  <p class="meta" style="margin-top:18px">Alle Werte wurden zum Zeitpunkt des Vorschlags gelesen. Beim Übernehmen wird jeder Datensatz erneut geprüft; hat sich etwas geändert, wird nichts geschrieben. Jede übernommene Änderung kann zurückgenommen werden (Vorher-Werte werden wiederhergestellt).</p>
+</article>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "name": "Gra_Ostpark_Herbstgäste_fremd_2025 ",
+  "description": "",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status"
+  ],
+  "filters": [],
+  "excluded_ids": [],
+  "id_field": "id"
+}

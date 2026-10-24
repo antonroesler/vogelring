@@ -1,0 +1,23 @@
+{
+  "name": "Nilgänse",
+  "description": "Alle Nilgänse",
+  "columns": [
+    "ring",
+    "reading",
+    "species",
+    "place",
+    "date",
+    "status",
+    "ringing_age",
+    "ringing_place"
+  ],
+  "filters": [
+    {
+      "type": "equals",
+      "column": "species",
+      "value": "Nilgans"
+    }
+  ],
+  "excluded_ids": [],
+  "id_field": "id"
+}

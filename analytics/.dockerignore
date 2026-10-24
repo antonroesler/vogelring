@@ -1,0 +1,14 @@
+# Build context is analytics/. Only server/ (pyproject, lock, README, src) and web/ are used.
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.DS_Store
+server/.venv
+server/data
+server/golden/out
+server/tests
+web/node_modules
+# dist/ is built inside the image (stage "web"); never send a local build.
+web/dist
+agent
+deploy
