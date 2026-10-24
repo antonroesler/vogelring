@@ -13,7 +13,10 @@ services:
       - ./backend/database/init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./postgres.conf:/etc/postgresql/postgresql.conf:ro
     ports:
-      - "192.168.0.201:5432:5432"  # Bind to Pi's IP address only
+      # Localhost only: containers reach Postgres via vogelring-network, humans via an SSH tunnel
+      # (ssh -L 5432:127.0.0.1:5432 pi@pi-server). Binding to a LAN IP broke every deploy once the Pi's
+      # DHCP lease changed (2026-09-27 outage).
+      - "127.0.0.1:5432:5432"
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U vogelring -d vogelring"]

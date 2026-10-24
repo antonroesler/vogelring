@@ -83,7 +83,7 @@ if [ ! -f "$ENV_FILE" ]; then
     exit 1
 fi
 
-# Step 1: Pull latest code
+# Step 1: Pull latest code (fast-forward only; a diverged checkout must be resolved by hand)
 echo -e "${BLUE}📥 Pulling latest code from git...${NC}"
 git fetch origin
 CURRENT_BRANCH=$(git branch --show-current)
@@ -95,7 +95,7 @@ if [ "$BEHIND" -eq 0 ]; then
     echo -e "${GREEN}✅ Already up to date${NC}"
 else
     echo -e "${YELLOW}📦 Pulling $BEHIND new commits...${NC}"
-    git pull origin "$CURRENT_BRANCH"
+    git pull --ff-only origin "$CURRENT_BRANCH"
 fi
 
 # Step 2: Backup database (if enabled and services are running)
@@ -125,11 +125,33 @@ if [ "$BACKUP_BEFORE_DEPLOY" = "true" ]; then
     fi
 fi
 
-# Step 3: Stop services gracefully
-echo -e "${BLUE}🛑 Stopping services...${NC}"
-docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" down
+# Step 3: Preflight – never stop a working stack for a config that cannot start.
+# (2026-09-27: postgres was bound to a LAN IP the Pi no longer had; "down" succeeded, "up" failed, prod was gone.)
+echo -e "${BLUE}🔎 Preflight checks...${NC}"
+if ! docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" config > /dev/null; then
+    echo -e "${RED}❌ Compose configuration is invalid – nothing was stopped${NC}"
+    exit 1
+fi
+LOCAL_IPS=$(ip -4 -o addr show | awk '{print $4}' | cut -d/ -f1)
+BAD_IPS=""
+for HOST_IP in $(docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" config \
+        | grep -E '^\s+host_ip:' | awk '{print $2}' | tr -d '"' | sort -u); do
+    case "$HOST_IP" in
+        0.0.0.0|127.0.0.1|::|::1) continue ;;
+    esac
+    if ! echo "$LOCAL_IPS" | grep -qx "$HOST_IP"; then
+        BAD_IPS="$BAD_IPS $HOST_IP"
+    fi
+done
+if [ -n "$BAD_IPS" ]; then
+    echo -e "${RED}❌ Port bindings use IP(s) not assigned to this host:${BAD_IPS}${NC}"
+    echo -e "   Local addresses: $(echo "$LOCAL_IPS" | tr '\n' ' ')"
+    echo -e "   Fix the binding in $COMPOSE_FILE (or the host's IP) before deploying. Nothing was stopped."
+    exit 1
+fi
+echo -e "${GREEN}✅ Preflight passed${NC}"
 
-# Step 4: Build frontend assets
+# Step 4: Build frontend assets (while the old stack keeps serving)
 echo -e "${BLUE}🎨 Building frontend assets...${NC}"
 if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
     cd frontend
@@ -148,13 +170,13 @@ else
     echo -e "${YELLOW}⚠️  Frontend directory not found, skipping frontend build${NC}"
 fi
 
-# Step 5: Build updated Docker images
+# Step 5: Build updated Docker images (still nothing stopped; a failed build leaves prod untouched)
 echo -e "${BLUE}🔨 Building updated Docker images...${NC}"
 docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" build --no-cache
 
-# Step 6: Start services
+# Step 6: Roll out – compose recreates only containers whose image or config changed
 echo -e "${BLUE}🚀 Starting services...${NC}"
-docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d
+docker compose -f "$COMPOSE_FILE" --env-file "$ENV_FILE" up -d --remove-orphans
 
 # Step 7: Wait for services to be healthy
 echo -e "${BLUE}⏳ Waiting for services to be healthy...${NC}"
