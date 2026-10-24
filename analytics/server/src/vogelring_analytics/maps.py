@@ -139,6 +139,41 @@ def _tooltip(row: pd.Series, cols: list[str]) -> str:
 # ---------------------------------------------------------------- layers
 
 
+
+def _is_date_col(series: pd.Series, name: str) -> bool:
+    return pd.api.types.is_datetime64_any_dtype(series) or name in ("date", "ringing_date", "first_sighting", "last_sighting", "datum")
+
+
+def _merged_value(series: pd.Series) -> Any:
+    """Tooltip value for a merged marker: the value itself if all rows agree, otherwise a short honest summary
+    (a merged marker must not look like one ring/one date – see ring E09547, 6 birds at one coordinate)."""
+    vals = series.dropna()
+    if vals.empty:
+        return None
+    uniq = list(dict.fromkeys(str(v) for v in vals))
+    if len(uniq) == 1:
+        return vals.iloc[0]
+    if len(uniq) <= 3:
+        return ", ".join(uniq)
+    return f"{uniq[0]}, {uniq[1]}, … ({len(uniq)} verschiedene)"
+
+
+def _merged_date(series: pd.Series) -> Any:
+    vals = series.dropna()
+    if vals.empty:
+        return None
+    if vals.nunique() == 1:
+        return vals.iloc[0]
+    try:
+        d = pd.to_datetime(vals, errors="coerce").dropna()
+        if d.empty:
+            return _merged_value(series)
+        lo, hi = d.min(), d.max()
+        return f"{lo:%d.%m.%Y} – {hi:%d.%m.%Y}"
+    except Exception:
+        return _merged_value(series)
+
+
 def _points_layer(layer: PointLayer, store: DatasetStore) -> tuple[dict[str, Any], list[dict[str, Any]], dict[str, Any], list[str]]:
     df = store.load(layer.dataset_id)
     _require(df, layer.lat_column, "lat")
@@ -174,7 +209,7 @@ def _points_layer(layer: PointLayer, store: DatasetStore) -> tuple[dict[str, Any
             agg["__individuals"] = ("ring", "nunique")
         for c in df.columns:
             if c not in keys and not c.startswith("__") and c not in agg:
-                agg[c] = (c, "first")
+                agg[c] = (c, _merged_date if _is_date_col(df[c], c) else _merged_value)
         agg["__color"] = ("__color", "first")
         if "__class" not in keys:
             agg["__class"] = ("__class", "first")
