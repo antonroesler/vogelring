@@ -1,7 +1,7 @@
 <template>
   <div class="page page--wide">
     <v-row>
-      <v-col cols="12" lg="8">
+      <v-col cols="12">
         <PageHeader title="Live" icon="mdi-broadcast" subtitle="Hier erscheint sofort, was der Assistent (oder du) gerade erstellt – ohne Neuladen. Ideal als zweiter Bildschirm neben dem Chat.">
           <template #title-append><v-chip size="small" :color="live.connected ? 'success' : 'grey'" variant="tonal">{{ live.connected ? 'verbunden' : 'getrennt' }}</v-chip></template>
           <template #actions><v-btn v-if="latest" variant="text" prepend-icon="mdi-pin-off" @click="follow = !follow">{{ follow ? 'Automatisch folgen: an' : 'Automatisch folgen: aus' }}</v-btn></template>
@@ -58,14 +58,6 @@
           <v-btn class="mt-4" color="primary" @click="meta.openChat()">Agent fragen</v-btn>
         </v-card>
       </v-col>
-      <v-col cols="12" lg="4">
-        <v-card class="pa-5">
-          <div class="card-title">Protokoll</div>
-          <div style="max-height: 78vh; overflow: auto">
-            <ActivityFeed :items="log" />
-          </div>
-        </v-card>
-      </v-col>
     </v-row>
   </div>
 </template>
@@ -74,8 +66,7 @@
 import PageHeader from '@/components/PageHeader.vue'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { api, type ActivityItem, type RunResult } from '@/api/client'
-import ActivityFeed from '@/components/ActivityFeed.vue'
+import { api, type RunResult } from '@/api/client'
 import RunResultView from '@/components/RunResultView.vue'
 import VisualById from '@/components/VisualById.vue'
 import { fmtTime, KIND_ICON } from '@/lib/format'
@@ -87,7 +78,6 @@ const meta = useMetaStore()
 const route = useRoute()
 const follow = ref(true)
 const pinnedArtefact = ref<Artefact | null>(null)
-const history = ref<ActivityItem[]>([])
 const runDoc = ref<RunResult | null>(null)
 
 const latest = computed(() => (follow.value ? live.latest || pinnedArtefact.value : pinnedArtefact.value || live.latest))
@@ -95,7 +85,6 @@ const activeRun = computed(() => {
   const runs = Object.values(live.progress)
   return runs.length ? runs[runs.length - 1] : null
 })
-const log = computed(() => [...live.events].reverse().slice(0, 80).concat(history.value.filter((h) => !live.events.some((e) => e.seq === h.seq))).slice(0, 120) as ActivityItem[])
 
 async function applyQuery() {
   const v = route.query.visual as string | undefined
@@ -129,8 +118,5 @@ watch(
   },
 )
 watch(() => route.query, applyQuery)
-onMounted(async () => {
-  history.value = (await api.activity(80)).items
-  await applyQuery()
-})
+onMounted(applyQuery)
 </script>
