@@ -2,7 +2,7 @@
   <div class="map-wrap">
     <div ref="el" class="map-box" />
     <div v-if="basemapSwitch" class="basemap-select">
-      <select v-model="basemap" @change="handle?.setBasemap(basemap)">
+      <select v-model="basemap" @change="pickBasemap">
         <option value="light">Hell</option>
         <option value="voyager">Voyager</option>
         <option value="dark">Dunkel</option>
@@ -18,6 +18,11 @@ import { renderMap, type MapHandle, type MapModel } from '@/lib/mapRender'
 import { isDark } from '@/lib/theme'
 
 const props = withDefaults(defineProps<{ model: MapModel; basemapSwitch?: boolean }>(), { basemapSwitch: true })
+const emit = defineEmits<{ (e: 'basemap', name: string): void }>()
+function pickBasemap() {
+  handle?.setBasemap(basemap.value)
+  emit('basemap', basemap.value) // the builder stores it, so exports use the same basemap
+}
 const el = ref<HTMLElement | null>(null)
 const defaultBasemap = () => (isDark.value && (props.model.basemap_name || 'light') === 'light' ? 'dark' : props.model.basemap_name || 'light')
 const basemap = ref(defaultBasemap())

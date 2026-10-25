@@ -127,7 +127,14 @@
 
       <v-alert v-if="b.error" type="warning" variant="tonal" class="mb-3" :text="b.error" />
       <template v-if="b.preview">
-        <VisualStage ref="stage" :kind="b.preview.kind" :model="b.preview.model" :height="stageHeight" footer-right="Vorschau" />
+        <VisualStage ref="stage" :kind="b.preview.kind" :model="b.preview.model" :height="stageHeight" footer-right="Vorschau" @basemap="f.map.basemap = $event" />
+        <v-snackbar v-model="readyFile.show" timeout="-1" location="bottom right" color="primary">
+          {{ readyFile.label }} ist fertig.
+          <template #actions>
+            <v-btn variant="text" prepend-icon="mdi-open-in-new" @click="openReady">Öffnen</v-btn>
+            <v-btn icon="mdi-close" variant="text" size="small" @click="readyFile.show = false" />
+          </template>
+        </v-snackbar>
         <div class="muted mt-2" style="font-size: 13.5px"><strong>Datengrundlage:</strong> {{ b.preview.description }} <span v-if="b.preview.row_count !== undefined">· {{ fmtInt.format(b.preview.row_count) }} Zeilen</span></div>
         <div v-for="n in b.preview.notes" :key="n" class="muted" style="font-size: 13px">{{ n }}</div>
       </template>
@@ -167,7 +174,7 @@
 
 <script setup lang="ts">
 import EmptyState from '@/components/EmptyState.vue'
-import { computed, onActivated, onMounted, ref, watch } from 'vue'
+import { computed, onActivated, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api, type CatalogItem } from '@/api/client'
 import BinControl from '@/components/BinControl.vue'
@@ -244,14 +251,21 @@ function changed() {
   if (f.value.source !== 'sightings' && f.value.dimension === 'month' && !dims.value.some((d) => d.key === 'month')) f.value.dimension = dims.value[0]?.key || 'species'
 }
 
-watch(() => b.form, () => { b.dirty = true; b.refresh() }, { deep: true })
+watch(
+  () => b.form,
+  () => {
+    b.checkDirty()
+    b.refresh()
+  },
+  { deep: true },
+)
 
 async function loadFromRoute() {
   const id = route.params.viewId as string | undefined
   if (id && id !== b.viewId) {
     try {
       const item = await api.item('view', id)
-      b.loadSpec(item.doc, id, item.title)
+      b.loadSpec(item.doc, id, item.title, item.extra?.visual_id || null)
     } catch (e) {
       meta.notify(friendlyError(e), 'error')
     }
@@ -304,20 +318,32 @@ function takeBounds() {
   meta.notify('Kartenausschnitt übernommen – gilt für Bild, PDF und Berichte, sobald die Ansicht gespeichert ist.')
 }
 
-async function download(what: 'png' | 'pdf' | 'xlsx' | 'open') {
+const FILE_LABEL = { png: 'Das Bild', pdf: 'Das PDF', xlsx: 'Die Excel-Datei', open: 'Die interaktive Seite' } as const
+const readyFile = reactive({ show: false, url: '', label: '' })
+const fileUrl = (vid: string, what: keyof typeof FILE_LABEL) => (what === 'open' ? `/viz/${vid}` : `/viz/${vid}.${what}`)
+function openReady() {
+  readyFile.show = false
+  window.open(readyFile.url, '_blank')
+}
+async function download(what: keyof typeof FILE_LABEL) {
+  // Saved and unchanged: open straight from the click. A window.open after a long await (maps render 10–20 s) is
+  // blocked as a popup, so after saving we show a button instead and open on that click.
+  if (b.viewId && b.visualId && !b.dirty) {
+    window.open(fileUrl(b.visualId, what), '_blank')
+    return
+  }
   saving.value = true
   try {
-    let vid = b.viewId ? (await api.item('view', b.viewId)).extra?.visual_id : null
-    if (!vid || b.dirty) {
-      const res = b.viewId ? await api.updateView(b.viewId, b.spec, b.viewTitle || undefined) : await api.createView(b.spec, f.value.title || b.preview?.describe || 'Ansicht')
-      b.viewId = res.id
-      b.viewTitle = res.title
-      b.dirty = false
-      vid = res.visual?.visual_id
-      if (route.params.viewId !== res.id) router.replace(`/erkunden/${res.id}`)
-    }
-    if (!vid) throw new Error('Kein Bild vorhanden.')
-    window.open(what === 'open' ? `/viz/${vid}` : `/viz/${vid}.${what}`, '_blank')
+    const res = b.viewId ? await api.updateView(b.viewId, b.spec, b.viewTitle || undefined) : await api.createView(b.spec, f.value.title || b.preview?.describe || 'Ansicht')
+    b.viewId = res.id
+    b.viewTitle = res.title
+    b.visualId = res.visual?.visual_id || null
+    b.markSaved()
+    if (route.params.viewId !== res.id) router.replace(`/erkunden/${res.id}`)
+    if (!b.visualId) throw new Error('Kein Bild vorhanden.')
+    readyFile.url = fileUrl(b.visualId, what)
+    readyFile.label = FILE_LABEL[what]
+    readyFile.show = true
   } catch (e) {
     meta.notify(friendlyError(e), 'error')
   } finally {

@@ -268,10 +268,12 @@ export const useBuilderStore = defineStore('builder', {
     form: defaultForm(),
     viewId: null as string | null,
     viewTitle: '' as string,
+    visualId: null as string | null, // rendered image of the saved view (PNG/PDF links)
     preview: null as Preview | null,
     loading: false,
     error: '' as string,
     dirty: false,
+    savedJson: '' as string, // spec as last loaded/saved – dirty = form differs from it (not: any watcher tick)
     timer: 0 as any,
     seq: 0,
   }),
@@ -283,15 +285,24 @@ export const useBuilderStore = defineStore('builder', {
       this.form = defaultForm()
       this.viewId = null
       this.viewTitle = ''
+      this.visualId = null
       this.preview = null
       this.error = ''
+      this.markSaved()
+    },
+    markSaved() {
+      this.savedJson = JSON.stringify(this.spec)
       this.dirty = false
     },
-    loadSpec(spec: any, id: string | null, title = '') {
+    checkDirty() {
+      this.dirty = JSON.stringify(this.spec) !== this.savedJson
+    },
+    loadSpec(spec: any, id: string | null, title = '', visualId: string | null = null) {
       this.form = fromSpec(spec)
       this.viewId = id
       this.viewTitle = title
-      this.dirty = false
+      this.visualId = visualId
+      this.markSaved()
       this.refresh(true)
     },
     refresh(immediate = false) {
@@ -315,7 +326,8 @@ export const useBuilderStore = defineStore('builder', {
       const res = this.viewId ? await api.updateView(this.viewId, this.spec, title) : await api.createView(this.spec, title)
       this.viewId = res.id
       this.viewTitle = res.title
-      this.dirty = false
+      this.visualId = res.visual?.visual_id || this.visualId
+      this.markSaved()
       return res
     },
   },

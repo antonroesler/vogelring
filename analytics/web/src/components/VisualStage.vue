@@ -6,7 +6,7 @@
     </div>
     <div class="body" :style="{ height: bodyHeight }">
       <ChartView v-if="kind === 'chart'" :model="model" />
-      <MapView v-else-if="kind === 'map'" ref="mapRef" :model="model" />
+      <MapView v-else-if="kind === 'map'" ref="mapRef" :model="model" @basemap="emit('basemap', $event)" />
       <TableView v-else-if="kind === 'table'" :model="model" />
     </div>
     <div v-if="model.footnote || footerRight" class="foot">
@@ -22,6 +22,7 @@ import ChartView from './ChartView.vue'
 import MapView from './MapView.vue'
 import TableView from './TableView.vue'
 
+const emit = defineEmits<{ (e: 'basemap', name: string): void }>()
 const mapRef = ref<InstanceType<typeof MapView> | null>(null)
 defineExpose({ mapBounds: () => mapRef.value?.getBounds() || null })
 
